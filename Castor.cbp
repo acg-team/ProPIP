@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="Castor"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\usr\;CMake Files\..\..\..\usr\local\;CMake Files\..\..\..\usr\local\lib\;CMake Files\..\..\..\usr\local\lib\cmake\;CMake Files\..\..\..\usr\local\lib\cmake\glog\;CMake Files\..\..\..\usr\local\lib\cmake\gflags\;CMake Files\..\..\..\usr\local\lib\cmake\bpp-core\;CMake Files\..\..\..\usr\local\lib\cmake\bpp-seq\;CMake Files\..\..\..\usr\local\lib\cmake\bpp-phyl\;CMake Files\..\..\..\usr\local\lib\tshlib\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Continuous">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 Continuous"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Castor">
+				<Option output="/Users/max/castor/Castor" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/max/castor"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DPRJ_GITBRANCH=&quot;refs/heads/castor_Aligner&quot;"/>
+					<Add option="-DPRJ_VERSION=&quot;1.1.0.3&quot;"/>
+					<Add option="-DPRJ_GITREF=&quot;8961836f97092f93c4e235c3db2883181d14b644&quot;"/>
+					<Add option="-DPRJ_DESC=&quot;Indel-Aware Phylogenetic Tree Inference&quot;"/>
+					<Add option="-DPRJ_NAME=&quot;Castor&quot;"/>
+					<Add option="-DPRJ_DATE=&quot;15 Mar 2019&quot;"/>
+					<Add option="-DPRJ_TIME=&quot;11:51:55&quot;"/>
+					<Add option="-DGFLAGS_DLL_DECLARE_FLAG="/>
+					<Add option="-DGFLAGS_DLL_DEFINE_FLAG="/>
+					<Add option="-DGOOGLE_GLOG_DLL_DECL="/>
+					<Add option="-DGFLAGS_IS_A_DLL=0"/>
+					<Add directory="/usr/local/include/tshlib"/>
+					<Add directory="/Users/max/castor/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 Castor"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Castor/fast">
+				<Option output="/Users/max/castor/Castor" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/max/castor"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DPRJ_GITBRANCH=&quot;refs/heads/castor_Aligner&quot;"/>
+					<Add option="-DPRJ_VERSION=&quot;1.1.0.3&quot;"/>
+					<Add option="-DPRJ_GITREF=&quot;8961836f97092f93c4e235c3db2883181d14b644&quot;"/>
+					<Add option="-DPRJ_DESC=&quot;Indel-Aware Phylogenetic Tree Inference&quot;"/>
+					<Add option="-DPRJ_NAME=&quot;Castor&quot;"/>
+					<Add option="-DPRJ_DATE=&quot;15 Mar 2019&quot;"/>
+					<Add option="-DPRJ_TIME=&quot;11:51:55&quot;"/>
+					<Add option="-DGFLAGS_DLL_DECLARE_FLAG="/>
+					<Add option="-DGFLAGS_DLL_DEFINE_FLAG="/>
+					<Add option="-DGOOGLE_GLOG_DLL_DECL="/>
+					<Add option="-DGFLAGS_IS_A_DLL=0"/>
+					<Add directory="/usr/local/include/tshlib"/>
+					<Add directory="/Users/max/castor/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/10.0.0/include"/>
+					<Add directory="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 Castor/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Nightly">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 Nightly"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="Experimental">
+				<Option working_dir="/Users/max/castor"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 Experimental"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/max/castor/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/max/castor/include/CastorApplication.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/CompositePIPmsa.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/CompositePIPnode.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/ExtendedAlphabet.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/FactoryPIPnode.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/FactoryPIPnodeCPU.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/FactoryPIPnodeRAM.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/FactoryPIPnodeSB.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/Horner.h">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/LambertW.h">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/Optimizators.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/PIP.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/PIPlkData.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/PIPmsa.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/PIPnode.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/RHomogeneousTreeLikelihood_Generic.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/RHomogeneousTreeLikelihood_PIP.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/SupportMeasures.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/UnifiedDistanceEstimation.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/UnifiedPhylogeneticTools.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/UnifiedTSHSearchable.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/UnifiedTSHTopologySearch.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/UnifiedTSHomogeneousTreeLikelihood_Generic.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/UnifiedTSHomogeneousTreeLikelihood_PIP.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/Utils.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/Version.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/pPIP.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/include/progressivePIP.hpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/CastorApplication.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/CompositePIPmsa.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/CompositePIPnode.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/ExtendedAlphabet.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/FactoryPIPnodeCPU.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/FactoryPIPnodeRAM.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/FactoryPIPnodeSB.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/LambertW.cc">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/Optimizators.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/PIP.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/PIPmsa.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/PIPnode.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/RHomogeneousTreeLikelihood_Generic.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/RHomogeneousTreeLikelihood_PIP.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/SupportMeasures.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/UnifiedDistanceEstimation.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/UnifiedPhylogeneticTools.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/UnifiedTSHSearchable.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/UnifiedTSHTopologySearch.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/UnifiedTSHomogeneousTreeLikelihood_Generic.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/UnifiedTSHomogeneousTreeLikelihood_PIP.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/Utils.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/main.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/pPIP.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/src/progressivePIP.cpp">
+			<Option target="Castor"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/glog/glog-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\glog\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/glog/glog-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\glog\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/glog/glog-targets-noconfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\glog\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/glog/glog-targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\glog\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/gflags/gflags-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\gflags\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/gflags/gflags-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\gflags\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/gflags/gflags-targets-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\gflags\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/gflags/gflags-targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\gflags\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-core/bpp-core-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-core\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-core/bpp-core-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-core\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-core/bpp-core-targets-relwithdebinfo.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-core\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-core/bpp-core-targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-core\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-seq/bpp-seq-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-seq\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-seq/bpp-seq-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-seq\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-seq/bpp-seq-targets-relwithdebinfo.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-seq\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-seq/bpp-seq-targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-seq\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-phyl/bpp-phyl-config-version.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-phyl\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-phyl/bpp-phyl-config.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-phyl\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-phyl/bpp-phyl-targets-relwithdebinfo.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-phyl\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/cmake/bpp-phyl/bpp-phyl-targets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\cmake\bpp-phyl\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/tshlib/TshLibConfig.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\tshlib\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/tshlib/TshLibConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\tshlib\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/tshlib/TshLibTargets-release.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\tshlib\"/>
+		</Unit>
+		<Unit filename="/Users/max/castor/../../../usr/local/lib/tshlib/TshLibTargets.cmake">
+			<Option virtualFolder="CMake Files\..\..\..\usr\local\lib\tshlib\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

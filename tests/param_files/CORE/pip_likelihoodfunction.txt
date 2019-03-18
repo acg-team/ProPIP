@@ -1,0 +1,12 @@
+alphabet=DNA
+alignment=false
+input.sequence.file=./tests/datasets/pip_lkfunc_dna_5.fa
+input.sequence.sites_to_use=all
+init.tree=user
+input.tree.file=./tests/datasets/pip_lkfunc_tree_5.nwk
+model=PIP(model=JC69,lambda=0.2,mu=0.1)
+rate_distribution=Constant
+optimization=None
+output.msa.file=./out_core_pip_lkfunc.alignment.fa
+output.tree.file=./out_core_pip_lkfunc.tree.nwk
+output.estimates.file=./out_core_pip_lkfunc.estimates.log

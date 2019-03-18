@@ -1,0 +1,2 @@
+Cannot generate 'Release' into /Users/max/castor/cmake-build-release
+CMakeCache.txt is found in the project dir, only in-source generation will be performed.

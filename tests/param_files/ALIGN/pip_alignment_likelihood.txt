@@ -1,0 +1,16 @@
+alphabet=DNA
+seed=1
+alignment=true
+alignment.version=ram
+input.sequence.file=./tests/datasets/minimal_notaligned_nt.fa
+input.sequence.sites_to_use=all
+init.tree=user
+input.tree.file=./tests/datasets/minimal_notaligned_nt.tree.nwk
+model=PIP(model=JC69,lambda=0.2,mu=0.1)
+rate_distribution=Constant
+optimization=None
+output.msa.file=./out_align_pip_likelihood.alignment.fa
+output.tree.file=./out_align_pip_likelihood.tree.nwk
+output.lk.file=./out_align_pip_likelihood.log
+output.estimates.file=./out_align_pip_likelihood.estimates.log
+

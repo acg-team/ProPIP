@@ -1,0 +1,31 @@
+                    Tree-Search Heuristics C++ Library
+
+ Copyright (c) 2017-2019, Lorenzo Gatti <lg@lorenzogatti.me> and contributors
+ All Rights Reserved.
+
+
+                           Bio++ Libraries
+
+ This software is based and extends the Bio++ libraries which are
+ developed by the Bio++ Development Team <http://biopp.univ-montp2.fr>
+ Julien Dutheil <julien.dutheil@univ-montp2.fr>
+ Sylvain Gaillard <sylvain.gaillard@angers.inra.fr>
+ Nicolas Galtier <galtier@univ-montp2.fr>
+ Céline Scornavacca <scornava@lirmm.fr>
+ Laurent Guéguen <gueguen@biomserv.univ-lyon1.fr>
+ Ania Pawelczyk <ania.pawelczyk@gmail.com>
+ François Gindraud <francois.gindraud@gmail.com>
+
+
+                         Google Logging Library
+
+Copyright (c) 2003-2008, Jouni Malinen <j@w1.fi> and contributors
+All Rights Reserved.
+
+
+                          Boost C++ Libraries
+
+ Copyright Beman Dawes, David Abrahams, 1998-2005.
+ Copyright Rene Rivera 2004-2007.
+ Distributed under the Boost Software License, Version 1.0.
+

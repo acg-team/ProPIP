@@ -1,0 +1,30 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Users/max/castor
+-- Compilation will be performed with the following release of the software:
+	branch   refs/heads/castor_Aligner
+	ref      8961836f97092f93c4e235c3db2883181d14b644
+	time     15 Mar 2019 11:51:55
+	current  1.1.0.3 (latest version)
+-- Compilation will be performed under Apple MacOS
+-- Boost version: 1.66.0
+-- Found the following Boost libraries:
+--   system
+--   filesystem
+--   static lib:  /usr/local/lib
+--   include dir: /usr/local/include
+-- tshlib 3.0.2 found:
+--   includes: /usr/local/include/tshlib
+-- bpp-core 4.0.0 found:
+--   static lib: /usr/local/lib/libbpp-core.a
+--   shared lib: /usr/local/lib/libbpp-core.4.0.0.dylib
+--   includes: /usr/local/include
+-- bpp-seq 12.0.0 found:
+--   static lib: /usr/local/lib/libbpp-seq.a
+--   shared lib: /usr/local/lib/libbpp-seq.12.0.0.dylib
+--   includes: /usr/local/include
+-- bpp-phyl 12.0.0 found:
+--   static lib: /usr/local/lib/libbpp-phyl.a
+--   shared lib: /usr/local/lib/libbpp-phyl.12.0.0.dylib
+--   includes: /usr/local/include
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/max/castor

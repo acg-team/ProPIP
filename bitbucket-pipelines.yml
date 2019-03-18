@@ -1,0 +1,108 @@
+# This is a sample build configuration for C++ � Make.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image:
+  name: lorenzogatti89/castor:latest
+  username: $DOCKER_HUB_USERNAME
+  password: $DOCKER_HUB_PASSWORD
+  email: $DOCKER_HUB_EMAIL
+
+pipelines:
+  default:
+   - step:
+        script: # Modify the commands below to build your repository.
+        #- cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+        #- make
+        - apt-get update; apt-get install -y curl
+  branches:
+      master:
+          - step:
+              script:
+              - cd /tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd ..;
+              - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+              - make
+              artifacts:
+              - Castor
+          - step:
+              script:
+              - ./Castor version=true
+              - ./Castor params=./tests/param_files/CORE/pip_likelihoodfunction.txt ; bash ./tests/scripts/test_core_pip_lkfunc.sh
+              - ./Castor params=./tests/param_files/GTR/nt_real_aligned_optall.txt
+              - ./Castor params=./tests/param_files/GTR_F/nt_real_aligned_optall.txt
+              - ./Castor params=./tests/param_files/GTR_PIP/nt_real_aligned_optall.txt
+              - ./Castor params=./tests/param_files/GTR_PIP_F/nt_real_aligned_optall.txt
+          - step:
+               name: Deploy Production Version
+               deployment: production   # can be test, staging or production
+               # trigger: manual  # uncomment to make manual deployment
+               script:
+                - apt-get update; apt-get install -y curl
+                - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release-static CMakeLists.txt
+                - make
+                - export EVERSION=$(git describe --abbrev=0 --tags); echo ${EVERSION};
+                - mv Castor Castor.Stable.${EVERSION}
+                - curl -u "${BB_USERNAME}:${BB_PASSWORD}" -X POST "https://${BB_AUTH_STRING}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"Castor.Stable.${EVERSION}"
+      develop:
+          - step:
+              script:
+              - cd /tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd ..;
+              - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+              - make
+              artifacts:
+              - Castor
+          - step:
+              script:
+              - ./Castor version=true
+              - ./Castor params=./tests/param_files/CORE/pip_likelihoodfunction.txt ; bash ./tests/scripts/test_core_pip_lkfunc.sh
+          - step:
+              name: Deploy Night-Build Version
+              deployment: test   # can be test, staging or production
+            # trigger: manual    # uncomment to make manual deployment
+              script:
+              - apt-get update; apt-get install -y curl
+              - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release-static CMakeLists.txt
+              - make
+              - export EVERSION=$(git describe --abbrev=0 --tags); echo ${EVERSION};
+              - mv Castor Castor.NightBuild.${EVERSION}
+              - curl -u "${BB_USERNAME}:${BB_PASSWORD}" -X POST "https://${BB_AUTH_STRING}@api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_OWNER}/${BITBUCKET_REPO_SLUG}/downloads" --form files=@"Castor.NightBuild.${EVERSION}"
+
+      feature/*:
+          - step:
+              script:
+              - cd /tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd ..;
+              - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+              - make
+              artifacts:
+              - Castor
+          - step:
+              script:
+              - ./Castor version=true
+      release/*:
+          - step:
+              script:
+              - cd /tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd ..;
+              - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+              - make
+              artifacts:
+              - Castor
+          - step:
+              script:
+              - ./Castor version=true
+              - ./Castor params=./tests/param_files/CORE/pip_likelihoodfunction.txt ; bash ./tests/scripts/test_core_pip_lkfunc.sh
+              - ./Castor params=./tests/param_files/GTR/nt_real_aligned_optall.txt
+              - ./Castor params=./tests/param_files/GTR_F/nt_real_aligned_optall.txt
+              - ./Castor params=./tests/param_files/GTR_PIP/nt_real_aligned_optall.txt
+              - ./Castor params=./tests/param_files/GTR_PIP_F/nt_real_aligned_optall.txt
+      hotfix/*:
+          - step:
+              script:
+              - cd /tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd ..;
+              - cd $BITBUCKET_CLONE_DIR; cmake --target Castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+              - make
+              artifacts:
+              - Castor
+          - step:
+              script:
+              - ./Castor version=true
