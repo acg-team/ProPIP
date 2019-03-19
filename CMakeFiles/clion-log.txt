@@ -1,9 +1,15 @@
 /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Users/max/castor
+fatal: Keine Namen gefunden, kann nichts beschreiben.
+CMake Warning at CMakeLists.txt:91 (project):
+  VERSION keyword not followed by a value or was followed by a value that
+  expanded to nothing.
+
+
 -- Compilation will be performed with the following release of the software:
-	branch   refs/heads/castor_Aligner
-	ref      8961836f97092f93c4e235c3db2883181d14b644
-	time     15 Mar 2019 11:51:55
-	current  1.1.0.3 (latest version)
+	branch   refs/heads/master
+	ref      bbc3cae9a9ebd8fde12ea39f90dbdc54b3edaed4
+	time     19 Mar 2019 11:14:43
+	current   (latest version)
 -- Compilation will be performed under Apple MacOS
 -- Boost version: 1.66.0
 -- Found the following Boost libraries:

@@ -38,13 +38,13 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
   "GFLAGS_DLL_DEFINE_FLAG="
   "GFLAGS_IS_A_DLL=0"
   "GOOGLE_GLOG_DLL_DECL="
-  "PRJ_DATE=\"15 Mar 2019\""
+  "PRJ_DATE=\"19 Mar 2019\""
   "PRJ_DESC=\"Indel-Aware Phylogenetic Tree Inference\""
-  "PRJ_GITBRANCH=\"refs/heads/castor_Aligner\""
-  "PRJ_GITREF=\"8961836f97092f93c4e235c3db2883181d14b644\""
+  "PRJ_GITBRANCH=\"refs/heads/master\""
+  "PRJ_GITREF=\"bbc3cae9a9ebd8fde12ea39f90dbdc54b3edaed4\""
   "PRJ_NAME=\"Castor\""
-  "PRJ_TIME=\"11:51:55\""
-  "PRJ_VERSION=\"1.1.0.3\""
+  "PRJ_TIME=\"11:14:43\""
+  "PRJ_VERSION=\"\""
   )
 
 # The include file search paths:

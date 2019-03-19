@@ -54,13 +54,13 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add option="-DPRJ_GITBRANCH=&quot;refs/heads/castor_Aligner&quot;"/>
-					<Add option="-DPRJ_VERSION=&quot;1.1.0.3&quot;"/>
-					<Add option="-DPRJ_GITREF=&quot;8961836f97092f93c4e235c3db2883181d14b644&quot;"/>
+					<Add option="-DPRJ_GITBRANCH=&quot;refs/heads/master&quot;"/>
+					<Add option="-DPRJ_VERSION=&quot;&quot;"/>
+					<Add option="-DPRJ_GITREF=&quot;bbc3cae9a9ebd8fde12ea39f90dbdc54b3edaed4&quot;"/>
 					<Add option="-DPRJ_DESC=&quot;Indel-Aware Phylogenetic Tree Inference&quot;"/>
 					<Add option="-DPRJ_NAME=&quot;Castor&quot;"/>
-					<Add option="-DPRJ_DATE=&quot;15 Mar 2019&quot;"/>
-					<Add option="-DPRJ_TIME=&quot;11:51:55&quot;"/>
+					<Add option="-DPRJ_DATE=&quot;19 Mar 2019&quot;"/>
+					<Add option="-DPRJ_TIME=&quot;11:14:43&quot;"/>
 					<Add option="-DGFLAGS_DLL_DECLARE_FLAG="/>
 					<Add option="-DGFLAGS_DLL_DEFINE_FLAG="/>
 					<Add option="-DGOOGLE_GLOG_DLL_DECL="/>
@@ -88,13 +88,13 @@
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add option="-DPRJ_GITBRANCH=&quot;refs/heads/castor_Aligner&quot;"/>
-					<Add option="-DPRJ_VERSION=&quot;1.1.0.3&quot;"/>
-					<Add option="-DPRJ_GITREF=&quot;8961836f97092f93c4e235c3db2883181d14b644&quot;"/>
+					<Add option="-DPRJ_GITBRANCH=&quot;refs/heads/master&quot;"/>
+					<Add option="-DPRJ_VERSION=&quot;&quot;"/>
+					<Add option="-DPRJ_GITREF=&quot;bbc3cae9a9ebd8fde12ea39f90dbdc54b3edaed4&quot;"/>
 					<Add option="-DPRJ_DESC=&quot;Indel-Aware Phylogenetic Tree Inference&quot;"/>
 					<Add option="-DPRJ_NAME=&quot;Castor&quot;"/>
-					<Add option="-DPRJ_DATE=&quot;15 Mar 2019&quot;"/>
-					<Add option="-DPRJ_TIME=&quot;11:51:55&quot;"/>
+					<Add option="-DPRJ_DATE=&quot;19 Mar 2019&quot;"/>
+					<Add option="-DPRJ_TIME=&quot;11:14:43&quot;"/>
 					<Add option="-DGFLAGS_DLL_DECLARE_FLAG="/>
 					<Add option="-DGFLAGS_DLL_DEFINE_FLAG="/>
 					<Add option="-DGOOGLE_GLOG_DLL_DECL="/>
