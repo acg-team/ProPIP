@@ -811,13 +811,16 @@ int main(int argc, char *argv[]) {
         pPIP *alignment = nullptr;
         progressivePIP *proPIP = nullptr;
 
-        std::string PAR_output_file_lk = ApplicationTools::getAFilePath("output.lk.file", castorapp.getParams(), false,
-                                                                        false, "", true, "", 1);
 
-        std::string PAR_output_file_msa = ApplicationTools::getAFilePath("output.msa.file", castorapp.getParams(), false,
-                                                                         false, "", true, "", 1);
 
         if (PAR_alignment) {
+
+            //std::string PAR_output_file_lk = ApplicationTools::getAFilePath("output.lk.file", castorapp.getParams(), false,
+            //                                                                false, "", true, "", 1);
+
+            std::string PAR_output_file_msa = ApplicationTools::getAFilePath("output.msa.file", castorapp.getParams(), false,
+                                                                             false, "", true, "", 1);
+
             std::string PAR_alignment_version = ApplicationTools::getStringParameter("alignment.version",
                                                                                      castorapp.getParams(), "cpu", "",
                                                                                      true, 0);

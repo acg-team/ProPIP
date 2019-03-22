@@ -60,10 +60,32 @@
 #define GAP_CHAR '-'
 #define ERR_STATE (-999)
 #define DBL_EPSILON std::numeric_limits<double>::min()
-#define MATCH_STATE 1
-#define GAP_X_STATE 2
-#define GAP_Y_STATE 3
-#define STOP_STATE 4
+
+
+
+
+
+#define COMPRESS_TR 1
+
+#ifdef COMPRESS_TR
+    #define STOP_STATE  0b00000000
+    #define MATCH_STATE 0b00000001
+    #define GAP_X_STATE 0b00000010
+    #define GAP_Y_STATE 0b00000011
+#else
+    #define MATCH_STATE 1
+    #define GAP_X_STATE 2
+    #define GAP_Y_STATE 3
+    #define STOP_STATE 4
+#endif
+
+
+
+
+
+
+
+
 #define LEFT 0
 #define RIGHT 1
 
@@ -101,7 +123,8 @@ namespace bpp {
 
         double mu0_; // original mu (no Gamma distribution)
 
-        PIPnode *PIPnodeRoot; // root PIPnode (root of the tree of PIPnodes)
+        PIPnode *PIPnodeRoot_; // root PIPnode (root of the tree of PIPnodes)
+
         //***************************************************************************************
         // PRIVATE METHODS
         //***************************************************************************************
@@ -156,8 +179,6 @@ namespace bpp {
         std::vector<double> nu_; // normalizing Poisson intensity for each gamma category
 
         //***************************************************************************************
-
-        //***************************************************************************************
         // PUBLIC METHODS
         //***************************************************************************************
 
@@ -193,7 +214,7 @@ namespace bpp {
 
         bpp::Node *getBPProotNode(){ return tree_->getRootNode(); }; // get the root of the tree
 
-        PIPnode *getPIPnodeRootNode(){ return PIPnodeRoot; }; // get the PIPnodeRoot of the PIPnode tree
+        PIPnode *getPIPnodeRootNode(){ return PIPnodeRoot_; }; // get the PIPnodeRoot of the PIPnode tree
 
         const Alphabet *getAlphabet() const { return alphabet_; }; // get the alphabet
 

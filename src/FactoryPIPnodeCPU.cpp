@@ -542,19 +542,19 @@ double nodeCPU::computeLK_M_local(double NU,
 
             // computes the recursive Felsenstein's peeling weight on the left subtree
             idx = 0;
-            bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL)->computeFVrec(sL, idx, catg);
+            bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL_)->computeFVrec(sL, idx, catg);
 
             // computes the recursive Felsenstein's peeling weight on the right subtree
             idx = 0;
-            bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR)->computeFVrec(sR, idx, catg);
+            bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR_)->computeFVrec(sR, idx, catg);
 
             // PrfvL = Pr_L * fv_L
             bpp::ColMatrix<double> PrfvL;
-            bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL, PrfvL);
+            bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL, PrfvL);
 
             // PrfvR = Pr_R * fv_R
             bpp::ColMatrix<double> PrfvR;
-            bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR, PrfvR);
+            bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR, PrfvR);
 
             // fv = PrfvL * PrfvR
             bpp::ColMatrix<double> fv;
@@ -631,19 +631,19 @@ double nodeCPU::computeLK_X_local(double NU,
 
             // computes the recursive Felsenstein's peeling weight on the left subtree
             idx = 0;
-            bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL)->computeFVrec(sL, idx, catg);
+            bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL_)->computeFVrec(sL, idx, catg);
 
             // computes the recursive Felsenstein's peeling weight on the right subtree
             idx = 0;
-            bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR)->computeFVrec(col_gap_R, idx, catg);
+            bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR_)->computeFVrec(col_gap_R, idx, catg);
 
             // PrfvL = Pr_L * fv_L
             bpp::ColMatrix<double> PrfvL;
-            bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL, PrfvL);
+            bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL, PrfvL);
 
             // PrfvR = Pr_R * fv_R
             bpp::ColMatrix<double> PrfvR;
-            bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR, PrfvR);
+            bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR, PrfvR);
 
             // fv = PrfvL * PrfvR
             bpp::ColMatrix<double> fv;
@@ -658,7 +658,7 @@ double nodeCPU::computeLK_X_local(double NU,
                     betasNode_[catg] * \
                     fv0;
 
-            pL = dynamic_cast<nodeCPU *>(childR)->_compute_lk_down(sL, catg);
+            pL = dynamic_cast<nodeCPU *>(childR_)->_compute_lk_down(sL, catg);
 
             pr += p0 + pL;
         }
@@ -698,19 +698,19 @@ std::vector<double> nodeCPU::computeLK_GapColumn_local(MSAcolumn_t &sL,
 
         // computes the recursive Felsenstein's peeling weight on the left subtree
         idx = 0;
-        bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL)->computeFVrec(sL, idx, catg);
+        bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL_)->computeFVrec(sL, idx, catg);
 
         // computes the recursive Felsenstein's peeling weight on the right subtree
         idx = 0;
-        bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR)->computeFVrec(sR, idx, catg);
+        bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR_)->computeFVrec(sR, idx, catg);
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL, PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL, PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR, PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR, PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::ColMatrix<double> fv;
@@ -723,8 +723,8 @@ std::vector<double> nodeCPU::computeLK_GapColumn_local(MSAcolumn_t &sL,
         double p0 = iotasNode_[catg] * fv0;
 
         double pL,pR;
-        pL = dynamic_cast<nodeCPU *>(childL)->compute_lk_gap_down(sL, catg);
-        pR = dynamic_cast<nodeCPU *>(childR)->compute_lk_gap_down(sR, catg);
+        pL = dynamic_cast<nodeCPU *>(childL_)->compute_lk_gap_down(sL, catg);
+        pR = dynamic_cast<nodeCPU *>(childR_)->compute_lk_gap_down(sR, catg);
 
         pc0.at(catg) = p0 + pL + pR;
     }
@@ -755,11 +755,11 @@ std::vector<double> nodeCPU::computeLK_GapColumn_local(int nodeID,
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL.at(catg), PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL.at(catg), PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR.at(catg), PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR.at(catg), PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::ColMatrix<double> fv;
@@ -827,19 +827,19 @@ double nodeCPU::computeLK_Y_local(double NU,
 
             // computes the recursive Felsenstein's peeling weight on the left subtree
             idx = 0;
-            bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL)->computeFVrec(col_gap_L, idx, catg);
+            bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL_)->computeFVrec(col_gap_L, idx, catg);
 
             // computes the recursive Felsenstein's peeling weight on the right subtree
             idx = 0;
-            bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR)->computeFVrec(sR, idx, catg);
+            bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR_)->computeFVrec(sR, idx, catg);
 
             // PrfvL = Pr_L * fv_L
             bpp::ColMatrix<double> PrfvL;
-            bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL, PrfvL);
+            bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL, PrfvL);
 
             // PrfvR = Pr_R * fv_R
             bpp::ColMatrix<double> PrfvR;
-            bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR, PrfvR);
+            bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR, PrfvR);
 
             // fv = PrfvL * PrfvR
             bpp::ColMatrix<double> fv;
@@ -854,7 +854,7 @@ double nodeCPU::computeLK_Y_local(double NU,
                         betasNode_[catg] * \
                         fv0;
 
-            pR = dynamic_cast<nodeCPU *>(childR)->_compute_lk_down(sR, catg);
+            pR = dynamic_cast<nodeCPU *>(childR_)->_compute_lk_down(sR, catg);
 
             pr += p0 + pR;
 
@@ -892,18 +892,18 @@ bpp::ColMatrix<double> nodeCPU::computeFVrec(MSAcolumn_t &s, int &idx, int catg)
 //        int sonRightID = sonRight->getId();
 
         // computes the recursive Felsenstein's peeling weight on the left subtree
-        bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL)->computeFVrec(s, idx, catg);
+        bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL_)->computeFVrec(s, idx, catg);
 
         // computes the recursive Felsenstein's peeling weight on the right subtree
-        bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR)->computeFVrec(s, idx, catg);
+        bpp::ColMatrix<double> fvR = dynamic_cast<nodeCPU *>(childR_)->computeFVrec(s, idx, catg);
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL, PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL, PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR, PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR, PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::MatrixTools::hadamardMult(PrfvL, PrfvR, fv);
@@ -934,8 +934,8 @@ void nodeCPU::allgaps(std::string &s, int &idx, bool &flag) {
 //        bpp::Node *sonRight = childR->_getBnode();
 //        int sonRightID = sonRight->getId();
 
-        dynamic_cast<nodeCPU *>(childL)->allgaps(s, idx, flag);
-        dynamic_cast<nodeCPU *>(childR)->allgaps(s, idx, flag);
+        dynamic_cast<nodeCPU *>(childL_)->allgaps(s, idx, flag);
+        dynamic_cast<nodeCPU *>(childR_)->allgaps(s, idx, flag);
     }
 
 }
@@ -984,21 +984,21 @@ double nodeCPU::compute_lk_gap_down(MSAcolumn_t &s, int catg) {
     bool flagL = true;
     bool flagR = true;
     idx = 0;
-    dynamic_cast<nodeCPU *>(childL)->allgaps(s, idx, flagL);
+    dynamic_cast<nodeCPU *>(childL_)->allgaps(s, idx, flagL);
 
     int ixx = idx;
-    dynamic_cast<nodeCPU *>(childR)->allgaps(s, idx, flagR);
+    dynamic_cast<nodeCPU *>(childR_)->allgaps(s, idx, flagR);
 
     int len;
 
     MSAcolumn_t sL;
     len = ixx;
     sL = s.substr(0, len);
-    double pL = dynamic_cast<nodeCPU *>(childL)->compute_lk_gap_down(sL, catg);
+    double pL = dynamic_cast<nodeCPU *>(childL_)->compute_lk_gap_down(sL, catg);
 
     MSAcolumn_t sR;
     sR = s.substr(ixx);
-    double pR = dynamic_cast<nodeCPU *>(childR)->compute_lk_gap_down(sR, catg);
+    double pR = dynamic_cast<nodeCPU *>(childR_)->compute_lk_gap_down(sR, catg);
 
     return pr + pL + pR;
 }
@@ -1100,22 +1100,22 @@ double nodeCPU::_compute_lk_down(MSAcolumn_t &s, int catg) {
     bool flagL = true;
     bool flagR = true;
     idx = 0;
-    dynamic_cast<nodeCPU *>(childL)->allgaps(s, idx, flagL);
+    dynamic_cast<nodeCPU *>(childL_)->allgaps(s, idx, flagL);
     int ixx = idx;
-    dynamic_cast<nodeCPU *>(childR)->allgaps(s, idx, flagR);
+    dynamic_cast<nodeCPU *>(childR_)->allgaps(s, idx, flagR);
 
     int len;
     if (flagR) {
         std::string sL;
         len = ixx;
         sL = s.substr(0, len);
-        return pr + dynamic_cast<nodeCPU *>(childL)->_compute_lk_down(sL, catg);
+        return pr + dynamic_cast<nodeCPU *>(childL_)->_compute_lk_down(sL, catg);
     }
 
     if (flagL) {
         std::string sR;
         sR = s.substr(ixx);
-        return pr + dynamic_cast<nodeCPU *>(childR)->_compute_lk_down(sR, catg);
+        return pr + dynamic_cast<nodeCPU *>(childR_)->_compute_lk_down(sR, catg);
     }
 
     return pr;
@@ -1162,8 +1162,8 @@ void nodeCPU::DP3D_PIP_node() {
     //int sonRightID = sonRight->getId();
 
     // Compute dimensions of the 3D block at current internal node.
-    h = dynamic_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->msa_.size() + 1; // dimension of the alignment on the left side
-    w = dynamic_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->msa_.size() + 1; // dimension of the alignment on the riht side
+    h = dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->msa_.size() + 1; // dimension of the alignment on the left side
+    w = dynamic_cast<PIPmsaSingle *>(childR_->MSA_)->pipmsa->msa_.size() + 1; // dimension of the alignment on the riht side
 
     int d = (h - 1) + (w - 1) + 1; // third dimension of the DP matrix
 
@@ -1176,8 +1176,8 @@ void nodeCPU::DP3D_PIP_node() {
     MSAcolumn_t col_gap_Ls; // left column full of gaps
     MSAcolumn_t col_gap_Rs; //right column full of gaps
 
-    int numLeavesLeft = dynamic_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->seqNames_.size(); // number of leaves in the left sub-tree
-    int numLeavesRight = dynamic_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->seqNames_.size(); // number of leaves in the right sub-tree
+    int numLeavesLeft = dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->seqNames_.size(); // number of leaves in the left sub-tree
+    int numLeavesRight = dynamic_cast<PIPmsaSingle *>(childR_->MSA_)->pipmsa->seqNames_.size(); // number of leaves in the right sub-tree
 
     col_gap_Ls = createGapCol(numLeavesLeft); // create column of gaps for the left sub-tree
     col_gap_Rs = createGapCol(numLeavesRight); // create column of gaps for the right sub-tree
@@ -1358,7 +1358,7 @@ void nodeCPU::DP3D_PIP_node() {
                 coordTriangle_prev_i = coordTriangle_this_i - 1;
 
                 // get left MSA column
-                sLs = dynamic_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->msa_.at(coordSeq_1);
+                sLs = dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->msa_.at(coordSeq_1);
 
                 for (int j = 0; j <= lw; j++) {
 
@@ -1367,7 +1367,7 @@ void nodeCPU::DP3D_PIP_node() {
                     coordTriangle_prev_j = coordTriangle_this_j - 1;
 
                     // get right MSA column
-                    sRs = dynamic_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->msa_.at(coordSeq_2);
+                    sRs = dynamic_cast<PIPmsaSingle *>(childR_->MSA_)->pipmsa->msa_.at(coordSeq_2);
 
                     idx = get_indices_M(coordTriangle_prev_i,
                                         coordTriangle_prev_j,
@@ -1471,7 +1471,7 @@ void nodeCPU::DP3D_PIP_node() {
                 coordSeq_1 = coordTriangle_this_i - 1;
 
                 // get left MSA column
-                sLs = dynamic_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->msa_.at(coordSeq_1);
+                sLs = dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->msa_.at(coordSeq_1);
 
                 for (int j = 0; j <= lw; j++) {
 
@@ -1584,7 +1584,7 @@ void nodeCPU::DP3D_PIP_node() {
                     coordSeq_2 = coordTriangle_this_j - 1;
 
                     // get right MSA column
-                    sRs = dynamic_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->msa_.at(coordSeq_2);
+                    sRs = dynamic_cast<PIPmsaSingle *>(childR_->MSA_)->pipmsa->msa_.at(coordSeq_2);
 
                     idx = get_indices_M(coordTriangle_prev_i,
                                         coordTriangle_prev_j,
@@ -1820,13 +1820,13 @@ void nodeCPU::DP3D_PIP_node() {
     }
 
     // converts traceback path into an MSA
-    MSA_t *msaL = dynamic_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->_getMSA();
-    MSA_t *msaR = dynamic_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->_getMSA();
+    MSA_t *msaL = dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->_getMSA();
+    MSA_t *msaR = dynamic_cast<PIPmsaSingle *>(childR_->MSA_)->pipmsa->_getMSA();
     dynamic_cast<PIPmsaSingle *>(MSA_)->pipmsa->_build_MSA(*msaL,*msaR);
 
     // assigns the sequence names of the new alligned sequences to the current MSA
-    std::vector<string> *seqNameL = &dynamic_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->seqNames_;
-    std::vector<string> *seqNameR = &dynamic_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->seqNames_;
+    std::vector<string> *seqNameL = &dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->seqNames_;
+    std::vector<string> *seqNameR = &dynamic_cast<PIPmsaSingle *>(childR_->MSA_)->pipmsa->seqNames_;
     dynamic_cast<PIPmsaSingle *>(MSA_)->pipmsa->_setSeqNameNode(*seqNameL,*seqNameR);
     //==========================================================================================
 

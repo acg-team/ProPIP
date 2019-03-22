@@ -53,6 +53,46 @@ using namespace bpp;
 
 #define EARLY_STOP_THR 10
 
+char nodeRAM::setTRvalCompressed(int j4,int r4,char TR,char STATE){
+
+    char trb=TR;
+    char state;
+
+    if(r4==0){
+        state = STATE << 6;
+    }else if(r4==1){
+        state = STATE << 4;
+    }else if(r4==2){
+        state = STATE << 2;
+    }else{
+        state = STATE << 0;
+    }
+
+    state = state | trb;
+
+    return state;
+}
+
+int nodeRAM::getTRvalCompressed(int j4,int r4,char TR){
+
+    char mask = 0b00000011;
+    char state;
+
+    if(r4==0){
+        state = TR >> 6;
+    }else if(r4==1){
+        state = TR >> 4;
+    }else if(r4==2){
+        state = TR >> 2;
+    }else{
+        state = TR >> 0;
+    }
+
+    state = state & mask;
+
+    return (int)state;
+}
+
 double nodeRAM::max_of_three(double m,
                              double x,
                              double y,
@@ -135,14 +175,22 @@ void nodeRAM::DP3D_PIP_leaf() {
                                     progressivePIP_->alphabet_);
 
     // set fv_sigma_empty = fv_empty dot pi
+    /*
     MSA_->getMSA()->_setFVsigmaEmptyLeaf(progressivePIP_->numCatg_);
+    */
 
     // computes the indicator values (fv values) at the leaves
+    /*
     MSA_->getMSA()->_setFVleaf(progressivePIP_->numCatg_,
                                progressivePIP_->alphabet_);
 
     MSA_->getMSA()->_setFVsigmaLeaf(progressivePIP_->numCatg_,
                                     progressivePIP_->pi_);
+    */
+
+    MSA_->getMSA()->_setFVleaf(progressivePIP_->numCatg_,
+                               progressivePIP_->alphabet_,
+                               progressivePIP_->pi_);
 
     // compute the lk of an empty column
     MSA_->getMSA()->_computeLkEmptyLeaf(progressivePIP_,
@@ -170,24 +218,6 @@ void nodeRAM::DP3D(LKdata &lkdata,
     // 3D DYNAMIC PROGRAMMING
     //***************************************************************************************
 
-//    printf("\n");
-//    for(int i=0;i<21;i++){
-//        for(int j=0;j<21;j++){
-//            printf("%18.16lf ",progressivePIP_->substModel_->getGenerator().operator()(i,j));
-//        }
-//        printf("\n");
-//    }
-//    printf("\n");
-//    printf("\n");
-//    printf("\n");
-//    for(int i=0;i<21;i++){
-//        for(int j=0;j<21;j++){
-//            printf("%18.16lf ",prNode_.at(0).operator()(i,j));
-//        }
-//        printf("\n");
-//    }
-//    printf("\n");
-
     //***************************************************************************************
     // DP VARIABLES
     //***************************************************************************************
@@ -205,7 +235,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
     //***************************************************************************************
     // RANDOM NUMBERS GENERATOR
     //***************************************************************************************
-    std::default_random_engine generator(progressivePIP_->getSeed()); // jatiapp seed
+    std::default_random_engine generator(progressivePIP_->getSeed()); // seed
     std::uniform_real_distribution<double> distribution(0.0, 1.0); // uniform distribution for the selection
     // of lks with the same value
     //***************************************************************************************
@@ -220,10 +250,15 @@ void nodeRAM::DP3D(LKdata &lkdata,
     int id1m, id2m;
     int id1x, id2y;
     //***************************************************************************************
+    // COMPRESS_TR VARIABLES
+    //***************************************************************************************
+    int j4;
+    int r4;
+    //***************************************************************************************
     // GET SONS
     //***************************************************************************************
-    std::vector<int> *map_compr_L = &(childL->MSA_->getMSA()->map_compressed_seqs_);
-    std::vector<int> *map_compr_R = &(childR->MSA_->getMSA()->map_compressed_seqs_);
+    std::vector<int> *map_compr_L = &(childL_->MSA_->getMSA()->map_compressed_seqs_);
+    std::vector<int> *map_compr_R = &(childR_->MSA_->getMSA()->map_compressed_seqs_);
     //***************************************************************************************
     // For each slice of the 3D cube, compute the values of each cell
     lkdata.Log3DM[0][0][0] = log_phi_gamma;
@@ -263,7 +298,73 @@ void nodeRAM::DP3D(LKdata &lkdata,
                                                                 min_inf,
                                                                 lkdata.Log2DX_fp[id1x]);;
 
+#ifdef COMPRESS_TR
+
+            j4=j/4;
+            r4=j%4;
+            lkdata.TR[m][i][j4] = setTRvalCompressed(j4,r4,lkdata.TR[m][i][j4],GAP_X_STATE);
+
+            /*
+            char ch = GAP_X_STATE;
+            std::cout << std::endl;
+            std::cout << "a = " << std::bitset<8>(ch)  << std::endl;
+            */
+
+            /*
+            char tr = 0b00010010;
+            char ch;
+
+            std::cout << std::endl;
+
+            ch = 0b00000011;
+            j=0;
+            ch=setTRvalCompressed(j,tr,ch);
+            std::cout << "a = " << std::bitset<8>(ch)  << std::endl;
+
+            ch = 0b00000011;
+            j=1;
+            ch=setTRvalCompressed(j,tr,ch);
+            std::cout << "a = " << std::bitset<8>(ch)  << std::endl;
+
+            ch = 0b00000011;
+            j=2;
+            ch=setTRvalCompressed(j,tr,ch);
+            std::cout << "a = " << std::bitset<8>(ch)  << std::endl;
+
+            ch = 0b00000011;
+            j=3;
+            ch=setTRvalCompressed(j,tr,ch);
+            std::cout << "a = " << std::bitset<8>(ch)  << std::endl;
+
+            std::cout << std::endl;
+
+            int newstate;
+
+            ch = 0b11000000;
+            j=0;
+            newstate = getTRvalCompressed(j,ch);
+            std::cout << "b = " << std::bitset<8>(newstate)  << "-> " << newstate << std::endl;
+
+            ch = 0b11110000;
+            j=1;
+            newstate = getTRvalCompressed(j,ch);
+            std::cout << "b = " << std::bitset<8>(newstate)  << "-> " << newstate << std::endl;
+
+            ch = 0b11001100;
+            j=2;
+            newstate = getTRvalCompressed(j,ch);
+            std::cout << "b = " << std::bitset<8>(newstate)  << "-> " << newstate << std::endl;
+
+            ch = 0b00001111;
+            j=3;
+            newstate = getTRvalCompressed(j,ch);
+            std::cout << "b = " << std::bitset<8>(newstate)  << "-> " << newstate << std::endl;
+             */
+
+#else
             lkdata.TR[m][i][j] = (int) GAP_X_STATE;
+#endif
+
         }
         //***********************************************************************************
         // GAPY[0][j]
@@ -278,8 +379,14 @@ void nodeRAM::DP3D(LKdata &lkdata,
                                                                 min_inf,
                                                                 lkdata.Log3DY[m_binary_prev][i][j - 1],
                                                                 lkdata.Log2DY_fp[id2y]);
-
+#ifdef COMPRESS_TR
+            j4=j/4;
+            r4=j%4;
+            lkdata.TR[m][i][j4] = setTRvalCompressed(j4,r4,lkdata.TR[m][i][j4],GAP_Y_STATE);
+#else
             lkdata.TR[m][i][j] = (int) GAP_Y_STATE;
+#endif
+
         }
         //***********************************************************************************
         for (i = 1; i < lkdata.h_; i++) {
@@ -324,8 +431,22 @@ void nodeRAM::DP3D(LKdata &lkdata,
                               tr_index,
                               max_lk_val);
 
+#ifdef COMPRESS_TR
+                j4=j/4;
+                r4=j%4;
+                if(tr_index==1){
+                    lkdata.TR[m][i][j4] = setTRvalCompressed(j4,r4,lkdata.TR[m][i][j4],MATCH_STATE);
+                }else if(tr_index==2){
+                    lkdata.TR[m][i][j4] = setTRvalCompressed(j4,r4,lkdata.TR[m][i][j4],GAP_X_STATE);
+                }else if(tr_index==3){
+                    lkdata.TR[m][i][j4] = setTRvalCompressed(j4,r4,lkdata.TR[m][i][j4],GAP_Y_STATE);
+                }else{
+
+                }
+#else
                 // Store the index for the traceback
                 lkdata.TR[m][i][j] = tr_index;
+#endif
 
                 // If we reached the corner of the 3D cube, then:
                 if ((m >= (lkdata.h_ - 1)) && (m >= (lkdata.w_ - 1)) && (i == (lkdata.h_ - 1)) &&
@@ -390,21 +511,26 @@ void nodeRAM::DP3D_PIP_node() {
     //***************************************************************************************
     // GET SONS
     //***************************************************************************************
-    std::vector<int> *map_compr_L = &(childL->MSA_->getMSA()->map_compressed_seqs_);
-    std::vector<int> *map_compr_R = &(childR->MSA_->getMSA()->map_compressed_seqs_);
+    std::vector<int> *map_compr_L = &(childL_->MSA_->getMSA()->map_compressed_seqs_);
+    std::vector<int> *map_compr_R = &(childR_->MSA_->getMSA()->map_compressed_seqs_);
     //***************************************************************************************
     // DP SIZES
     //***************************************************************************************
     // Compute dimensions of the 3D block at current internal node.
-    int h = childL->MSA_->getMSA()->_getMSAlength() + 1; // dimension of the alignment on the left side
-    int w = childR->MSA_->getMSA()->_getMSAlength() + 1; // dimension of the alignment on the right side
+    int h = childL_->MSA_->getMSA()->_getMSAlength() + 1; // dimension of the alignment on the left side
+    int w = childR_->MSA_->getMSA()->_getMSAlength() + 1; // dimension of the alignment on the right side
     int d = (h - 1) + (w - 1) + 1; // third dimension of the DP matrix
-    int h_compr = childL->MSA_->getMSA()->_getCompressedMSAlength(); // dimension of the compressed alignment on the left side
-    int w_compr = childR->MSA_->getMSA()->_getCompressedMSAlength(); // dimension of the compressed alignment on the right side
+    int h_compr = childL_->MSA_->getMSA()->_getCompressedMSAlength(); // dimension of the compressed alignment on the left side
+    int w_compr = childR_->MSA_->getMSA()->_getCompressedMSAlength(); // dimension of the compressed alignment on the right side
     //***************************************************************************************
     // WORKING VARIABLES
     //***************************************************************************************
     int i, j;
+    //***************************************************************************************
+    // COMPRESS_TR VARIABLES
+    //***************************************************************************************
+    int j4;
+    int r4;
     //***************************************************************************************
     // MEMORY ALLOCATION
     //***************************************************************************************
@@ -418,14 +544,14 @@ void nodeRAM::DP3D_PIP_node() {
     MSA_->getMSA()->fv_empty_data_.resize(numCatg);
     MSA_->getMSA()->fv_empty_sigma_.resize(numCatg);
 
-    std::vector<bpp::ColMatrix<double> > &fvL = childL->MSA_->getMSA()->fv_empty_data_;
-    std::vector<bpp::ColMatrix<double> > &fvR = childR->MSA_->getMSA()->fv_empty_data_;
+    std::vector<bpp::ColMatrix<double> > &fvL = childL_->MSA_->getMSA()->fv_empty_data_;
+    std::vector<bpp::ColMatrix<double> > &fvR = childR_->MSA_->getMSA()->fv_empty_data_;
 
     std::vector<bpp::ColMatrix<double> > &fv_empty_data = MSA_->getMSA()->fv_empty_data_;
     std::vector<double> &fv_empty_sigma = MSA_->getMSA()->fv_empty_sigma_;
 
-    std::vector<double> &lk_emptyL = childL->MSA_->getMSA()->lk_empty_;
-    std::vector<double> &lk_emptyR = childR->MSA_->getMSA()->lk_empty_;
+    std::vector<double> &lk_emptyL = childL_->MSA_->getMSA()->lk_empty_;
+    std::vector<double> &lk_emptyR = childR_->MSA_->getMSA()->lk_empty_;
 
     std::vector<double> &lk_empty = MSA_->getMSA()->lk_empty_;
 
@@ -459,8 +585,8 @@ void nodeRAM::DP3D_PIP_node() {
     //***************************************************************************************
     // 2D LK COMPUTATION
     //***************************************************************************************
-    PIPmsa *pipmsaL = childL->MSA_->getMSA();
-    PIPmsa *pipmsaR = childR->MSA_->getMSA();
+    PIPmsa *pipmsaL = childL_->MSA_->getMSA();
+    PIPmsa *pipmsaR = childR_->MSA_->getMSA();
 
     _alignStateMatrices2D(pipmsaL,
                           pipmsaR,
@@ -498,7 +624,16 @@ void nodeRAM::DP3D_PIP_node() {
     int idmL, idmR;
     int state;
     for (int lev = level_max_lk; lev > 0; lev--) {
+
+
+#ifdef COMPRESS_TR
+        j4=j/4;
+        r4=j%4;
+        state = getTRvalCompressed(j4,r4,lkdata.TR[lev][i][j4]);
+#else
         state = lkdata.TR[lev][i][j];
+#endif
+
         switch (state) {
             case MATCH_STATE:
 
@@ -550,13 +685,13 @@ void nodeRAM::DP3D_PIP_node() {
     // BUILD NEW MSA
     //***************************************************************************************
     // converts traceback path into an MSA
-    MSA_t *msaL = childL->MSA_->getMSA()->_getMSA();
-    MSA_t *msaR = childR->MSA_->getMSA()->_getMSA();
+    MSA_t *msaL = childL_->MSA_->getMSA()->_getMSA();
+    MSA_t *msaR = childR_->MSA_->getMSA()->_getMSA();
     MSA_->getMSA()->_build_MSA(*msaL, *msaR);
 
     // assigns the sequence names of the new alligned sequences to the current MSA
-    std::vector<string> *seqNameL = &(childL->MSA_->getMSA()->seqNames_);
-    std::vector<string> *seqNameR = &(childR->MSA_->getMSA()->seqNames_);
+    std::vector<string> *seqNameL = &(childL_->MSA_->getMSA()->seqNames_);
+    std::vector<string> *seqNameR = &(childR_->MSA_->getMSA()->seqNames_);
     MSA_->getMSA()->_setSeqNameNode(*seqNameL, *seqNameR);
     //***************************************************************************************
     // COMPRESS INFO
@@ -575,8 +710,8 @@ void nodeRAM::DP3D_PIP_node() {
     lkdata.freeMemory(true);
 
 
-    delete childL;
-    delete childR;
+    delete childL_;
+    delete childR_;
 
 
 }

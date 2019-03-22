@@ -54,24 +54,25 @@ struct LKdata {
     int w_compr_;
     int numCatg_;
 
-    std::vector<std::vector<vector<double> > > Log3DM;   // DP sparse matrix for MATCH case (only 2 layer are needed)
-    std::vector<vector<vector<double> > > Log3DX;   // DP sparse matrix for GAPX case (only 2 layer are needed)
-    std::vector<vector<vector<double> > > Log3DY;   // DP sparse matrix for GAPY case (only 2 layer are needed)
+    std::vector<std::vector<std::vector<double> > > Log3DM;   // DP sparse matrix for MATCH case (only 2 layer are needed)
+    std::vector<std::vector<std::vector<double> > > Log3DX;   // DP sparse matrix for GAPX case (only 2 layer are needed)
+    std::vector<std::vector<std::vector<double> > > Log3DY;   // DP sparse matrix for GAPY case (only 2 layer are needed)
 
-    std::vector<vector<vector<int> > > TR;   // DP matrix for tracebacking
+    //std::vector<std::vector<std::vector<int> > > TR;   // DP matrix for tracebacking
+    std::vector<std::vector<std::vector<char> > > TR;   // DP matrix for tracebacking
 
-    std::vector<vector<double> > Log2DM;
+    std::vector<std::vector<double> > Log2DM;
     std::vector<double> Log2DX;
     std::vector<double> Log2DY;
-    std::vector<vector<double> > Log2DM_fp;
+    std::vector<std::vector<double> > Log2DM_fp;
     std::vector<double> Log2DX_fp;
     std::vector<double> Log2DY_fp;
-    std::vector<vector<vector<bpp::ColMatrix<double> > > > Fv_M;
-    std::vector<vector<bpp::ColMatrix<double> > > Fv_X;
-    std::vector<vector<bpp::ColMatrix<double> > > Fv_Y;
-    std::vector<vector<vector<double> > > Fv_sigma_M;
-    std::vector<vector<double> > Fv_sigma_X;
-    std::vector<vector<double> > Fv_sigma_Y;
+    std::vector<std::vector<std::vector<bpp::ColMatrix<double> > > > Fv_M;
+    std::vector<std::vector<bpp::ColMatrix<double> > > Fv_X;
+    std::vector<std::vector<bpp::ColMatrix<double> > > Fv_Y;
+    std::vector<std::vector<vector<double> > > Fv_sigma_M;
+    std::vector<std::vector<double> > Fv_sigma_X;
+    std::vector<std::vector<double> > Fv_sigma_Y;
 
     LKdata(int d,int h,int h_compr,int w,int w_compr,int numCatg,bool sparse) {
 
@@ -158,7 +159,12 @@ struct LKdata {
             for (i = 1; i < d; i++) {
                 TR[i].resize(h);
                 for(j = 0; j < h; j++){
+#ifdef COMPRESS_TR
+                    int new_w=ceil(w/4)+1;
+                    TR[i][j].resize(new_w,0);
+#else
                     TR[i][j].resize(w,0);
+#endif
                 }
             }
         }

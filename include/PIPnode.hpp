@@ -83,9 +83,9 @@ namespace bpp {
         // each PIPnode has a father and two children (left and right)
         // the parent node of the root is NULL
         // the children nodes of a leaf node are both NULL
-        PIPnode *parent;
-        PIPnode *childL;
-        PIPnode *childR;
+        PIPnode *parent_;
+        PIPnode *childL_;
+        PIPnode *childR_;
 
         const progressivePIP *progressivePIP_; // pointer to progressivePIP
 
@@ -105,7 +105,7 @@ namespace bpp {
 
         std::vector<double> etaNode_;
 
-        double distanceToRoot; // length of the path from this node to root (sum of branch length)
+        double distanceToRoot_; // length of the path from this node to root (sum of branch length)
 
         //***************************************************************************************
         // PUBLIC METHODS

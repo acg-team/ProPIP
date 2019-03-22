@@ -64,8 +64,15 @@ namespace bpp {
     private:
 
         //***************************************************************************************
+        // PRIVATE FIELDS
+        //***************************************************************************************
+
+        //***************************************************************************************
         // PRIVATE METHODS
         //***************************************************************************************
+
+        char setTRvalCompressed(int j4,int r4,char TR,char STATE);
+        int getTRvalCompressed(int j4,int r4,char TR);
 
         // get max value among the three input values (m,x,y)
         double max_of_three(double m,           // match value

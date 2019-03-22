@@ -76,8 +76,6 @@ progressivePIP::progressivePIP(tshlib::Utree *utree,
 
 };
 
-
-
 void progressivePIP::_setLambda(double lambda) {
 
     // original lambda w/o rate variation
@@ -140,6 +138,11 @@ void progressivePIP::_setAllIotas() {
 
             for (int catg = 0; catg < numCatg_; catg++) {
 
+                // checks division by 0 or too small number
+                if (fabs(mu_.at(catg)) < SMALL_DOUBLE) {
+                    PLOG(WARNING) << "ERROR in _setAllIotas: mu too small";
+                }
+
                 // T(r) = tau + 1/ (mu * r)
                 T = tau_ + 1 / mu_.at(catg);
 
@@ -160,12 +163,23 @@ void progressivePIP::_setAllIotas() {
 
             for (int catg = 0; catg < numCatg_; catg++) {
 
+
+                // checks division by 0 or too small number
+                if (fabs(mu_.at(catg)) < SMALL_DOUBLE) {
+                    PLOG(WARNING) << "ERROR in _setAllIotas: mu too small";
+                }
+
                 // T(r) = tau + 1/(mu * r)
                 T = tau_ + 1 / mu_.at(catg);
 
                 // checks division by 0 or too small number
                 if (fabs(T) < SMALL_DOUBLE) {
                     PLOG(WARNING) << "ERROR in _setAllIotas: T too small";
+                }
+
+                // checks division by 0 or too small number
+                if (fabs(node->bnode_->getDistanceToFather()) < SMALL_DOUBLE) {
+                    PLOG(WARNING) << "ERROR in _setAllIotas: b(v) too small";
                 }
 
                 //iotasNode_[node->getId()][catg] = (node->getDistanceToFather() * rDist_->getCategory(catg) ) / T;
@@ -191,6 +205,12 @@ void progressivePIP::_setAllAlphas() {
         node->alphaNode_.resize(numCatg_);
 
         for(int catg=0;catg<numCatg_;catg++){
+
+            // checks division by 0 or too small number
+            if (fabs(mu_.at(catg)) < SMALL_DOUBLE) {
+                PLOG(WARNING) << "ERROR in _setAllAlphas: mu too small";
+            }
+
             // initialize alpha with the probability at the starting node which is
             // alpha(v) = iota * beta
             node->alphaNode_.at(catg) = (1.0/mu_.at(catg)) / (tau_ + 1/mu_.at(catg));
@@ -207,16 +227,26 @@ void progressivePIP::_setAllEtas() {
         // resize for each gamma category
         node->etaNode_.resize(numCatg_);
 
-
         for(int catg=0;catg<numCatg_;catg++) {
 
             if (node->_isRootNode()) {
                 node->etaNode_.at(catg) = 0.0;
             } else {
-                node->etaNode_.at(catg) = node->alphaNode_.at(catg) * (1 - exp(-mu_.at(catg) * node->distanceToRoot)) +
-                                          (node->distanceToRoot / (tau_ + 1 / mu_.at(catg))) * \
-                                          (1 - (1 - exp(-mu_.at(catg) * node->distanceToRoot)) /
-                                               (mu_.at(catg) * node->distanceToRoot));
+
+                // checks division by 0 or too small number
+                if (fabs(mu_.at(catg)) < SMALL_DOUBLE) {
+                    PLOG(WARNING) << "ERROR in _setAllEtas: mu too small";
+                }
+
+                // checks division by 0 or too small number
+                if (fabs(node->bnode_->getDistanceToFather()) < SMALL_DOUBLE) {
+                    PLOG(WARNING) << "ERROR in _setAllEtas: b(v) too small";
+                }
+
+                node->etaNode_.at(catg) = node->alphaNode_.at(catg) * (1 - exp(-mu_.at(catg) * node->distanceToRoot_)) +
+                                          (node->distanceToRoot_ / (tau_ + 1 / mu_.at(catg))) * \
+                                          (1 - (1 - exp(-mu_.at(catg) * node->distanceToRoot_)) /
+                                               (mu_.at(catg) * node->distanceToRoot_));
             }
         }
 
@@ -256,6 +286,7 @@ void progressivePIP::_setAllBetas() {
                 if (fabs(muT) < SMALL_DOUBLE) {
                     PLOG(WARNING) << "ERROR mu * T is too small";
                 }
+
                 // survival probability on node v (different from (local)-root)
                 // beta(v,r) = (1 - exp( -mu * r * b(v) )) / (mu * r * b(v))
                 node->betasNode_.at(catg) = (1.0 - exp(-muT)) / muT;
@@ -290,7 +321,7 @@ void progressivePIP::_computeLengthPathToRoot(){
 
         // save the path length at the given node
         // the path length from root to root is 0.0
-        node->distanceToRoot = T;
+        node->distanceToRoot_ = T;
 
     }
 
@@ -307,27 +338,25 @@ void progressivePIP::_buildPIPnodeTree() {
 
         bpp::Node *bnode = node->bnode_;
 
-        //int bnodeId = bnode->getId();
-
         if(bnode->hasFather()){
             // internal node
             int bnodeFatherId = bnode->getFatherId();
-            node->parent = compositePIPaligner_->pip_nodes_.at(bnodeFatherId);
+            node->parent_ = compositePIPaligner_->pip_nodes_.at(bnodeFatherId);
         }else{
             // root node
-            node->parent = nullptr;
-            PIPnodeRoot = node;
+            node->parent_ = nullptr;
+            PIPnodeRoot_ = node;
         }
 
         if(!bnode->isLeaf()){
             // internal node
             std::vector<int> bnodeSonsId = bnode->getSonsId();
-            node->childL = compositePIPaligner_->pip_nodes_.at(bnodeSonsId.at(LEFT));
-            node->childR = compositePIPaligner_->pip_nodes_.at(bnodeSonsId.at(RIGHT));
+            node->childL_ = compositePIPaligner_->pip_nodes_.at(bnodeSonsId.at(LEFT));
+            node->childR_ = compositePIPaligner_->pip_nodes_.at(bnodeSonsId.at(RIGHT));
         }else{
             // leaf node
-            node->childL = nullptr;
-            node->childR = nullptr;
+            node->childL_ = nullptr;
+            node->childR_ = nullptr;
         }
 
     }
@@ -346,19 +375,19 @@ void progressivePIP::_computeTauRec_(PIPnode *pipnode) {
 
     }else{
 
-        _computeTauRec_(pipnode->childL);
-        _computeTauRec_(pipnode->childR);
+        _computeTauRec_(pipnode->childL_);
+        _computeTauRec_(pipnode->childR_);
 
-        pipnode->subTreeLenL_ = pipnode->childL->subTreeLenL_ + \
-                                pipnode->childL->subTreeLenR_ + \
-                                pipnode->childL->bnode_->getDistanceToFather();
+        pipnode->subTreeLenL_ = pipnode->childL_->subTreeLenL_ + \
+                                pipnode->childL_->subTreeLenR_ + \
+                                pipnode->childL_->bnode_->getDistanceToFather();
 
-        pipnode->subTreeLenR_ = pipnode->childR->subTreeLenL_ + \
-                                pipnode->childR->subTreeLenR_ + \
-                                pipnode->childR->bnode_->getDistanceToFather();
+        pipnode->subTreeLenR_ = pipnode->childR_->subTreeLenL_ + \
+                                pipnode->childR_->subTreeLenR_ + \
+                                pipnode->childR_->bnode_->getDistanceToFather();
 
-        tau_ += pipnode->childL->bnode_->getDistanceToFather() +\
-                pipnode->childR->bnode_->getDistanceToFather();
+        tau_ += pipnode->childL_->bnode_->getDistanceToFather() +\
+                pipnode->childR_->bnode_->getDistanceToFather();
 
     }
 
@@ -391,6 +420,13 @@ void progressivePIP::_computeNu() {
     nu_.resize(numCatg_);
 
     for (int catg = 0; catg < numCatg_; catg++) {
+
+
+        // checks division by 0 or too small value
+        if (fabs(mu_.at(catg)) < SMALL_DOUBLE) {
+            PLOG(WARNING) << "ERROR mu is too small";
+        }
+
         // computes the normalizing constant with discrete rate variation (gamma distribution)
         // nu(r) = lambda * r * (tau + 1/(mu *r))
         nu_.at(catg) = lambda_.at(catg) * (tau_ + 1 / mu_.at(catg));

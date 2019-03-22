@@ -82,7 +82,7 @@ bool PIPnode::_isRootNode(){
 
     // true if PIPnode is the root node
     // (the last node to be aligned) otherwise false
-    if(parent == nullptr){
+    if(parent_ == nullptr){
         return true;
     }else{
         return false;
@@ -94,7 +94,7 @@ bool PIPnode::_isTerminalNode(){
 
     // true if PIPnode is a leaf node
     // (a leaf node doesn't need to be aligned) otherwise false
-    if(childL == nullptr || childR == nullptr){
+    if(childL_ == nullptr || childR_ == nullptr){
         return true;
     }else{
         return false;
@@ -110,7 +110,8 @@ void PIPnode::_getPrFromSubstitutionModel() {
 
         prNode_.resize(progressivePIP_->numCatg_);
 
-        for (int i = 0; i < progressivePIP_->rDist_->getNumberOfCategories(); i++) {
+        //for (int i = 0; i < progressivePIP_->rDist_->getNumberOfCategories(); i++) {
+        for (int i = 0; i < progressivePIP_->numCatg_; i++) {
             // substitution/deletion probabilities with rate variation (gamma)
             // Pr = exp( branchLength * rateVariation * Q )
             double brlen = bnode_->getDistanceToFather();
@@ -154,11 +155,11 @@ void PIPnode::_computeLK_M(std::vector<bpp::ColMatrix<double> > &fvL,
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL.at(catg), PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL.at(catg), PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR.at(catg), PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR.at(catg), PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::ColMatrix<double> fv;
@@ -210,11 +211,11 @@ void PIPnode::_computeLK_X(std::vector<bpp::ColMatrix<double> > &fvL,
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL.at(catg), PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL.at(catg), PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR.at(catg), PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR.at(catg), PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::ColMatrix<double> fv;
@@ -266,11 +267,11 @@ void PIPnode::_computeLK_Y(std::vector<bpp::ColMatrix<double> > &fvL,
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL.at(catg), PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL.at(catg), PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR.at(catg), PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR.at(catg), PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::ColMatrix<double> fv;
@@ -319,11 +320,11 @@ std::vector<double> PIPnode::_computeLkEmptyNode(std::vector<bpp::ColMatrix<doub
 
         // PrfvL = Pr_L * fv_L
         bpp::ColMatrix<double> PrfvL;
-        bpp::MatrixTools::mult(childL->prNode_.at(catg), fvL.at(catg), PrfvL);
+        bpp::MatrixTools::mult(childL_->prNode_.at(catg), fvL.at(catg), PrfvL);
 
         // PrfvR = Pr_R * fv_R
         bpp::ColMatrix<double> PrfvR;
-        bpp::MatrixTools::mult(childR->prNode_.at(catg), fvR.at(catg), PrfvR);
+        bpp::MatrixTools::mult(childR_->prNode_.at(catg), fvR.at(catg), PrfvR);
 
         // fv = PrfvL * PrfvR
         bpp::ColMatrix<double> fv;

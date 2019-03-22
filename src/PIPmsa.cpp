@@ -107,6 +107,7 @@ void PIPmsa::_setSeqNameNode(std::vector<std::string> &seqNamesL,
 
 }
 
+/*
 void PIPmsa::_setFVleaf(int numCatg,
                         const bpp::Alphabet *alphabet) {
 
@@ -181,7 +182,67 @@ void PIPmsa::_setFVsigmaLeaf(int numCatg,
     }
 
 }
+*/
 
+void PIPmsa::_setFVleaf(int numCatg,
+                        const bpp::Alphabet *alphabet,
+                         const bpp::ColMatrix<double> &pi) {
+
+    // get the number of compressed sites
+    int lenComprSeqs = rev_map_compressed_seqs_.size();
+
+    // get the size of the alphabet (extended)
+    int lenAlphabet = alphabet->getSize();
+
+    // resize fv data([site][catg][states])
+    fv_data_.resize(lenComprSeqs);
+    for (int i = 0; i < lenComprSeqs; i++) {
+        fv_data_[i].resize(numCatg);
+    }
+
+    // resize the array ([site][numCatg])
+    fv_sigma_.resize(lenComprSeqs);
+
+    int idx;
+    // go through all the sites
+    for (int site = 0; site < lenComprSeqs; site++) {
+
+        // get the index in the compressed map
+        idx = rev_map_compressed_seqs_.at(site);
+        MSAcolumn_t s = this->msa_.at(idx);
+
+        // allocate fv column to the ext. alphabet size
+        bpp::ColMatrix<double> fv;
+        fv.resize(lenAlphabet, 1); // ColMatrix as Nx1 matrix
+        bpp::MatrixTools::fill(fv, 0.0); // all zeros
+
+        // check if the sequence contains a "forbidden" char
+        if (s[0] == 'X' || s[0] == ' ' || s[0] == '-') {
+            LOG(FATAL) << "\nERROR sequence contains either 'X' or ' ' or '-'";
+        }
+
+        // get the char position in the alphabet
+        idx = alphabet->charToInt(&s[0]);
+
+        // set to 1 the indicator array at the position of the observed char
+        fv(idx, 0) = 1.0;
+
+        // resize fv_sigma_
+        fv_sigma_.at(site).resize(numCatg);
+
+        // assign the indicator array to all the gamma categories
+        for (int catg = 0; catg < numCatg; catg++) {
+            fv_data_.at(site).at(catg) = fv;
+
+            // compute fv_sigma = fv dot pi
+            fv_sigma_.at(site).at(catg) = pi(idx,0);
+        }
+
+    }
+
+}
+
+/*
 void PIPmsa::_setFVemptyLeaf(int numCatg,
                              const bpp::Alphabet *alphabet) {
 
@@ -208,6 +269,7 @@ void PIPmsa::_setFVemptyLeaf(int numCatg,
     }
 
 }
+*/
 
 void PIPmsa::_setFVemptyNode(int numCatg,
                              PIPmsa *childL,
@@ -237,12 +299,48 @@ void PIPmsa::_setFVemptyNode(int numCatg,
 
 }
 
+/*
 void PIPmsa::_setFVsigmaEmptyLeaf(int numCatg) {
 
     // allocate memory ([numCatg] x 1)
     fv_empty_sigma_.resize(numCatg);
 
     for (int catg = 0; catg < numCatg; catg++) {
+        // fv_empty_sigma = fv dot pi
+        // fv_empty_sigma is always 0 at the leaves
+        fv_empty_sigma_.at(catg) = 0.0;
+    }
+
+}
+*/
+
+void PIPmsa::_setFVemptyLeaf(int numCatg,
+                             const bpp::Alphabet *alphabet) {
+
+    // get the size of the compressed sequence
+    int lenAlphabet = alphabet->getSize();
+
+    // indicator array (all zeros except the observed character)
+    bpp::ColMatrix<double> fv;
+    fv.resize(lenAlphabet, 1);
+    bpp::MatrixTools::fill(fv, 0.0); // all zeros
+
+    // get the gap position in the alphabet
+    std::string ch(1, GAP_CHAR);
+    int gapIndex = alphabet->charToInt(ch);
+
+    fv(gapIndex, 0) = 1.0; // set gap position to 1
+
+    // for all the gamma categories an array of fv values
+    fv_empty_data_.resize(numCatg);
+
+    // allocate memory ([numCatg] x 1)
+    fv_empty_sigma_.resize(numCatg);
+
+    // assign the indicator array to all gamma categories
+    for (int catg = 0; catg < numCatg; catg++) {
+        fv_empty_data_.at(catg) = fv;
+
         // fv_empty_sigma = fv dot pi
         // fv_empty_sigma is always 0 at the leaves
         fv_empty_sigma_.at(catg) = 0.0;

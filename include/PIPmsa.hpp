@@ -135,10 +135,11 @@ namespace bpp {
         std::vector<std::string> getSequenceNames() { return seqNames_; }; // return the sequences name
 
         void _setFVleaf(int numCatg,
-                        const bpp::Alphabet *alphabet);
+                        const bpp::Alphabet *alphabet,
+                        const bpp::ColMatrix<double> &pi);
 
-        void _setFVsigmaLeaf(int numCatg,
-                             const bpp::ColMatrix<double> &pi);
+        //void _setFVsigmaLeaf(int numCatg,
+        //                     const bpp::ColMatrix<double> &pi);
 
         void _setFVemptyNode(int numCatg,
                              PIPmsa *childL,
@@ -146,7 +147,7 @@ namespace bpp {
                              std::vector<bpp::RowMatrix<double> > &PrL,
                              std::vector<bpp::RowMatrix<double> > &PrR);
 
-        void _setFVsigmaEmptyLeaf(int numCatg);
+        //void _setFVsigmaEmptyLeaf(int numCatg);
 
         void _setFVsigmaEmptyNode(int numCatg,
                                   PIPmsa *childL,
