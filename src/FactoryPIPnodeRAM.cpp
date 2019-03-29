@@ -265,6 +265,14 @@ void nodeRAM::DP3D(LKdata &lkdata,
     lkdata.Log3DX[0][0][0] = log_phi_gamma;
     lkdata.Log3DY[0][0][0] = log_phi_gamma;
     lkdata.TR[0][0][0] = STOP_STATE;
+
+
+    //***************************************************************************************
+    //printf("\n");
+    FILE *fid;
+    fid=fopen("/Users/max/castor/data/output/LK","w");
+    //***************************************************************************************
+
     for (int m = 1; m < lkdata.d_; m++) {
 
         // if lk doesn't increase anymore for K steps (EARLY_STOP_THR) exit
@@ -482,7 +490,46 @@ void nodeRAM::DP3D(LKdata &lkdata,
                 }
             }
         }
+
+
+
+        //***************************************************************************
+        fprintf(fid,"M%d=[\n",m);
+        for (i = 1; i < lkdata.h_; i++) {
+            for (j = 1; j < lkdata.w_; j++) {
+                fprintf(fid,"%8.6lf ",lkdata.Log3DM[m_binary_this][i][j]);
+            }
+            fprintf(fid,"\n");
+        }
+        fprintf(fid,"];\n");
+        fprintf(fid,"X%d=[\n",m);
+        for (i = 1; i < lkdata.h_; i++) {
+            for (j = 1; j < lkdata.w_; j++) {
+                fprintf(fid,"%8.6lf ",lkdata.Log3DX[m_binary_this][i][j]);
+            }
+            fprintf(fid,"\n");
+        }
+        fprintf(fid,"];\n");
+        fprintf(fid,"Y%d=[\n",m);
+        for (i = 1; i < lkdata.h_; i++) {
+            for (j = 1; j < lkdata.w_; j++) {
+                fprintf(fid,"%8.6lf ",lkdata.Log3DY[m_binary_this][i][j]);
+            }
+            fprintf(fid,"\n");
+        }
+        fprintf(fid,"];\n");
+        //***************************************************************************
+
+
+
+
     }
+
+
+    //***************************************************************************
+    fclose(fid);
+    //***************************************************************************
+
 
 }
 
@@ -562,6 +609,11 @@ void nodeRAM::DP3D_PIP_node() {
                                                   lk_emptyL,
                                                   lk_emptyR,
                                                   lk_empty);
+
+
+    printf("p0 %18.16lf\n",pc0[0]);
+
+
     //***************************************************************************************
     // COMPUTES LOG(PHI(0))
     //***************************************************************************************

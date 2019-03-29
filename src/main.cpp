@@ -505,6 +505,7 @@ int main(int argc, char *argv[]) {
             } else {
                 // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
 
+
                 distEstimation.computeMatrix();
                 DistanceMatrix *dm = distEstimation.getMatrix();
                 distMethod->setDistanceMatrix((*dm));

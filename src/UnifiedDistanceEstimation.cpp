@@ -350,6 +350,7 @@ void TwoTreeLikelihood_PIP::fireParameterChanged(const ParameterList &params) {
     for (size_t c = 0; c < nbClasses_; c++) {
         VVdouble *pxy_c = &pxy_[c];
         pxy_c->resize(nbStates_);
+
         RowMatrix<double> Q = model_->getPij_t(brLen_ * rateDistribution_->getCategory(c));
         for (size_t x = 0; x < nbStates_; x++) {
             Vdouble *pxy_c_x = &(*pxy_c)[x];
@@ -398,14 +399,6 @@ void TwoTreeLikelihood_PIP::fireParameterChanged(const ParameterList &params) {
 
     computeTreeLikelihood();
 
-    /*
-    if (computeFirstOrderDerivatives_) {
-        computeTreeDLikelihood();
-    }
-    if (computeSecondOrderDerivatives_) {
-        computeTreeD2Likelihood();
-    }
-    */
 }
 
 
@@ -485,8 +478,22 @@ void TwoTreeLikelihood_PIP::initTreeLikelihoods(const SequenceContainer &sequenc
     d2Likelihoods_.resize(nbDistinctSites_);
 }
 
-
+/*
 void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
+
+
+    //==============================================//
+    FILE *fid;
+    fid=fopen("/Users/max/castor/data/output/bl","a");
+
+    std::string s1 = seqnames_.at(0);
+    std::string s2 = seqnames_.at(1);
+
+    fprintf(fid,"%s %s %18.16lf\n",s1.c_str(),s2.c_str(),brLen_);
+
+    fclose(fid);
+    //==============================================//
+
     // get parameters PIP
     double mu = model_->getParameter("mu").getValue();
     double tau = brLen_;
@@ -497,6 +504,57 @@ void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
     double betaBranch = (1 - exp(-mu * brLen_)) / (mu * brLen_);
     double iotaBranch = brLen_ / (tau + 1 / mu);
 
+    //---------------------------------------------
+    printf("\n");
+    printf("$$$$$$$$$$$$$$$$$$$$$\n");
+    printf("mu %18.16 lf\n",mu);
+    printf("tau %18.16 lf\n",tau);
+    printf("$$$$$$$$$$$$$$$$$$$$$\n");
+    printf("\n");
+    //---------------------------------------------
+    printf("\n");
+    printf("*********************\n");
+    VVdouble *pxy_cT = &pxy_[0];
+    for(int i=0;i<5;i++){
+        Vdouble *pxy_c_xT = &(*pxy_cT)[i];
+        for(int j=0;j<5;j++){
+            printf("%18.16lf ",(*pxy_c_xT)[j]);
+        }
+        printf("\n");
+    }
+    printf("*******************\n");
+    printf("\n");
+    //---------------------------------------------
+    printf("-------------------\n");
+    for (size_t i = 0; i < nbDistinctSites_; i++) {
+        Vdouble *leafLikelihoods1_i = &leafLikelihoods1_[i];
+        for (size_t c = 0; c < nbClasses_; c++) {
+            for (size_t x = 0; x < nbStates_; x++) {
+                double l1 = (*leafLikelihoods1_i)[x];
+                printf("%d %18.16lf ",i,l1);
+            }
+        }
+        printf("\n");
+    }
+    printf("-------------------\n");
+    printf("\n");
+    //---------------------------------------------
+    printf("===================\n");
+    for (size_t i = 0; i < nbDistinctSites_; i++) {
+        Vdouble *leafLikelihoods2_i = &leafLikelihoods2_[i];
+        for (size_t c = 0; c < nbClasses_; c++) {
+            for (size_t x = 0; x < nbStates_; x++) {
+                double l1 = (*leafLikelihoods2_i)[x];
+                printf("%d %18.16lf ",i,l1);
+            }
+        }
+        printf("\n");
+    }
+    printf("===================\n");
+    printf("\n");
+    //---------------------------------------------
+
+    printf(".............................................\n");
     for (size_t i = 0; i < nbDistinctSites_; i++) {
         VVdouble *rootLikelihoods_i = &rootLikelihoods_[i];
         Vdouble *leafLikelihoods1_i = &leafLikelihoods1_[i];
@@ -513,10 +571,17 @@ void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
                     l += l1 * l2 * (*pxy_c_x)[y];
                 }
                 (*rootLikelihoods_i_c)[x] = l;
+
+                printf("%d %18.16lf ",i,l);
+
             }
+            printf("\n");
         }
     }
+    printf(".............................................\n");
+    printf("\n");
 
+    printf("££££££££££££££££££££££££££££££££££££££££££££££\n");
     Vdouble fr = model_->getFrequencies();
     Vdouble p = rateDistribution_->getProbabilities();
     for (size_t i = 0; i < nbDistinctSites_; i++) {
@@ -539,6 +604,8 @@ void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
 
             rootLikelihoodsSR_[i] = betaRoot * iotaRoot * rootLikelihoodsSR_[i];
 
+            printf("%d A1 %18.16lf\n",i,rootLikelihoodsSR_[i]);
+
         } else if (setA_[i] == PairwiseSeqStates::gc) {
 
             Vdouble *leafLikelihoods2_i = &leafLikelihoods2_[i];
@@ -555,31 +622,194 @@ void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
 
             rootLikelihoodsSR_[i] = betaBranch * iotaBranch * leaflk;
 
+            printf("%d A2 %18.16lf\n",i,rootLikelihoodsSR_[i]);
+
         } else {
             // this is the case for -|-
             rootLikelihoodsSR_[i] = iotaBranch * (1 - betaBranch);
+
+            printf("%d A3 %18.16lf\n",i,rootLikelihoodsSR_[i]);
+        }
+    }
+    printf("££££££££££££££££££££££££££££££££££££££££££££££\n");
+
+}
+*/
+
+void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
+
+    /*
+    //==============================================//
+    FILE *fid;
+    fid=fopen("/Users/max/castor/data/output/bl","a");
+
+    std::string s1 = seqnames_.at(0);
+    std::string s2 = seqnames_.at(1);
+
+    fprintf(fid,"%s %s %18.16lf\n",s1.c_str(),s2.c_str(),brLen_);
+
+    fclose(fid);
+    //==============================================//
+    */
+
+    // get parameters PIP
+    double mu = model_->getParameter("mu").getValue();
+    double tau = brLen_;
+
+    // compute PIP composite parameters
+    double iotaRoot = (1 / mu) / (tau + 1 / mu);
+    double betaRoot = 1;
+    double iotaBranch = brLen_ / (tau + 1 / mu);
+    double betaBranch = (1 - exp(-mu * brLen_)) / (mu * brLen_);
+
+    /*
+    //---------------------------------------------
+    printf("\n");
+    printf("$$$$$$$$$$$$$$$$$$$$$\n");
+    printf("mu %18.16 lf\n",mu);
+    printf("tau %18.16 lf\n",tau);
+    printf("$$$$$$$$$$$$$$$$$$$$$\n");
+    printf("\n");
+    //---------------------------------------------
+    printf("\n");
+    printf("*********************\n");
+    VVdouble *pxy_cT = &pxy_[0];
+    for(int i=0;i<5;i++){
+        Vdouble *pxy_c_xT = &(*pxy_cT)[i];
+        for(int j=0;j<5;j++){
+            printf("%18.16lf ",(*pxy_c_xT)[j]);
+        }
+        printf("\n");
+    }
+    printf("*******************\n");
+    printf("\n");
+    //---------------------------------------------
+    printf("-------------------\n");
+    for (size_t i = 0; i < nbDistinctSites_; i++) {
+        Vdouble *leafLikelihoods1_i = &leafLikelihoods1_[i];
+        for (size_t c = 0; c < nbClasses_; c++) {
+            for (size_t x = 0; x < nbStates_; x++) {
+                double l1 = (*leafLikelihoods1_i)[x];
+                printf("%d %18.16lf ",i,l1);
+            }
+        }
+        printf("\n");
+    }
+    printf("-------------------\n");
+    printf("\n");
+    //---------------------------------------------
+    printf("===================\n");
+    for (size_t i = 0; i < nbDistinctSites_; i++) {
+        Vdouble *leafLikelihoods2_i = &leafLikelihoods2_[i];
+        for (size_t c = 0; c < nbClasses_; c++) {
+            for (size_t x = 0; x < nbStates_; x++) {
+                double l1 = (*leafLikelihoods2_i)[x];
+                printf("%d %18.16lf ",i,l1);
+            }
+        }
+        printf("\n");
+    }
+    printf("===================\n");
+    printf("\n");
+    //---------------------------------------------
+    */
+
+    //printf(".............................................\n");
+    for (size_t i = 0; i < nbDistinctSites_; i++) {
+        VVdouble *rootLikelihoods_i = &rootLikelihoods_[i];
+        Vdouble *leafLikelihoods1_i = &leafLikelihoods1_[i];
+        Vdouble *leafLikelihoods2_i = &leafLikelihoods2_[i];
+        for (size_t c = 0; c < nbClasses_; c++) {
+            Vdouble *rootLikelihoods_i_c = &(*rootLikelihoods_i)[c];
+            VVdouble *pxy_c = &pxy_[c];
+            for (size_t x = 0; x < nbStates_; x++) {
+                Vdouble *pxy_c_x = &(*pxy_c)[x];
+                double l = 0;
+
+                for (size_t y = 0; y < nbStates_; y++) {
+                    double l1 = (*leafLikelihoods1_i)[y];
+
+                    l += l1 * (*pxy_c_x)[y];
+                }
+
+                // bL = bv
+                // bR = 0
+                double l2 = (*leafLikelihoods2_i)[x];
+
+                l=l*l2;
+
+                (*rootLikelihoods_i_c)[x] = l;
+
+                //printf("%d %18.16lf ",i,l);
+
+            }
+            //printf("\n");
+        }
+    }
+    //printf(".............................................\n");
+    //printf("\n");
+
+    //printf("££££££££££££££££££££££££££££££££££££££££££££££\n");
+    Vdouble fr = model_->getFrequencies();
+    Vdouble p = rateDistribution_->getProbabilities();
+    for (size_t i = 0; i < nbDistinctSites_; i++) {
+        // For each site in the sequence,
+        VVdouble *rootLikelihoods_i = &rootLikelihoods_[i];
+        Vdouble *rootLikelihoodsS_i = &rootLikelihoodsS_[i];
+        rootLikelihoodsSR_[i] = 0;
+        for (size_t c = 0; c < nbClasses_; c++) {
+            (*rootLikelihoodsS_i)[c] = 0;
+            // For each rate classe,
+            Vdouble *rootLikelihoods_i_c = &(*rootLikelihoods_i)[c];
+            for (size_t x = 0; x < nbStates_; x++) {
+                // For each initial state,
+                (*rootLikelihoodsS_i)[c] += fr[x] * (*rootLikelihoods_i_c)[x];
+            }
+            rootLikelihoodsSR_[i] += p[c] * (*rootLikelihoodsS_i)[c];
         }
 
-        //else if (setA_[i] == PairwiseSeqStates::cg) {
+        if (setA_[i] == PairwiseSeqStates::cc){
 
-        //    Vdouble *leafLikelihoods1_i = &leafLikelihoods1_[i];
-        //    double leaflk = 0;
-        //    double rootlk = 0;
-        //    double tmp = rootLikelihoodsSR_[i];
-        //for (size_t x = 0; x < nbStates_; x++) {
-        //    leaflk += fr[x] * (*leafLikelihoods1_i)[x];
-        //  }
-        //leaflk = betaBranch * iotaBranch * leaflk;
+            rootLikelihoodsSR_[i] = iotaRoot * betaRoot * rootLikelihoodsSR_[i];
 
-        //leaflk = iotaBranch * (1-betaBranch);
-        //    rootlk = betaRoot * iotaRoot * tmp;
+            //printf("%d A1 %18.16lf\n",i,rootLikelihoodsSR_[i]);
 
-        //    rootLikelihoodsSR_[i] = rootlk + leaflk;
-        //}
+        } else if(setA_[i] == PairwiseSeqStates::gc) {
 
+            Vdouble *leafLikelihoods2_i = &leafLikelihoods2_[i];
+
+            //double leaflk = 0;
+            //for (size_t x = 0; x < nbStates_; x++) {
+            //    leaflk += fr[x] * (*leafLikelihoods2_i)[x];
+            //}
+
+            rootLikelihoodsSR_[i] = iotaRoot * betaRoot * rootLikelihoodsSR_[i];// + iotaBranch * betaBranch * leaflk;
+
+            //printf("%d A2 %18.16lf\n",i,rootLikelihoodsSR_[i]);
+
+        } else if (setA_[i] == PairwiseSeqStates::cg) {
+
+            Vdouble *leafLikelihoods1_i = &leafLikelihoods1_[i];
+
+            double leaflk = 0;
+            for (size_t x = 0; x < nbStates_; x++) {
+                leaflk += fr[x] * (*leafLikelihoods1_i)[x];
+            }
+
+            rootLikelihoodsSR_[i] = iotaRoot * betaRoot * rootLikelihoodsSR_[i] + iotaBranch * betaBranch * leaflk;
+
+            //printf("%d A3 %18.16lf\n",i,rootLikelihoodsSR_[i]);
+
+        } else {
+            // this is the case for -|-
+            rootLikelihoodsSR_[i] = iotaRoot * betaRoot * rootLikelihoodsSR_[i] +iotaBranch*(1+betaBranch*(-1));
+
+            //printf("%d A4 %18.16lf\n",i,rootLikelihoodsSR_[i]);
+        }
     }
-}
+    //printf("££££££££££££££££££££££££££££££££££££££££££££££\n");
 
+}
 
 void TwoTreeLikelihood_PIP::computeTreeDLikelihood() {
     for (size_t i = 0; i < nbDistinctSites_; i++) {
