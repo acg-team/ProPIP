@@ -280,6 +280,14 @@ namespace bpp {
         void DP3D_PIP();
 
         void _computeAllFvEmptySigmaRec();
+
+/*
+        virtual std::unique_ptr<PIPnode> clone() const override
+        {
+            return std::make_unique<nodeCPU>(*this);
+        }
+*/
+
     };
 
 }

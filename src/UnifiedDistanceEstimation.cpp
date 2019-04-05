@@ -671,6 +671,7 @@ void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
     printf("$$$$$$$$$$$$$$$$$$$$$\n");
     printf("\n");
     //---------------------------------------------
+
     printf("\n");
     printf("*********************\n");
     VVdouble *pxy_cT = &pxy_[0];
@@ -802,7 +803,7 @@ void TwoTreeLikelihood_PIP::computeTreeLikelihood() {
 
         } else {
             // this is the case for -|-
-            rootLikelihoodsSR_[i] = iotaRoot * betaRoot * rootLikelihoodsSR_[i] +iotaBranch*(1+betaBranch*(-1));
+            rootLikelihoodsSR_[i] = iotaRoot * betaRoot * rootLikelihoodsSR_[i] +iotaBranch*(1-betaBranch);
 
             //printf("%d A4 %18.16lf\n",i,rootLikelihoodsSR_[i]);
         }

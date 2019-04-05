@@ -58,7 +58,7 @@
 #include "PIPlkData.hpp"
 
 namespace bpp {
-
+    
     class PIPnode{ // pure virtual class
 
     private:

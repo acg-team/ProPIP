@@ -269,8 +269,8 @@ void nodeRAM::DP3D(LKdata &lkdata,
 
     //***************************************************************************************
     //printf("\n");
-    FILE *fid;
-    fid=fopen("/Users/max/castor/data/output/LK","w");
+    //FILE *fid;
+    //fid=fopen("/Users/max/castor/data/output/LK","w");
     //***************************************************************************************
 
     for (int m = 1; m < lkdata.d_; m++) {
@@ -492,7 +492,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
         }
 
 
-
+        /*
         //***************************************************************************
         fprintf(fid,"M%d=[\n",m);
         for (i = 1; i < lkdata.h_; i++) {
@@ -519,7 +519,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
         }
         fprintf(fid,"];\n");
         //***************************************************************************
-
+        */
 
 
 
@@ -527,7 +527,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
 
 
     //***************************************************************************
-    fclose(fid);
+    //fclose(fid);
     //***************************************************************************
 
 
@@ -609,10 +609,6 @@ void nodeRAM::DP3D_PIP_node() {
                                                   lk_emptyL,
                                                   lk_emptyR,
                                                   lk_empty);
-
-
-    printf("p0 %18.16lf\n",pc0[0]);
-
 
     //***************************************************************************************
     // COMPUTES LOG(PHI(0))
@@ -768,14 +764,206 @@ void nodeRAM::DP3D_PIP_node() {
 
 }
 
+PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
+
+    nodeRAM *R = new nodeRAM(ref->progressivePIP_,ref->vnode_,ref->bnode_);
+
+    R->MSA_->getMSA(0)->lk_empty_ = ref->MSA_->getMSA(0)->lk_empty_;
+
+    R->MSA_->getMSA(0)->log_lk_down_=ref->MSA_->getMSA(0)->log_lk_down_;
+
+    R->MSA_->getMSA(0)->fv_empty_sigma_ = ref->MSA_->getMSA(0)->fv_empty_sigma_;
+
+    R->MSA_->getMSA(0)->rev_map_compressed_seqs_ = ref->MSA_->getMSA(0)->rev_map_compressed_seqs_;
+
+    R->MSA_->getMSA(0)->seqNames_ = ref->MSA_->getMSA(0)->seqNames_;
+
+    R->prNode_ = ref->prNode_;
+
+    R->MSA_->getMSA(0)->fv_sigma_ = ref->MSA_->getMSA(0)->fv_sigma_;
+
+    R->MSA_->getMSA(0)->fv_empty_data_ = ref->MSA_->getMSA(0)->fv_empty_data_;
+
+    R->MSA_->getMSA(0)->fv_data_ = ref->MSA_->getMSA(0)->fv_data_;
+
+    //-------------------------------------------------------------//
+    R->MSA_->getMSA(0)->map_compressed_seqs_.insert(\
+    R->MSA_->getMSA(0)->map_compressed_seqs_.end(),\
+    ref->MSA_->getMSA(0)->map_compressed_seqs_.begin()+delta,
+    ref->MSA_->getMSA(0)->map_compressed_seqs_.begin()+delta+len);
+
+    R->MSA_->getMSA(0)->traceback_path_.insert(\
+    R->MSA_->getMSA(0)->traceback_path_.end(),\
+    ref->MSA_->getMSA(0)->traceback_path_.begin()+delta,
+    ref->MSA_->getMSA(0)->traceback_path_.begin()+delta+len);
+
+    R->MSA_->getMSA(0)->msa_.insert(\
+    R->MSA_->getMSA(0)->msa_.end(),\
+    ref->MSA_->getMSA(0)->msa_.begin()+delta,
+    ref->MSA_->getMSA(0)->msa_.begin()+delta+len);
+    //-------------------------------------------------------------//
+
+    return R;
+}
+
+nodeRAM *nodeRAM::cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR) {
+
+    nodeRAM *R = new nodeRAM(this->progressivePIP_,this->vnode_,this->bnode_);
+
+    R->parent_=this->parent_;
+
+    R->subTreeLenL_=this->subTreeLenL_;
+    R->subTreeLenR_=this->subTreeLenR_;
+    R->distanceToRoot_=this->distanceToRoot_;
+
+    R->iotasNode_ = this->iotasNode_;
+    R->betasNode_ = this->betasNode_;
+    R->alphaNode_ = this->alphaNode_;
+    R->etaNode_ = this->etaNode_;
+
+    R->prNode_ = this->prNode_;
+
+    R->childL_ = cloneChildNodeRAM(this->childL_,deltaL,lenL);
+    R->childR_ = cloneChildNodeRAM(this->childR_,deltaR,lenR);
+
+    return R;
+}
+
+void nodeRAM::gatherResults(std::vector< nodeRAM* > &nodeRAMvec){
+
+    std::vector<double> lk_down_not_compressed;
+    std::vector<std::vector<bpp::ColMatrix<double>>> fv_data_not_compressed;
+    std::vector<std::vector<double> > fv_sigma_not_compressed;
+
+    int numBlocks = nodeRAMvec.size();
+
+    this->MSA_->getMSA(0)->seqNames_ = nodeRAMvec.at(0)->MSA_->getMSA(0)->seqNames_;
+
+    this->MSA_->getMSA(0)->lk_empty_ = nodeRAMvec.at(0)->MSA_->getMSA(0)->lk_empty_;
+
+    this->MSA_->getMSA(0)->fv_empty_sigma_ = nodeRAMvec.at(0)->MSA_->getMSA(0)->fv_empty_sigma_;
+
+    this->MSA_->getMSA(0)->fv_empty_data_.insert(\
+    this->MSA_->getMSA(0)->fv_empty_data_.end(),\
+    nodeRAMvec.at(0)->MSA_->getMSA(0)->fv_empty_data_.begin(),\
+    nodeRAMvec.at(0)->MSA_->getMSA(0)->fv_empty_data_.end());
+
+    int msalen=0;
+    int msa_compr_len=0;
+    for(int i=0;i<numBlocks;i++){
+        msalen+=nodeRAMvec.at(i)->MSA_->getMSA(0)->msa_.size();
+        msa_compr_len+=nodeRAMvec.at(i)->MSA_->getMSA(0)->rev_map_compressed_seqs_.size();
+    }
+
+    this->MSA_->getMSA(0)->msa_.reserve(msalen);
+    this->MSA_->getMSA(0)->traceback_path_.reserve(msalen);
+    lk_down_not_compressed.reserve(msa_compr_len);
+    fv_data_not_compressed.reserve(msa_compr_len);
+    fv_sigma_not_compressed.reserve(msa_compr_len);
+    for(int i=0;i<numBlocks;i++){
+
+        this->MSA_->getMSA(0)->msa_.insert(\
+        this->MSA_->getMSA(0)->msa_.end(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->msa_.begin(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->msa_.end());
+
+        this->MSA_->getMSA(0)->traceback_path_.insert(\
+        this->MSA_->getMSA(0)->traceback_path_.end(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->traceback_path_.begin(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->traceback_path_.end());
+
+        lk_down_not_compressed.insert(\
+        lk_down_not_compressed.end(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->log_lk_down_.begin(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->log_lk_down_.end());
+
+        fv_data_not_compressed.insert(\
+        fv_data_not_compressed.end(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->fv_data_.begin(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->fv_data_.end());
+
+        fv_sigma_not_compressed.insert(\
+        fv_sigma_not_compressed.end(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->fv_sigma_.begin(),\
+        nodeRAMvec.at(i)->MSA_->getMSA(0)->fv_sigma_.end());
+
+    }
+
+    // compress the MSA
+    this->MSA_->getMSA()->_compressMSA(this->progressivePIP_->alphabet_);
+
+    // compress fv values and lk_down
+    this->MSA_->getMSA()->_compressLK(lk_down_not_compressed);
+    this->MSA_->getMSA()->_compressFv(fv_data_not_compressed);
+    this->MSA_->getMSA()->_compressFvSigma(fv_sigma_not_compressed);
+
+}
+
+
 void nodeRAM::DP3D_PIP() {
 
     if (_isTerminalNode()) {
         // align leaf (prepare data)
         DP3D_PIP_leaf();
     } else {
+
+#ifdef STFT
+
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+        int numBlocks = 4;
+
+        std::vector< nodeRAM* > nodeRAMvec;
+
+        nodeRAMvec.resize(numBlocks);
+
+        int lenL,lenR;
+        int deltaL,deltaR;
+
+        lenL = floor(this->childL_->MSA_->getMSA(0)->map_compressed_seqs_.size()/numBlocks);
+        lenR = floor(this->childR_->MSA_->getMSA(0)->map_compressed_seqs_.size()/numBlocks);
+
+        deltaL = lenL;
+        deltaR = lenR;
+
+        for(int i=0;i<numBlocks;i++){
+
+            //----------------------------------------------------------------------------------------------//
+
+            if(i== (numBlocks-1)){
+                lenL = this->childL_->MSA_->getMSA(0)->map_compressed_seqs_.size()-\
+               (numBlocks-1)*floor(this->childL_->MSA_->getMSA(0)->map_compressed_seqs_.size()/numBlocks);
+                lenR = this->childR_->MSA_->getMSA(0)->map_compressed_seqs_.size()-\
+               (numBlocks-1)*floor(this->childR_->MSA_->getMSA(0)->map_compressed_seqs_.size()/numBlocks);
+            }
+            //---------------------------------------------------------------------------------------------//
+
+            nodeRAMvec.at(i) = cloneNodeRAM( (i*deltaL) ,lenL, (i*deltaR) ,lenR);
+
+        }
+
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+
+        for(int i=0;i<numBlocks;i++){
+            nodeRAMvec.at(i)->DP3D_PIP_node();
+        }
+
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+
+        this->gatherResults(nodeRAMvec);
+
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+        //*******************************************************************************************************//
+#else
         // align internal node
         DP3D_PIP_node();
+#endif
     }
 
 }

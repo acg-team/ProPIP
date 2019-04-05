@@ -38,12 +38,12 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
   "GFLAGS_DLL_DEFINE_FLAG="
   "GFLAGS_IS_A_DLL=0"
   "GOOGLE_GLOG_DLL_DECL="
-  "PRJ_DATE=\"19 Mar 2019\""
+  "PRJ_DATE=\"05 Apr 2019\""
   "PRJ_DESC=\"Indel-Aware Phylogenetic Tree Inference\""
   "PRJ_GITBRANCH=\"refs/heads/master\""
-  "PRJ_GITREF=\"bbc3cae9a9ebd8fde12ea39f90dbdc54b3edaed4\""
+  "PRJ_GITREF=\"8081f6425fb3493703dcb778411237087c06b4b9\""
   "PRJ_NAME=\"Castor\""
-  "PRJ_TIME=\"11:14:43\""
+  "PRJ_TIME=\"08:49:00\""
   "PRJ_VERSION=\"\""
   )
 

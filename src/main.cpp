@@ -903,14 +903,6 @@ int main(int argc, char *argv[]) {
 
             double MSAscore = proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore();
 
-            /*
-            std::ofstream lkFile;
-            lkFile << std::setprecision(18);
-            lkFile.open(PAR_output_file_lk);
-            lkFile << MSAscore;
-            lkFile.close();
-            */
-
             ApplicationTools::displayResult("Alignment log likelihood", TextTools::toString(MSAscore, 15));
 
 

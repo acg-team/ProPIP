@@ -146,6 +146,12 @@ namespace bpp {
 
         void DP3D_PIP();
 
+/*
+        virtual std::unique_ptr<PIPnode> clone() const override
+        {
+            return std::make_unique<nodeSB>(*this);
+        }
+*/
 
     };
 
