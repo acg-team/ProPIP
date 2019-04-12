@@ -808,6 +808,28 @@ int main(int argc, char *argv[]) {
         //**********************************************************************************************************
         //**********************************************************************************************************
         //**********************************************************************************************************
+
+
+        /*
+        FILE *fid = fopen("/Users/max/castor/data/WAG_Q","w");
+        for(int i=0;i<21;i++){
+            for(int j=0;j<21;j++){
+                fprintf(fid,"%18.16lf ",smodel->getGenerator()(i,j));
+            }
+            fprintf(fid,"\n");
+        }
+        fclose(fid);
+
+        fid = fopen("/Users/max/castor/data/WAG_Pi","w");
+        for(int i=0;i<21;i++) {
+            fprintf(fid,"%18.16lf\n",smodel->getFrequencies()[i]);
+        }
+        fclose(fid);
+
+        exit(0);
+        */
+
+
         // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
         pPIP *alignment = nullptr;
         progressivePIP *proPIP = nullptr;

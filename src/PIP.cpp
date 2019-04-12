@@ -210,16 +210,37 @@ void PIP_Nuc::setFreq(std::map<int, double> &freqs) {
 }
 
 void PIP_Nuc::setFreqFromData(const SequenceContainer &data, double pseudoCount) {
+
     std::map<int, int> counts;
     SequenceContainerTools::getCounts(data, counts);
     std::map<int, double> freqs;
 
+
+    //-----------------------------------------------------
+    int ns = this->alphabet_->getSize();
+    int idxGap = data.getAlphabet()->getGapCharacterCode();
+    int idx;
+    std::map<int, int>::iterator iter;
+    for(int i=0;i<ns;i++){
+        idx = data.getAlphabet()->getIntCodeAt(i);
+        iter = counts.find(idx);
+        if(iter != counts.end()){
+            if(idx == idxGap) {
+                counts.erase(iter);
+            }
+        }else{
+            counts[idx] = 0;
+        }
+    }
+    //-----------------------------------------------------
+    /*
     int gapkey = data.getAlphabet()->getGapCharacterCode();
     std::map<int, int>::iterator iter = counts.find(gapkey);
     if (iter != counts.end())
         counts.erase(iter);
     else puts("not found");
-
+    */
+    //-----------------------------------------------------
 
     std::vector<int> retval;
     for (auto const &element : counts) {
@@ -238,6 +259,7 @@ void PIP_Nuc::setFreqFromData(const SequenceContainer &data, double pseudoCount)
     }
 
     freqs[data.getAlphabet()->getGapCharacterCode()] = 0;
+
     // Re-compute generator and eigen values:
     setFreq(freqs);
 
