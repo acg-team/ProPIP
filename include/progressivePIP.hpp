@@ -64,7 +64,7 @@
 
 
 
-#define STFT
+//#define STFT
 //#define COMPRESS_TR 1
 
 #ifdef COMPRESS_TR
