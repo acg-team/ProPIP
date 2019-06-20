@@ -64,8 +64,10 @@
 
 
 
-//#define STFT
+#define STFT 1
 //#define COMPRESS_TR 1
+//#define EXTRA_TR 1
+//#define TR_GAP 1
 
 #ifdef COMPRESS_TR
     #define STOP_STATE  0b00000000
@@ -73,10 +75,31 @@
     #define GAP_X_STATE 0b00000010
     #define GAP_Y_STATE 0b00000011
 #else
-    #define MATCH_STATE 1
-    #define GAP_X_STATE 2
-    #define GAP_Y_STATE 3
-    #define STOP_STATE 4
+
+    #ifdef EXTRA_TR
+
+        #define MATCH_STATE 1
+        #define GAP_X_STATE 2
+        #define GAP_Y_STATE 3
+        #define STOP_STATE 4
+
+        #define MX_STATE 5
+        #define MY_STATE 6
+        #define MXY_STATE 7
+        #define XM_STATE 8
+        #define XY_STATE 9
+        #define XMY_STATE 10
+        #define YM_STATE 11
+        #define YX_STATE 12
+        #define YMX_STATE 13
+
+    #else
+        #define MATCH_STATE 1
+        #define GAP_X_STATE 2
+        #define GAP_Y_STATE 3
+        #define STOP_STATE 4
+    #endif
+
 #endif
 
 

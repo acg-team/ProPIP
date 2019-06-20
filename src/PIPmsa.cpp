@@ -542,8 +542,15 @@ void PIPmsa::_compressLK(std::vector<double> &lk_down_not_compressed){
     log_lk_down_.resize(comprMSAlen);
 
     for(int i=0;i<comprMSAlen;i++){
+
         id_map = rev_map_compressed_seqs_.at(i);
-        log_lk_down_.at(i)=lk_down_not_compressed.at(id_map);
+
+        if(id_map<lk_down_not_compressed.size()){
+            log_lk_down_.at(i)=lk_down_not_compressed.at(id_map);
+        }else{
+            LOG(FATAL) << "\nERROR in _compressLK";
+        }
+
     }
 
 }
