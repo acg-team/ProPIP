@@ -415,6 +415,7 @@ void PIP_AA::updateMatrices() {
 
 }
 
+
 void PIP_AA::setFreqFromData(const SequenceContainer &data, double pseudoCount) {
     std::map<int, int> counts;
     SequenceContainerTools::getCounts(data, counts);
@@ -441,7 +442,6 @@ void PIP_AA::setFreqFromData(const SequenceContainer &data, double pseudoCount) 
                                                                                             TextTools::toString(bpp::VectorTools::sum(freq_), 15) <<
                                                                                             " != [1.0]";
 }
-
 
 PIP_Codon::PIP_Codon(const CodonAlphabet_Extended *alpha, const GeneticCode *gc, SubstitutionModel *basemodel, const SequenceContainer &data,
                      double lambda, double mu, bool initFreqFromData) :

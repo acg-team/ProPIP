@@ -267,11 +267,44 @@ void nodeRAM::DP3D(LKdata &lkdata,
     lkdata.TR[0][0][0] = STOP_STATE;
 
 
-    //***************************************************************************************
-    //printf("\n");
-    //FILE *fid;
-    //fid=fopen("/Users/max/castor/data/output/LK","w");
-    //***************************************************************************************
+    //***************************************************************************
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    /*
+    FILE *fidM;
+    FILE *fidX;
+    FILE *fidY;
+    if(this->_isRootNode()){
+
+        char strM[5];
+        sprintf(strM, "%04d", this->progressivePIP_->getSeed());
+        char* txtM="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/M_";
+        char* sM=(char *)malloc(strlen(txtM)+1+4);
+        strcpy(sM,txtM);
+        strcat(sM,strM);
+
+        char strX[5];
+        sprintf(strX, "%04d", this->progressivePIP_->getSeed());
+        char* txtX="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/X_";
+        char* sX=(char *)malloc(strlen(txtX)+1+4);
+        strcpy(sX,txtX);
+        strcat(sX,strX);
+
+        char strY[5];
+        sprintf(strY, "%04d", this->progressivePIP_->getSeed());
+        char* txtY="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/Y_";
+        char* sY=(char *)malloc(strlen(txtY)+1+4);
+        strcpy(sY,txtY);
+        strcat(sY,strY);
+
+        fidM=fopen(sM,"w");
+        fidX=fopen(sX,"w");
+        fidY=fopen(sY,"w");
+    }
+     */
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    //***************************************************************************
 
     for (int m = 1; m < lkdata.d_; m++) {
 
@@ -472,19 +505,20 @@ void nodeRAM::DP3D(LKdata &lkdata,
                         level_max_lk = m;
                     }
 
+
                     //***********************************************************************
                     // early stop condition
-                    if (curr_best_score < prev_best_score) {
-                        prev_best_score = curr_best_score;
-                        counter_to_early_stop++;
-                        if (counter_to_early_stop > max_decrease_before_stop) {
-                            // if for max_decrease_before_stop consecutive times
-                            // the lk decrease then exit, the maximum lk has been reached
-                            flag_exit = true;
+                        if (curr_best_score < prev_best_score) {
+                            prev_best_score = curr_best_score;
+                            counter_to_early_stop++;
+                            if (counter_to_early_stop > max_decrease_before_stop) {
+                                // if for max_decrease_before_stop consecutive times
+                                // the lk decrease then exit, the maximum lk has been reached
+                                flag_exit = true;
+                            }
+                        } else {
+                            counter_to_early_stop = 0;
                         }
-                    } else {
-                        counter_to_early_stop = 0;
-                    }
                     //***************************************************************************
 
                 }
@@ -492,34 +526,21 @@ void nodeRAM::DP3D(LKdata &lkdata,
         }
 
 
+
+        //***************************************************************************
+        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         /*
-        //***************************************************************************
-        fprintf(fid,"M%d=[\n",m);
-        for (i = 1; i < lkdata.h_; i++) {
-            for (j = 1; j < lkdata.w_; j++) {
-                fprintf(fid,"%8.6lf ",lkdata.Log3DM[m_binary_this][i][j]);
-            }
-            fprintf(fid,"\n");
+        if(this->_isRootNode()) {
+            fprintf(fidM, "%16.14lf\n", lkdata.Log3DM[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
+            fprintf(fidX, "%16.14lf\n", lkdata.Log3DX[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
+            fprintf(fidY, "%16.14lf\n", lkdata.Log3DY[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
         }
-        fprintf(fid,"];\n");
-        fprintf(fid,"X%d=[\n",m);
-        for (i = 1; i < lkdata.h_; i++) {
-            for (j = 1; j < lkdata.w_; j++) {
-                fprintf(fid,"%8.6lf ",lkdata.Log3DX[m_binary_this][i][j]);
-            }
-            fprintf(fid,"\n");
-        }
-        fprintf(fid,"];\n");
-        fprintf(fid,"Y%d=[\n",m);
-        for (i = 1; i < lkdata.h_; i++) {
-            for (j = 1; j < lkdata.w_; j++) {
-                fprintf(fid,"%8.6lf ",lkdata.Log3DY[m_binary_this][i][j]);
-            }
-            fprintf(fid,"\n");
-        }
-        fprintf(fid,"];\n");
-        //***************************************************************************
         */
+        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+        //***************************************************************************
+
 
 
 
@@ -527,7 +548,17 @@ void nodeRAM::DP3D(LKdata &lkdata,
 
 
     //***************************************************************************
-    //fclose(fid);
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    /*
+    if(this->_isRootNode()) {
+        fclose(fidM);
+        fclose(fidX);
+        fclose(fidY);
+    }
+    */
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     //***************************************************************************
 
 
@@ -609,6 +640,18 @@ void nodeRAM::DP3D_PIP_node() {
                                                   lk_emptyL,
                                                   lk_emptyR,
                                                   lk_empty);
+
+
+
+    //==== DEBUG ===============
+    /*
+    FILE *fidp0;
+    fidp0=fopen("/Users/max/PIPjava/state/execs/p0","w");
+    fprintf(fidp0,"%8.6lf\n",pc0.at(0));
+    fclose(fidp0);
+     */
+    //==== DEBUG ===============
+
 
     //***************************************************************************************
     // COMPUTES LOG(PHI(0))
@@ -760,6 +803,12 @@ void nodeRAM::DP3D_PIP_node() {
 
     delete childL_;
     delete childR_;
+
+
+
+#ifdef EXTRA_TR
+    printf("\n");
+#endif
 
 
 }

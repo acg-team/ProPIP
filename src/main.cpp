@@ -829,6 +829,22 @@ int main(int argc, char *argv[]) {
         exit(0);
         */
 
+        /*
+        FILE *fid=fopen("Q.data","w");
+        for(int i=0;i<20;i++){
+            for(int j=0;j<20;j++) {
+                if(i==j){
+                    double val=smodel->getGenerator().operator()(i,j)+smodel->getParameter("mu").getValue();
+
+                    fprintf(fid,"%18.16lf ",val);
+                }else{
+                    fprintf(fid,"%18.16lf ",smodel->getGenerator().operator()(i,j));
+                }
+            }
+            fprintf(fid,"\n");
+        }
+        fclose(fid);
+    */
 
         // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
         pPIP *alignment = nullptr;
@@ -847,8 +863,13 @@ int main(int argc, char *argv[]) {
             std::string PAR_alignment_version = ApplicationTools::getStringParameter("alignment.version",
                                                                                      castorapp.getParams(), "cpu", "",
                                                                                      true, 0);
+
             int PAR_alignment_sbsolutions = ApplicationTools::getIntParameter("alignment.sb_solutions",
                                                                               castorapp.getParams(), 1, "", true, 0);
+
+            double PAR_alignment_sbtemperature = ApplicationTools::getDoubleParameter("alignment.sb_temperature",
+                                                                              castorapp.getParams(), 1.0, "", true, 0);
+
 
             ApplicationTools::displayMessage("\n[Computing the multi-sequence alignment]");
             //ApplicationTools::displayResult("Proportion gappy sites", TextTools::toString(PAR_proportion, 4));
@@ -866,8 +887,8 @@ int main(int argc, char *argv[]) {
             std::vector<tshlib::VirtualNode *> ftn = utree->getPostOrderNodeList();
 
 
-            int num_sb = 0; // number of sub-optimal MSAs
-            double temperature = 100; // temperature for SB version
+            int num_sb;// = 0; // number of sub-optimal MSAs
+            double temperature;// = 1; // temperature for SB version
 
             enumDP3Dversion DPversion = CPU; // DP3D version
 
@@ -879,7 +900,8 @@ int main(int argc, char *argv[]) {
                 num_sb = 1;
             } else if (PAR_alignment_version.find("sb") != std::string::npos) {
                 DPversion = SB;  // stochastic backtracking version
-                num_sb = 4;
+                num_sb = PAR_alignment_sbsolutions;
+                temperature = PAR_alignment_sbtemperature;
             } else {
                 ApplicationTools::displayError("The user specified an unknown alignment.version. "
                                                "The execution will not continue.");

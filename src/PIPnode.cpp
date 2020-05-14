@@ -551,7 +551,34 @@ void PIPnode::_alignStateMatrices2D(PIPmsa *msaL,
 //    std::cout<<"\n";
     //==== DEBUG ===============
 
+    //==== DEBUG ===============
+    /*
+    FILE *fidM;
+    FILE *fidX;
+    FILE *fidY;
+    fidM=fopen("/Users/max/PIPjava/state/execs/2DM","w");
+    fidX=fopen("/Users/max/PIPjava/state/execs/2DX","w");
+    fidY=fopen("/Users/max/PIPjava/state/execs/2DY","w");
+    for (i = 0; i < lkdata.h_compr_; i++) {
+        for (j = 0; j < lkdata.w_compr_; j++) {
+            fprintf(fidM,"%8.6lf ",lkdata.Log2DM_fp[i][j]);
+        }
+        fprintf(fidM,"\n");
+    }
 
+    for (i = 0; i < lkdata.h_compr_; i++) {
+            fprintf(fidX,"%8.6lf\n",lkdata.Log2DX_fp[i]);
+    }
+
+    for (j = 0; j < lkdata.w_compr_; j++) {
+            fprintf(fidY,"%8.6lf\n",lkdata.Log2DY_fp[j]);
+    }
+
+    fclose(fidM);
+    fclose(fidX);
+    fclose(fidY);
+    */
+    //==== DEBUG ===============
 
 
 
