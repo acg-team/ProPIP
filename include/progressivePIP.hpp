@@ -64,7 +64,7 @@
 
 
 
-#define STFT 1
+//#define STFT 1
 //#define COMPRESS_TR 1
 //#define EXTRA_TR 1
 //#define TR_GAP 1
