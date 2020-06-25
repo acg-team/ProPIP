@@ -74,6 +74,8 @@
 #include <Bpp/Seq/Alphabet/AlphabetTools.h>
 #include <Bpp/Seq/App/SequenceApplicationTools.h>
 
+#include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
+
 /*
 * From PhylLib:
 */
@@ -125,6 +127,15 @@ using namespace tshlib;
 #include "progressivePIP.hpp"
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
+#include "inference_indel_rates.hpp"
+
+/*
+* From GSL:
+*/
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_multifit_nlinear.h>
 
 int main(int argc, char *argv[]) {
 
@@ -391,7 +402,7 @@ int main(int argc, char *argv[]) {
                                            mu, false);
                     ApplicationTools::displayWarning(
                             "Codon models are experimental in the current version... use with caution!");
-                    DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
+                    DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
                 }
 
             }
@@ -540,6 +551,49 @@ int main(int argc, char *argv[]) {
 
         } else throw Exception("Unknown init tree method.");
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //======================================================================================================
+        // Infere indel rates from pairwise alignment
+        double lambda;
+        double mu;
+        lambda = (modelMap.find("lambda") == modelMap.end()) ? 0.0 : std::stod(modelMap["lambda"]);
+        mu = (modelMap.find("mu") == modelMap.end()) ? 0.0 : std::stod(modelMap["mu"]);
+        if(lambda==0.0 || mu==0.0){
+            inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
+                                                                     PAR_Alphabet,
+                                                                     tree,
+                                                                     &lambda,
+                                                                     &mu);
+        }
+        //======================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // If the tree has multifurcation, then resolve it with midpoint rooting
         auto ttree_ = new TreeTemplate<Node>(*tree);
         if (ttree_->getRootNode()->getNumberOfSons() > 2) {
@@ -624,8 +678,8 @@ int main(int argc, char *argv[]) {
         bpp::SubstitutionModel *smodel = nullptr;
         bpp::TransitionModel *model = nullptr;
 
-        double lambda;
-        double mu;
+        //double lambda;
+        //double mu;
         bool estimatePIPparameters = false;
 
         // Instantiate a substitution model and extend it with PIP
@@ -684,14 +738,8 @@ int main(int argc, char *argv[]) {
 
             if (estimatePIPparameters) {
 
-//                if (PAR_alignment) {
-//                    lambda = bpp::estimateLambdaFromData(tree, sequences, PAR_proportion);
-//                    mu = bpp::estimateMuFromData(tree, PAR_proportion);
-//
-//                } else {
                 lambda = bpp::estimateLambdaFromData(tree, sites);
                 mu = bpp::estimateMuFromData(tree, sites);
-                //}
 
                 DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<
                            lambda << ",mu=" << mu << "," "I=" << lambda * mu << ")";
