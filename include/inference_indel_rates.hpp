@@ -82,9 +82,13 @@ namespace inference_indel_rates{
                                            std::string PAR_Alphabet,
                                            bpp::Tree *tree,
                                            double *lambda_from_pairs,
+<<<<<<< HEAD
                                            double *mu_from_pairs,
                                            const bpp::GeneticCode*  gCode,
                                            std::map<std::string, std::string> modelMap);
+=======
+                                           double *mu_from_pairs);
+>>>>>>> indel_rates_inference
 
 }
 

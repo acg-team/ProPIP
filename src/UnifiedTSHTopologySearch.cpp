@@ -187,9 +187,23 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 //  {
 //        for (int i=r.begin(); i<r.end(); ++i){
 #else
+
+
+
+
+
 	for (i = 0; i < candidateMoves->getNumberOfMoves(); i++) {
-#endif   
-        // ------------------------------------
+#endif
+
+
+        // @MAX
+        //std::cout<<this->getUtree()->printTreeNewick(false,true);
+        //std::cout<<std::endl;
+
+
+
+
+	    // ------------------------------------
         // Get the number of the thread
 #ifdef USE_OPENMP
         thread_id = omp_get_thread_num();
@@ -229,6 +243,15 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
         // ------------------------------------
         // Apply the move
         status = candidateMoves->applyMove(i, (*_thread__topology));
+
+
+
+
+        // @MAX
+        //std::cout<<_thread__topology->printTreeNewick(false,true);
+        //std::cout<<std::endl;
+
+
 
         if (status) {
 

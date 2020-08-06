@@ -269,6 +269,13 @@ if (STATIC GREATER 0)
     target_link_libraries(Castor ${BPP_LIBS_STATIC})
     target_link_libraries(Castor ${Boost_LIBRARIES})
     target_link_libraries(Castor ${OpenMP_CXX_LIBRARIES_STATIC})
+
+    # GSL
+    find_package(GSL REQUIRED)
+    message("Libraries: ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES}")
+    include_directories(Castor ${GSL_INCLUDE_DIR})
+    target_link_libraries(Castor ${GSL_LIBRARIES})
+
 else ()
 
     target_link_libraries(Castor tshlib)
@@ -277,6 +284,13 @@ else ()
     target_link_libraries(Castor ${BPP_LIBS_SHARED})
     target_link_libraries(Castor ${Boost_LIBRARIES})
     target_link_libraries(Castor ${OpenMP_CXX_LIBRARIES})
+
+    # GSL
+    find_package(GSL REQUIRED)
+    message("Libraries: ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES}")
+    include_directories(Castor ${GSL_INCLUDE_DIR})
+    target_link_libraries(Castor ${GSL_LIBRARIES})
+
 endif()
 
 include (CTest)

@@ -725,6 +725,70 @@ void nodeRAM::DP3D_PIP_node() {
         state = lkdata.TR[lev][i][j];
 #endif
 
+#ifdef EXTRA_TR
+        printf("%d ",state);
+#endif
+
+#ifdef EXTRA_TR
+
+        switch (state) {
+            case MATCH_STATE:
+            case MX_STATE:
+            case MY_STATE:
+            case MXY_STATE:
+
+
+
+                idmL = map_compr_L->at(i - 1);
+                idmR = map_compr_R->at(j - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_M[idmL][idmR];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_M[idmL][idmR];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DM[idmL][idmR];
+
+                i = i - 1;
+                j = j - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) MATCH_STATE;
+
+                break;
+            case GAP_X_STATE:
+            case XM_STATE:
+            case XY_STATE:
+            case XMY_STATE:
+                idmL = map_compr_L->at(i - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_X[idmL];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_X[idmL];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DX[idmL];
+
+                i = i - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) GAP_X_STATE;
+
+                break;
+            case GAP_Y_STATE:
+            case YX_STATE:
+            case YM_STATE:
+            case YMX_STATE:
+                idmR = map_compr_R->at(j - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_Y[idmR];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_Y[idmR];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DY[idmR];
+
+                j = j - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) GAP_Y_STATE;
+
+                break;
+            default:
+                LOG(FATAL) << "\nSomething went wrong during the alignment reconstruction in function "
+                              "pPIP::DP3D_PIP. Check call stack below.";
+        }
+
+#else
+
         switch (state) {
             case MATCH_STATE:
 
@@ -771,6 +835,9 @@ void nodeRAM::DP3D_PIP_node() {
                 LOG(FATAL) << "\nSomething went wrong during the alignment reconstruction in function "
                               "pPIP::DP3D_PIP. Check call stack below.";
         }
+
+#endif
+
     }
     //***************************************************************************************
     // BUILD NEW MSA
@@ -787,6 +854,15 @@ void nodeRAM::DP3D_PIP_node() {
     //***************************************************************************************
     // COMPRESS INFO
     //***************************************************************************************
+
+#ifdef STFT
+
+    MSA_->getMSA()->log_lk_down_ = lk_down_not_compressed;
+    MSA_->getMSA()->fv_data_ = fv_data_not_compressed;
+    MSA_->getMSA()->fv_sigma_ = fv_sigma_not_compressed;
+
+#else
+
     // compress the MSA
     MSA_->getMSA()->_compressMSA(progressivePIP_->alphabet_);
 
@@ -794,6 +870,8 @@ void nodeRAM::DP3D_PIP_node() {
     MSA_->getMSA()->_compressLK(lk_down_not_compressed);
     MSA_->getMSA()->_compressFv(fv_data_not_compressed);
     MSA_->getMSA()->_compressFvSigma(fv_sigma_not_compressed);
+
+#endif
     //***************************************************************************************
     // FREE MEMORY
     //***************************************************************************************
@@ -823,8 +901,6 @@ PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
 
     R->MSA_->getMSA(0)->fv_empty_sigma_ = ref->MSA_->getMSA(0)->fv_empty_sigma_;
 
-    R->MSA_->getMSA(0)->rev_map_compressed_seqs_ = ref->MSA_->getMSA(0)->rev_map_compressed_seqs_;
-
     R->MSA_->getMSA(0)->seqNames_ = ref->MSA_->getMSA(0)->seqNames_;
 
     R->prNode_ = ref->prNode_;
@@ -836,11 +912,15 @@ PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
     R->MSA_->getMSA(0)->fv_data_ = ref->MSA_->getMSA(0)->fv_data_;
 
     //-------------------------------------------------------------//
+    /*
     R->MSA_->getMSA(0)->map_compressed_seqs_.insert(\
     R->MSA_->getMSA(0)->map_compressed_seqs_.end(),\
     ref->MSA_->getMSA(0)->map_compressed_seqs_.begin()+delta,
     ref->MSA_->getMSA(0)->map_compressed_seqs_.begin()+delta+len);
 
+    R->MSA_->getMSA(0)->rev_map_compressed_seqs_ = ref->MSA_->getMSA(0)->rev_map_compressed_seqs_;
+     */
+    //-------------------------------------------------------------//
     R->MSA_->getMSA(0)->traceback_path_.insert(\
     R->MSA_->getMSA(0)->traceback_path_.end(),\
     ref->MSA_->getMSA(0)->traceback_path_.begin()+delta,
@@ -850,6 +930,10 @@ PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
     R->MSA_->getMSA(0)->msa_.end(),\
     ref->MSA_->getMSA(0)->msa_.begin()+delta,
     ref->MSA_->getMSA(0)->msa_.begin()+delta+len);
+
+
+    //-------------------------------------------------------------//
+    R->MSA_->getMSA(0)->_compressMSA(this->progressivePIP_->alphabet_);
     //-------------------------------------------------------------//
 
     return R;

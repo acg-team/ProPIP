@@ -650,11 +650,37 @@ bool PIPnode::_index_of_max(double m,
                 // the state is selected with a uniform random
                 // distribution with 50% probability each
                 if (random_number < (1.0 / 2.0)) {
+
+
+#ifdef TR_GAP
+                    index = int(GAP_Y_STATE);
+
+#else
+
+#ifdef EXTRA_TR
+                    index = int(MY_STATE);
+#else
                     index = int(MATCH_STATE);
+#endif
+
+#endif
+
                     val = m;
                     return true;
                 } else {
+
+#ifdef TR_GAP
                     index = int(GAP_Y_STATE);
+#else
+
+#ifdef EXTRA_TR
+                    index = int(YM_STATE);
+#else
+                    index = int(GAP_Y_STATE);
+#endif
+
+#endif
+
                     val = y;
                     return true;
                 }
@@ -681,11 +707,23 @@ bool PIPnode::_index_of_max(double m,
                 // the state is selected with a uniform random
                 // distribution with 50% probability each
                 if (random_number < (1.0 / 2.0)) {
+
+#ifdef EXTRA_TR
+                    index = int(XY_STATE);
+#else
                     index = int(GAP_X_STATE);
+#endif
+
                     val = x;
                     return true;
                 } else {
+
+#ifdef EXTRA_TR
+                    index = int(YX_STATE);
+#else
                     index = int(GAP_Y_STATE);
+#endif
+
                     val = y;
                     return true;
                 }
@@ -705,11 +743,35 @@ bool PIPnode::_index_of_max(double m,
             // the state is selected with a uniform random
             // distribution with 50% probability each
             if (random_number < (1.0 / 2.0)) {
+
+#ifdef TR_GAP
+                index = int(GAP_X_STATE);
+#else
+
+#ifdef EXTRA_TR
+                index = int(MX_STATE);
+#else
                 index = int(MATCH_STATE);
+#endif
+
+#endif
+
                 val = m;
                 return true;
             } else {
+
+#ifdef TR_GAP
                 index = int(GAP_X_STATE);
+#else
+
+#ifdef EXTRA_TR
+                index = int(XM_STATE);
+#else
+                index = int(GAP_X_STATE);
+#endif
+
+#endif
+
                 val = x;
                 return true;
             }
@@ -724,19 +786,52 @@ bool PIPnode::_index_of_max(double m,
                 // the state is selected with a uniform random
                 // distribution with 1/3 probability each
                 random_number = distribution(generator);
+
+
+#ifdef TR_GAP
+                if (random_number < (1.0 / 2.0)) {
+                    index = int(GAP_X_STATE);
+                }else{
+                    index = int(GAP_Y_STATE);
+                }
+#else
+
+
                 if (random_number < (1.0 / 3.0)) {
+
+#ifdef EXTRA_TR
+                    index = int(MXY_STATE);
+#else
                     index = int(MATCH_STATE);
+#endif
+
                     val = m;
                     return true;
                 } else if (random_number < (2.0 / 3.0)) {
+
+#ifdef EXTRA_TR
+                    index = int(XMY_STATE);
+#else
                     index = int(GAP_X_STATE);
+#endif
+
                     val = x;
                     return true;
                 } else {
+
+#ifdef EXTRA_TR
+                    index = int(YMX_STATE);
+#else
                     index = int(GAP_Y_STATE);
+#endif
+
                     val = y;
                     return true;
                 }
+
+#endif
+
+
             } else {
                 LOG(FATAL) << "\nSomething went wrong during the comparison in function "
                               "pPIP::_index_of_max. Check call stack below.";

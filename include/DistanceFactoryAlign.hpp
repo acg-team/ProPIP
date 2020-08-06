@@ -45,6 +45,7 @@
 #ifndef CASTOR_DISTANCEFACTORYALIGN_HPP
 #define CASTOR_DISTANCEFACTORYALIGN_HPP
 
+<<<<<<< HEAD
 #include "DistanceFactory.hpp"
 #include "DistanceFactoryML.hpp"
 #include <glog/logging.h>
@@ -111,4 +112,6 @@ namespace DistanceFactoryPrographMSA {
 
 }
 
+=======
+>>>>>>> indel_rates_inference
 #endif //CASTOR_DISTANCEFACTORYALIGN_HPP

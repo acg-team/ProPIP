@@ -127,20 +127,6 @@ using namespace tshlib;
 #include "progressivePIP.hpp"
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
-#include "inference_indel_rates.hpp"
-
-/*
-* From GSL:
-*/
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_multifit_nlinear.h>
-
-#include "DistanceFactory.hpp"
-#include "DistanceFactoryAngle.hpp"
-#include "DistanceFactoryAlign.hpp"
-#include "DistanceFactoryPrealigned.hpp"
 
 int main(int argc, char *argv[]) {
 
@@ -351,74 +337,9 @@ int main(int argc, char *argv[]) {
                 auto *bionj = new BioNJ();
                 bionj->outputPositiveLengths(true);
                 distMethod = bionj;
-            } else if (token == "distmatrix") {
-                // Use a distance matrix provided by the user
-                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
-                std::string PAR_distance_matrix;
-                try {
-                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
-                                                                         castorapp.getParams(), true, true, "", false,
-                                                                         "",
-                                                                         0);
-                } catch (bpp::Exception &e) {
-                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
-                }
-
-                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
-                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
-                bpp::BioNJ bionj(*distances, true, true, false);
-                tree = bionj.getTree();
-            }else if(token == "infere_distance_matrix"){
-
-                int ALPHABET_DIM;
-                int K;
-                bool mldist_flag=true;
-                bool mldist_gap_flag=false;
-                double cutoff_dist=1.0;
-                double indel_rate=1.0;
-
-                if (PAR_Alphabet.find("DNA") != std::string::npos) {
-                    ALPHABET_DIM=4;
-                    K=6;
-                }else if (PAR_Alphabet.find("Protein") != std::string::npos) {
-                    ALPHABET_DIM=20;
-                    K=2;
-                }else if(PAR_Alphabet.find("Codon") != std::string::npos) {
-                    ALPHABET_DIM=60;
-                    K=2;
-                }
-
-                DistanceFactoryPrographMSA::DistanceFactory *dist_factory_angle = new DistanceFactoryPrographMSA::DistanceFactoryAngle(ALPHABET_DIM,K);
-
-                DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(sequences,
-                                                                                                            ALPHABET_DIM,
-                                                                                                            K,
-                                                                                                            mldist_flag,
-                                                                                                            mldist_gap_flag,
-                                                                                                            cutoff_dist,
-                                                                                                            indel_rate);
-
-                bpp::DistanceMatrix *dist_ = new DistanceMatrix(sequences->getSequencesNames());
-
-                for(int iii=0;iii<sequences->getNumberOfSequences();iii++){
-                    for(int jjj=0;jjj<sequences->getNumberOfSequences();jjj++){
-                        (*dist_)(iii,jjj) = ( abs(dist_ml.distances(iii,jjj)) < DISTCUTOFF ? 0.0: abs(dist_ml.distances(iii,jjj)) );
-                    }
-                }
-
-                bpp::DistanceMethod *distMethod = nullptr;
-                auto *bionj = new BioNJ();
-                bionj->outputPositiveLengths(true);
-                distMethod = bionj;
-                distMethod->setDistanceMatrix(*dist_);
-                distMethod->computeTree();
-                tree = distMethod->getTree();
-
-                delete dist_factory_angle;
-                delete dist_;
-                delete bionj;
-
             } else throw Exception("Unknown tree reconstruction method.");
+
+            //if (!PAR_alignment) {
 
             // Compute bioNJ tree using the GTR model
             map<std::string, std::string> parmap;
