@@ -74,6 +74,8 @@
 #include <Bpp/Seq/Alphabet/AlphabetTools.h>
 #include <Bpp/Seq/App/SequenceApplicationTools.h>
 
+#include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
+
 /*
 * From PhylLib:
 */
@@ -125,6 +127,20 @@ using namespace tshlib;
 #include "progressivePIP.hpp"
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
+#include "inference_indel_rates.hpp"
+
+/*
+* From GSL:
+*/
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_multifit_nlinear.h>
+
+#include "DistanceFactory.hpp"
+#include "DistanceFactoryAngle.hpp"
+#include "DistanceFactoryAlign.hpp"
+#include "DistanceFactoryPrealigned.hpp"
 
 int main(int argc, char *argv[]) {
 
@@ -166,6 +182,9 @@ int main(int argc, char *argv[]) {
         KeyvalTools::parseProcedure(PAR_model_substitution, modelStringName, modelMap);
         bool PAR_model_indels = modelStringName == "PIP";
 
+
+        double lambda;
+        double mu;
 
         /* ***************************************************
          * Standard workflow
@@ -332,9 +351,74 @@ int main(int argc, char *argv[]) {
                 auto *bionj = new BioNJ();
                 bionj->outputPositiveLengths(true);
                 distMethod = bionj;
-            } else throw Exception("Unknown tree reconstruction method.");
+            } else if (token == "distmatrix") {
+                // Use a distance matrix provided by the user
+                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
+                std::string PAR_distance_matrix;
+                try {
+                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
+                                                                         castorapp.getParams(), true, true, "", false,
+                                                                         "",
+                                                                         0);
+                } catch (bpp::Exception &e) {
+                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
+                }
 
-            //if (!PAR_alignment) {
+                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
+                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
+                bpp::BioNJ bionj(*distances, true, true, false);
+                tree = bionj.getTree();
+            }else if(token == "infere_distance_matrix"){
+
+                int ALPHABET_DIM;
+                int K;
+                bool mldist_flag=true;
+                bool mldist_gap_flag=false;
+                double cutoff_dist=1.0;
+                double indel_rate=1.0;
+
+                if (PAR_Alphabet.find("DNA") != std::string::npos) {
+                    ALPHABET_DIM=4;
+                    K=6;
+                }else if (PAR_Alphabet.find("Protein") != std::string::npos) {
+                    ALPHABET_DIM=20;
+                    K=2;
+                }else if(PAR_Alphabet.find("Codon") != std::string::npos) {
+                    ALPHABET_DIM=60;
+                    K=2;
+                }
+
+                DistanceFactoryPrographMSA::DistanceFactory *dist_factory_angle = new DistanceFactoryPrographMSA::DistanceFactoryAngle(ALPHABET_DIM,K);
+
+                DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(sequences,
+                                                                                                            ALPHABET_DIM,
+                                                                                                            K,
+                                                                                                            mldist_flag,
+                                                                                                            mldist_gap_flag,
+                                                                                                            cutoff_dist,
+                                                                                                            indel_rate);
+
+                bpp::DistanceMatrix *dist_ = new DistanceMatrix(sequences->getSequencesNames());
+
+                for(int iii=0;iii<sequences->getNumberOfSequences();iii++){
+                    for(int jjj=0;jjj<sequences->getNumberOfSequences();jjj++){
+                        (*dist_)(iii,jjj) = ( abs(dist_ml.distances(iii,jjj)) < DISTCUTOFF ? 0.0: abs(dist_ml.distances(iii,jjj)) );
+                    }
+                }
+
+                bpp::DistanceMethod *distMethod = nullptr;
+                auto *bionj = new BioNJ();
+                bionj->outputPositiveLengths(true);
+                distMethod = bionj;
+                distMethod->setDistanceMatrix(*dist_);
+                distMethod->computeTree();
+                tree = distMethod->getTree();
+
+                delete dist_factory_angle;
+                delete dist_;
+                delete bionj;
+
+            } else throw Exception("Unknown tree reconstruction method.");
 
             // Compute bioNJ tree using the GTR model
             map<std::string, std::string> parmap;
@@ -373,8 +457,21 @@ int main(int argc, char *argv[]) {
                                                                                       false, 0);
                 }
 
-                double lambda = (modelMap.find("lambda") == modelMap.end()) ? 0.1 : std::stod(modelMap["lambda"]);
-                double mu = (modelMap.find("mu") == modelMap.end()) ? 0.2 : std::stod(modelMap["mu"]);
+
+                if(modelMap.find("lambda") == modelMap.end() || modelMap.find("mu") == modelMap.end()){
+
+                    inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
+                                                                             PAR_Alphabet,
+                                                                             tree,
+                                                                             &lambda,
+                                                                             &mu,
+                                                                             gCode.get(),
+                                                                             modelMap);
+
+                }else{
+                    lambda = std::stod(modelMap["lambda"]);
+                    mu = std::stod(modelMap["mu"]);
+                }
 
                 // Instatiate the corrisponding PIP model given the alphabet
                 if (PAR_Alphabet.find("DNA") != std::string::npos &&
@@ -391,7 +488,7 @@ int main(int argc, char *argv[]) {
                                            mu, false);
                     ApplicationTools::displayWarning(
                             "Codon models are experimental in the current version... use with caution!");
-                    DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
+                    DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
                 }
 
             }
@@ -502,10 +599,13 @@ int main(int argc, char *argv[]) {
                                                               tolerance, nbEvalMax, profiler, messenger,
                                                               optVerbose);
 
-            } else {
+            }
+
+            /*
+            else {
                 // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
 
-
+                // LORENZO version
                 distEstimation.computeMatrix();
                 DistanceMatrix *dm = distEstimation.getMatrix();
                 distMethod->setDistanceMatrix((*dm));
@@ -514,6 +614,7 @@ int main(int argc, char *argv[]) {
                 std::cout << std::endl;
 
             }
+            */
 
             delete sitesDistMethod;
             delete distMethod;
@@ -539,6 +640,7 @@ int main(int argc, char *argv[]) {
 //            }
 
         } else throw Exception("Unknown init tree method.");
+
 
         // If the tree has multifurcation, then resolve it with midpoint rooting
         auto ttree_ = new TreeTemplate<Node>(*tree);
@@ -624,8 +726,6 @@ int main(int argc, char *argv[]) {
         bpp::SubstitutionModel *smodel = nullptr;
         bpp::TransitionModel *model = nullptr;
 
-        double lambda;
-        double mu;
         bool estimatePIPparameters = false;
 
         // Instantiate a substitution model and extend it with PIP
@@ -660,8 +760,6 @@ int main(int argc, char *argv[]) {
                 modelMap["model"] = baseModel;
             }
 
-            //}
-
             // Instantiation of the canonical substitution model
             if (PAR_Alphabet.find("Codon") != std::string::npos || PAR_Alphabet.find("Protein") != std::string::npos) {
                 smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetNoGaps, gCode.get(), sites,
@@ -684,17 +782,27 @@ int main(int argc, char *argv[]) {
 
             if (estimatePIPparameters) {
 
-//                if (PAR_alignment) {
-//                    lambda = bpp::estimateLambdaFromData(tree, sequences, PAR_proportion);
-//                    mu = bpp::estimateMuFromData(tree, PAR_proportion);
-//
-//                } else {
-                lambda = bpp::estimateLambdaFromData(tree, sites);
-                mu = bpp::estimateMuFromData(tree, sites);
-                //}
+                //lambda = bpp::estimateLambdaFromData(tree, sites);
+                //mu = bpp::estimateMuFromData(tree, sites);
+
+
+                inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
+                                                                         PAR_Alphabet,
+                                                                         tree,
+                                                                         &lambda,
+                                                                         &mu,
+                                                                         gCode.get(),
+                                                                         modelMap);
+
 
                 DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<
                            lambda << ",mu=" << mu << "," "I=" << lambda * mu << ")";
+
+
+
+
+
+
 
             } else {
                 lambda = (modelMap.find("lambda") == modelMap.end()) ? 0.1 : std::stod(modelMap["lambda"]);
@@ -727,26 +835,26 @@ int main(int argc, char *argv[]) {
                     DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
                 }
             } else {
-            if (PAR_Alphabet.find("DNA") != std::string::npos && PAR_Alphabet.find("Codon") == std::string::npos) {
+                if (PAR_Alphabet.find("DNA") != std::string::npos && PAR_Alphabet.find("Codon") == std::string::npos) {
 
-                smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabet), smodel, *sites, lambda, mu,
-                                     computeFrequenciesFromData);
+                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabet), smodel, *sites, lambda, mu,
+                                         computeFrequenciesFromData);
 
-            } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
+                } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
 
-                smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabet), smodel, *sites, lambda, mu,
-                                    computeFrequenciesFromData);
+                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabet), smodel, *sites, lambda, mu,
+                                        computeFrequenciesFromData);
 
-            } else if (PAR_Alphabet.find("Codon") != std::string::npos) {
+                } else if (PAR_Alphabet.find("Codon") != std::string::npos) {
 
-                smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabet), gCode.get(), smodel,
-                                       *sites, lambda, mu,
-                                       computeFrequenciesFromData);
+                    smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabet), gCode.get(), smodel,
+                                           *sites, lambda, mu,
+                                           computeFrequenciesFromData);
 
-                ApplicationTools::displayWarning(
-                        "Codon models are experimental in the current version... use with caution!");
-                DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
-            }
+                    ApplicationTools::displayWarning(
+                            "Codon models are experimental in the current version... use with caution!");
+                    DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
+                }
             }
 
         } else {
@@ -800,62 +908,14 @@ int main(int argc, char *argv[]) {
         }
 
         //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
         // ********  3D DP PIP  ************************************************************************************
         //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-
-
-        /*
-        FILE *fid = fopen("/Users/max/castor/data/WAG_Q","w");
-        for(int i=0;i<21;i++){
-            for(int j=0;j<21;j++){
-                fprintf(fid,"%18.16lf ",smodel->getGenerator()(i,j));
-            }
-            fprintf(fid,"\n");
-        }
-        fclose(fid);
-
-        fid = fopen("/Users/max/castor/data/WAG_Pi","w");
-        for(int i=0;i<21;i++) {
-            fprintf(fid,"%18.16lf\n",smodel->getFrequencies()[i]);
-        }
-        fclose(fid);
-
-        exit(0);
-        */
-
-        /*
-        FILE *fid=fopen("Q.data","w");
-        for(int i=0;i<20;i++){
-            for(int j=0;j<20;j++) {
-                if(i==j){
-                    double val=smodel->getGenerator().operator()(i,j)+smodel->getParameter("mu").getValue();
-
-                    fprintf(fid,"%18.16lf ",val);
-                }else{
-                    fprintf(fid,"%18.16lf ",smodel->getGenerator().operator()(i,j));
-                }
-            }
-            fprintf(fid,"\n");
-        }
-        fclose(fid);
-    */
 
         // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
         pPIP *alignment = nullptr;
         progressivePIP *proPIP = nullptr;
 
-
-
         if (PAR_alignment) {
-
-            //std::string PAR_output_file_lk = ApplicationTools::getAFilePath("output.lk.file", castorapp.getParams(), false,
-            //                                                                false, "", true, "", 1);
 
             std::string PAR_output_file_msa = ApplicationTools::getAFilePath("output.msa.file", castorapp.getParams(), false,
                                                                              false, "", true, "", 1);
@@ -872,7 +932,6 @@ int main(int argc, char *argv[]) {
 
 
             ApplicationTools::displayMessage("\n[Computing the multi-sequence alignment]");
-            //ApplicationTools::displayResult("Proportion gappy sites", TextTools::toString(PAR_proportion, 4));
             ApplicationTools::displayResult("Aligner optimised for:", PAR_alignment_version);
 
             ApplicationTools::displayBooleanResult("Stochastic backtracking active", PAR_alignment_sbsolutions > 1);
@@ -887,8 +946,8 @@ int main(int argc, char *argv[]) {
             std::vector<tshlib::VirtualNode *> ftn = utree->getPostOrderNodeList();
 
 
-            int num_sb;// = 0; // number of sub-optimal MSAs
-            double temperature;// = 1; // temperature for SB version
+            int num_sb = 1;         // number of sub-optimal MSAs
+            double temperature = 0; // temperature for SB version
 
             enumDP3Dversion DPversion = CPU; // DP3D version
 
@@ -951,12 +1010,6 @@ int main(int argc, char *argv[]) {
 
 
         }
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
-        //**********************************************************************************************************
         //**********************************************************************************************************
         //**********************************************************************************************************
 
@@ -1107,14 +1160,6 @@ int main(int argc, char *argv[]) {
 
         /////////////////////////
         // OUTPUT
-
-        // Export final alignment
-//        if (PAR_output_file_msa.find("none") == std::string::npos) {
-//            ApplicationTools::displayResult("\n\nOutput alignment to file", PAR_output_file_msa);
-//            DLOG(INFO) << "[Output alignment]\t The final alignment can be found in " << PAR_output_file_msa;
-//            bpp::Fasta seqWriter;
-//            seqWriter.writeAlignment(PAR_output_file_msa, *sites, true);
-//        }
 
         delete sequences;
 

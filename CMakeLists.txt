@@ -242,9 +242,12 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 # Files to compile
 file(GLOB SOURCES src/*.cpp src/*.cc)
 file(GLOB HEADERS include/*.hpp include/*.h)
-add_executable(Castor ${SOURCES} ${HEADERS})
+add_executable(Castor ${SOURCES} ${HEADERS} include/DistanceFactory.hpp src/DistanceFactory.cpp include/DistanceFactoryML.hpp include/DistanceFactoryAlign.hpp include/DistanceFactoryAngle.hpp include/DistanceFactoryPrealigned.hpp src/DistanceFactoryAngle.cpp src/DistanceFactoryML.cpp src/DistanceFactoryPrealigned.cpp src/DistanceFactoryAlign.cpp)
 set_target_properties(Castor PROPERTIES PUBLIC_HEADER "${HEADERS}")
 
+# EIGEN3
+SET(EIGEN_INCLUDE_DIR "/usr/local/include/eigen3/" CACHE STRING "path to libEigen3 headers")
+message(STATUS "EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
 
 if (STATIC GREATER 0)
     message(STATUS "Compilation will produce a static executable")
