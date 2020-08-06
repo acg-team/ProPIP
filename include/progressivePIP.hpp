@@ -64,10 +64,8 @@
 
 
 
-//#define STFT 1
+//#define STFT
 //#define COMPRESS_TR 1
-//#define EXTRA_TR 1
-//#define TR_GAP 1
 
 #ifdef COMPRESS_TR
     #define STOP_STATE  0b00000000
