@@ -1,0 +1,8 @@
+//
+// Created by Massimo Maiolo on 2020-07-27.
+//
+
+#ifndef CASTOR_DISTANCEFACTORYML_HPP
+#define CASTOR_DISTANCEFACTORYML_HPP
+
+#endif //CASTOR_DISTANCEFACTORYML_HPP
