@@ -45,7 +45,6 @@
 #ifndef CASTOR_DISTANCEFACTORYANGLE_HPP
 #define CASTOR_DISTANCEFACTORYANGLE_HPP
 
-<<<<<<< HEAD
 #include "DistanceFactory.hpp"
 
 namespace DistanceFactoryPrographMSAutils {
@@ -88,6 +87,4 @@ namespace DistanceFactoryPrographMSA {
 
 }
 
-=======
->>>>>>> indel_rates_inference
 #endif //CASTOR_DISTANCEFACTORYANGLE_HPP

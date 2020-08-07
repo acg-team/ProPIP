@@ -45,7 +45,6 @@
 #ifndef CASTOR_DISTANCEFACTORYPREALIGNED_HPP
 #define CASTOR_DISTANCEFACTORYPREALIGNED_HPP
 
-<<<<<<< HEAD
 #include "DistanceFactoryML.hpp"
 
 namespace DistanceFactoryPrographMSA {
@@ -79,6 +78,4 @@ namespace DistanceFactoryPrographMSA {
 
 }
 
-=======
->>>>>>> indel_rates_inference
 #endif //CASTOR_DISTANCEFACTORYPREALIGNED_HPP

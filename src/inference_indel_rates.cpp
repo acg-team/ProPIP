@@ -77,7 +77,6 @@
 #include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
 #include <Bpp/Seq/AlphabetIndex/GranthamAAChemicalDistance.h>
 
-<<<<<<< HEAD
 #include <Bpp/Phyl/Tree.h>
 #include <Bpp/Phyl/TreeTools.h>
 #include <Bpp/Phyl/Node.h>
@@ -95,11 +94,6 @@
 
 #include <Bpp/Phyl/Distance/BioNJ.h>
 
-=======
-#include <Bpp/Phyl/TreeTools.h>
-#include <Bpp/Phyl/Node.h>
-
->>>>>>> indel_rates_inference
 #include <glog/logging.h>
 
 #include "inference_indel_rates.hpp"
@@ -133,7 +127,7 @@ void inference_indel_rates::callback(const size_t iter, void *params,const gsl_m
 }
 
 void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fdf *fdf,
-        gsl_multifit_nlinear_parameters *params,double *lambda_0,double *mu_0){
+                                         gsl_multifit_nlinear_parameters *params,double *lambda_0,double *mu_0){
 
     const gsl_multifit_nlinear_type *T = gsl_multifit_nlinear_trust;
     const size_t max_iter = 200;
@@ -167,13 +161,8 @@ void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fd
     /* store cond(J(x)) */
     gsl_multifit_nlinear_rcond(&rcond, work);
 
-<<<<<<< HEAD
     /*
     // print summary
-=======
-    /* print summary */
-
->>>>>>> indel_rates_inference
     fprintf(stderr, "NITER         = %zu\n", gsl_multifit_nlinear_niter(work));
     fprintf(stderr, "NFEV          = %zu\n", fdf->nevalf);
     fprintf(stderr, "NJEV          = %zu\n", fdf->nevaldf);
@@ -182,12 +171,7 @@ void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fd
     fprintf(stderr, "final cost    = %.12e\n", chisq);
     fprintf(stderr, "final x       = (%.12e, %.12e)\n",gsl_vector_get(x, 0), gsl_vector_get(x, 1));
     fprintf(stderr, "final cond(J) = %.12e\n", 1.0 / rcond);
-<<<<<<< HEAD
     */
-=======
-
-    printf("\n\n");
->>>>>>> indel_rates_inference
 
     *lambda_0 = gsl_vector_get(x, 0);
     *mu_0 = gsl_vector_get(x, 1);
@@ -196,16 +180,12 @@ void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fd
 }
 
 void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_input_sequences,
-        std::string PAR_Alphabet,
-        bpp::Tree *tree,
-        double *lambda_from_pairs,
-<<<<<<< HEAD
-        double *mu_from_pairs,
-        const bpp::GeneticCode*  gCode,
-        std::map<std::string, std::string> modelMap){
-=======
-        double *mu_from_pairs){
->>>>>>> indel_rates_inference
+                                                              std::string PAR_Alphabet,
+                                                              bpp::Tree *tree,
+                                                              double *lambda_from_pairs,
+                                                              double *mu_from_pairs,
+                                                              const bpp::GeneticCode*  gCode,
+                                                              std::map<std::string, std::string> modelMap){
 
     *lambda_from_pairs=0.0;
     *mu_from_pairs=0.0;
@@ -227,11 +207,7 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
 
     std::vector<std::string> seqnames = sequencesCanonical->getSequencesNames();
 
-<<<<<<< HEAD
     double gap_penalty = -10.0;
-=======
-    double gap_penalty = -1.0;
->>>>>>> indel_rates_inference
 
     double count_pairs=0.0;
     for(int i=0;i<seqnames.size()-1;i++){
@@ -241,14 +217,14 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
 
             if (PAR_Alphabet.find("DNA") != std::string::npos ){
                 alignedSeq = bpp::SiteContainerTools::alignNW(sequencesCanonical->getSequence(seqnames.at(i)),
-                                                                                  sequencesCanonical->getSequence(seqnames.at(j)),
-                                                                                  bpp::DefaultNucleotideScore(&bpp::AlphabetTools::DNA_ALPHABET),
-                                                                                  gap_penalty);
+                                                              sequencesCanonical->getSequence(seqnames.at(j)),
+                                                              bpp::DefaultNucleotideScore(&bpp::AlphabetTools::DNA_ALPHABET),
+                                                              gap_penalty);
             } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
                 alignedSeq = bpp::SiteContainerTools::alignNW(sequencesCanonical->getSequence(seqnames.at(i)),
-                                                                                  sequencesCanonical->getSequence(seqnames.at(j)),
-                                                                                  bpp::GranthamAAChemicalDistance(),
-                                                                                  gap_penalty);
+                                                              sequencesCanonical->getSequence(seqnames.at(j)),
+                                                              bpp::GranthamAAChemicalDistance(),
+                                                              gap_penalty);
             } else{
 
             }

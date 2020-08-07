@@ -48,3 +48,29 @@
 #include "DistanceFactoryAngle.hpp"
 #include "DistanceFactoryPrealigned.hpp"
 
+
+using namespace DistanceFactoryPrographMSA;
+
+DistanceFactory *DistanceFactory::getDefault(bpp::SubstitutionModel *smodel, bool prealigned, int ALPHABET_DIM, bool nwdist_flag) {
+    DistanceFactory *dist_factory = NULL;
+    if(!prealigned) {
+        if(nwdist_flag) {
+            dist_factory = new DistanceFactoryAlign(smodel,ALPHABET_DIM);
+        } else {
+
+            int K;
+            if(ALPHABET_DIM==4){
+                K=6;
+            }else if(ALPHABET_DIM==20){
+                K=2;
+            }else{
+                K=2;
+            }
+
+            dist_factory = new DistanceFactoryAngle(ALPHABET_DIM,K);
+        }
+    } else {
+        dist_factory = new DistanceFactoryPrealigned(smodel,ALPHABET_DIM);
+    }
+    return dist_factory;
+}
