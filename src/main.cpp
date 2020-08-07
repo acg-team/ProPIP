@@ -128,6 +128,8 @@ using namespace tshlib;
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
 
+#include "inference_indel_rates.hpp"
+
 int main(int argc, char *argv[]) {
 
     //FLAGS_logtostderr = 1;
