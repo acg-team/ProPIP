@@ -184,8 +184,8 @@ int main(int argc, char *argv[]) {
         bool PAR_model_indels = modelStringName == "PIP";
 
 
-        double lambda;
-        double mu;
+        double lambda = 0;
+        double mu = 0;
 
         /* ***************************************************
          * Standard workflow
@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
                 distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
                 bpp::BioNJ bionj(*distances, true, true, false);
                 tree = bionj.getTree();
-            }else if(token == "infere_distance_matrix") {
+            } else if (token == "infere_distance_matrix") {
 
                 int ALPHABET_DIM;
                 int K;
@@ -389,11 +389,12 @@ int main(int argc, char *argv[]) {
                     K = 2;
                 }
 
-                if (!sequences){
+                if (!sequences) {
                     bpp::Fasta seqReader;
                     sequences = seqReader.readSequences(PAR_input_sequences, alphabet);
                 }
-                DistanceFactoryPrographMSA::DistanceFactory *dist_factory_angle = new DistanceFactoryPrographMSA::DistanceFactoryAngle(ALPHABET_DIM,K);
+                DistanceFactoryPrographMSA::DistanceFactory *dist_factory_angle = new DistanceFactoryPrographMSA::DistanceFactoryAngle(
+                        ALPHABET_DIM, K);
 
                 DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(sequences,
                                                                                                             ALPHABET_DIM,
@@ -405,19 +406,27 @@ int main(int argc, char *argv[]) {
 
                 bpp::DistanceMatrix *dist_ = new DistanceMatrix(sequences->getSequencesNames());
 
-                for(int iii=0;iii<sequences->getNumberOfSequences();iii++){
-                    for(int jjj=0;jjj<sequences->getNumberOfSequences();jjj++){
-                        (*dist_)(iii,jjj) = ( abs(dist_ml.distances(iii,jjj)) < DISTCUTOFF ? 0.0: abs(dist_ml.distances(iii,jjj)) );
+                for (int iii = 0; iii < sequences->getNumberOfSequences(); iii++) {
+                    for (int jjj = 0; jjj < sequences->getNumberOfSequences(); jjj++) {
+                        (*dist_)(iii, jjj) = (abs(dist_ml.distances(iii, jjj)) < DISTCUTOFF ? 0.0 : abs(
+                                dist_ml.distances(iii, jjj)));
                     }
                 }
 
                 bpp::DistanceMethod *distMethod = nullptr;
-                auto *bionj = new BioNJ();
+                auto *bionj = new BioNJ(true, true, false);
                 bionj->outputPositiveLengths(true);
                 distMethod = bionj;
                 distMethod->setDistanceMatrix(*dist_);
                 distMethod->computeTree();
                 tree = distMethod->getTree();
+
+
+
+
+                //PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
+
+
 
                 delete dist_factory_angle;
                 delete dist_;
@@ -425,224 +434,233 @@ int main(int argc, char *argv[]) {
 
             } else throw Exception("Unknown tree reconstruction method.");
 
-            //if (!PAR_alignment) {
+            //----------------------------------------------------------------
+            //m@x
+            if (false) {
 
-            // Compute bioNJ tree using the GTR model
-            map<std::string, std::string> parmap;
+                // Compute bioNJ tree using the GTR model
+                map<std::string, std::string> parmap;
 
-            VectorSiteContainer *allSites;
-            VectorSiteContainer *sitesDistMethod;
-            bpp::Alphabet *alphabetDistMethod;
+                VectorSiteContainer *allSites;
+                VectorSiteContainer *sitesDistMethod;
+                bpp::Alphabet *alphabetDistMethod;
 
-            if (PAR_model_indels) {
-                alphabetDistMethod = alphabet;
-                parmap["model"] = modelMap["model"];
-            } else {
-                alphabetDistMethod = alphabetNoGaps;
-                parmap["model"] = castorapp.getParams()["model"];
-            }
-
-            allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, castorapp.getParams());
-            sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, castorapp.getParams());
-            delete allSites;
-
-            bpp::SubstitutionModel *smodel;
-            if (PAR_model_indels) {
-
-                // Instantiation of the canonical substitution model
-                if (PAR_Alphabet.find("Codon") != std::string::npos ||
-                    PAR_Alphabet.find("Protein") != std::string::npos) {
-                    smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetNoGaps, gCode.get(),
-                                                                                      sitesDistMethod, modelMap, "",
-                                                                                      true,
-                                                                                      false, 0);
+                if (PAR_model_indels) {
+                    alphabetDistMethod = alphabet;
+                    parmap["model"] = modelMap["model"];
                 } else {
-                    smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetDistMethod,
-                                                                                      gCode.get(), sitesDistMethod,
-                                                                                      modelMap,
-                                                                                      "", true,
-                                                                                      false, 0);
+                    alphabetDistMethod = alphabetNoGaps;
+                    parmap["model"] = castorapp.getParams()["model"];
                 }
 
 
-                if(modelMap.find("lambda") == modelMap.end() || modelMap.find("mu") == modelMap.end()){
 
-                    inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
-                                                                             PAR_Alphabet,
-                                                                             tree,
-                                                                             &lambda,
-                                                                             &mu,
-                                                                             gCode.get(),
-                                                                             modelMap);
+                allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, castorapp.getParams());
+                sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, castorapp.getParams());
+                delete allSites;
 
-                }else{
-                    lambda = std::stod(modelMap["lambda"]);
-                    mu = std::stod(modelMap["mu"]);
-                }
 
-                // Instatiate the corrisponding PIP model given the alphabet
-                if (PAR_Alphabet.find("DNA") != std::string::npos &&
-                    PAR_Alphabet.find("Codon") == std::string::npos) {
-                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod), smodel,
-                                         *sitesDistMethod, lambda, mu, false);
-                } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
-                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod), smodel,
-                                        *sitesDistMethod, lambda, mu, false);
-                } else if (PAR_Alphabet.find("Codon") != std::string::npos) {
-                    smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod), gCode.get(),
-                                           smodel, *sitesDistMethod,
-                                           lambda,
-                                           mu, false);
-                    ApplicationTools::displayWarning(
-                            "Codon models are experimental in the current version... use with caution!");
-                    DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-                }
+                bpp::SubstitutionModel *smodel;
+                if (PAR_model_indels) {
 
-            }
-
-            //Initialize model to compute the distance tree
-            //TransitionModel *dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, gCode.get(), sitesDistMethod, parmap);
-            TransitionModel *dmodel;
-            // Get transition model from substitution model
-            if (!PAR_model_indels) {
-                dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, gCode.get(),
-                                                                           sitesDistMethod, parmap);
-            } else {
-                unique_ptr<TransitionModel> test;
-                test.reset(smodel);
-                dmodel = test.release();
-            }
-
-            // Add a ASRV distribution
-            DiscreteDistribution *rDist = nullptr;
-            if (dmodel->getNumberOfStates() > dmodel->getAlphabet()->getSize()) {
-                //Markov-modulated Markov model!
-                rDist = new ConstantRateDistribution();
-            } else {
-                rDist = PhylogeneticsApplicationTools::getRateDistribution(castorapp.getParams());
-            }
-
-            // Remove gap characters since we are roughly estimating the initial topology
-            if (!PAR_model_indels) {
-                bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
-            }
-
-            UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
-
-            if (PAR_distance_method.find("-ml") != std::string::npos) {
-
-                std::string PAR_optim_distance = ApplicationTools::getStringParameter(
-                        "init.distance.optimization.method", castorapp.getParams(),
-                        "init");
-                ApplicationTools::displayResult("Initial tree model parameters estimation method",
-                                                PAR_optim_distance);
-                if (PAR_optim_distance == "init") PAR_optim_distance = Optimizators::DISTANCEMETHOD_INIT;
-                else if (PAR_optim_distance == "pairwise")
-                    PAR_optim_distance = Optimizators::DISTANCEMETHOD_PAIRWISE;
-                else if (PAR_optim_distance == "iterations")
-                    PAR_optim_distance = Optimizators::DISTANCEMETHOD_ITERATIONS;
-                else throw Exception("Unknown parameter estimation procedure '" + PAR_optim_distance + "'.");
-
-                // Optimisation method verbosity
-                auto optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose",
-                                                                               castorapp.getParams(), 2);
-                string mhPath = ApplicationTools::getAFilePath("optimization.message_handler", castorapp.getParams(),
-                                                               false, false);
-                auto *messenger = (mhPath == "none") ? nullptr : (mhPath == "std") ? ApplicationTools::message.get()
-                                                                                   : new StlOutputStream(
-                                new ofstream(mhPath.c_str(), ios::out));
-                ApplicationTools::displayResult("Initial tree optimization handler", mhPath);
-
-                // Optimisation method profiler
-                string prPath = ApplicationTools::getAFilePath("optimization.profiler", castorapp.getParams(), false,
-                                                               false);
-                auto *profiler = (prPath == "none") ? nullptr : (prPath == "std") ? ApplicationTools::message.get()
-                                                                                  : new StlOutputStream(
-                                new ofstream(prPath.c_str(), ios::out));
-                if (profiler) profiler->setPrecision(20);
-                ApplicationTools::displayResult("Initial tree optimization profiler", prPath);
-
-                // Should I ignore some parameters?
-                ParameterList allParameters = dmodel->getParameters();
-                allParameters.addParameters(rDist->getParameters());
-
-                ParameterList parametersToIgnore;
-                string paramListDesc = ApplicationTools::getStringParameter(
-                        "init.distance.optimization.ignore_parameter", castorapp.getParams(),
-                        "", "", true, false);
-                bool ignoreBrLen = false;
-                StringTokenizer st(paramListDesc, ",");
-
-                while (st.hasMoreToken()) {
-                    try {
-                        string param = st.nextToken();
-                        if (param == "BrLen")
-                            ignoreBrLen = true;
-                        else {
-                            if (allParameters.hasParameter(param)) {
-                                Parameter *p = &allParameters.getParameter(param);
-                                parametersToIgnore.addParameter(*p);
-                            } else ApplicationTools::displayWarning("Parameter '" + param + "' not found.");
-                        }
-                    } catch (ParameterNotFoundException &pnfe) {
-                        ApplicationTools::displayError(
-                                "Parameter '" + pnfe.getParameter() + "' not found, and so can't be ignored!");
+                    // Instantiation of the canonical substitution model
+                    if (PAR_Alphabet.find("Codon") != std::string::npos ||
+                        PAR_Alphabet.find("Protein") != std::string::npos) {
+                        smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetNoGaps, gCode.get(),
+                                                                                          sitesDistMethod, modelMap, "",
+                                                                                          true,
+                                                                                          false, 0);
+                    } else {
+                        smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetDistMethod,
+                                                                                          gCode.get(), sitesDistMethod,
+                                                                                          modelMap,
+                                                                                          "", true,
+                                                                                          false, 0);
                     }
+
+
+                    if(modelMap.find("lambda") == modelMap.end() || modelMap.find("mu") == modelMap.end()){
+
+                        inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
+                                                                                 PAR_Alphabet,
+                                                                                 tree,
+                                                                                 &lambda,
+                                                                                 &mu,
+                                                                                 gCode.get(),
+                                                                                 modelMap);
+
+                    }else{
+                        lambda = std::stod(modelMap["lambda"]);
+                        mu = std::stod(modelMap["mu"]);
+                    }
+
+                    // Instatiate the corrisponding PIP model given the alphabet
+                    if (PAR_Alphabet.find("DNA") != std::string::npos &&
+                        PAR_Alphabet.find("Codon") == std::string::npos) {
+                        smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod), smodel,
+                                             *sitesDistMethod, lambda, mu, false);
+                    } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
+                        smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod), smodel,
+                                            *sitesDistMethod, lambda, mu, false);
+                    } else if (PAR_Alphabet.find("Codon") != std::string::npos) {
+                        smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod), gCode.get(),
+                                               smodel, *sitesDistMethod,
+                                               lambda,
+                                               mu, false);
+                        ApplicationTools::displayWarning(
+                                "Codon models are experimental in the current version... use with caution!");
+                        DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
+                    }
+
                 }
 
-                auto nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval",
-                                                                              castorapp.getParams(), 1000000);
-                ApplicationTools::displayResult("Initial tree optimization | max # ML evaluations",
-                                                TextTools::toString(nbEvalMax));
-
-                double tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance",
-                                                                        castorapp.getParams(), .000001);
-                ApplicationTools::displayResult("Initial tree optimization | Tolerance",
-                                                TextTools::toString(tolerance));
-
-                //Here it is:
-                tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-                                                              !ignoreBrLen, PAR_optim_distance,
-                                                              tolerance, nbEvalMax, profiler, messenger,
-                                                              optVerbose);
-
-            } else {
-                // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
-
-                if(!tree) {
-                    // LORENZO version
-                    distEstimation.computeMatrix();
-                    DistanceMatrix *dm = distEstimation.getMatrix();
-                    distMethod->setDistanceMatrix((*dm));
-                    distMethod->computeTree();
-                    tree = distMethod->getTree();
+                //Initialize model to compute the distance tree
+                //TransitionModel *dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, gCode.get(), sitesDistMethod, parmap);
+                TransitionModel *dmodel;
+                // Get transition model from substitution model
+                if (!PAR_model_indels) {
+                    dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, gCode.get(),
+                                                                               sitesDistMethod, parmap);
+                } else {
+                    unique_ptr<TransitionModel> test;
+                    test.reset(smodel);
+                    dmodel = test.release();
                 }
 
-            }
-            /**/
+                // Add a ASRV distribution
+                DiscreteDistribution *rDist = nullptr;
+                if (dmodel->getNumberOfStates() > dmodel->getAlphabet()->getSize()) {
+                    //Markov-modulated Markov model!
+                    rDist = new ConstantRateDistribution();
+                } else {
+                    rDist = PhylogeneticsApplicationTools::getRateDistribution(castorapp.getParams());
+                }
 
-            delete sitesDistMethod;
-            delete distMethod;
+                // Remove gap characters since we are roughly estimating the initial topology
+                if (!PAR_model_indels) {
+                    bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
+                }
 
-//            } else {
-//
-//                // Use a distance matrix provided by the user
-//
-//                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
-//                std::string PAR_distance_matrix;
-//                try {
-//                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
-//                                                                         castorapp.getParams(), true, true, "", false, "",
-//                                                                         0);
-//                } catch (bpp::Exception &e) {
-//                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
-//                }
-//
-//                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
-//                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
-//                bpp::BioNJ bionj(*distances, true, true, false);
-//                tree = bionj.getTree();
-//            }
+                UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
+
+                if (PAR_distance_method.find("-ml") != std::string::npos) {
+
+                    std::string PAR_optim_distance = ApplicationTools::getStringParameter(
+                            "init.distance.optimization.method", castorapp.getParams(),
+                            "init");
+                    ApplicationTools::displayResult("Initial tree model parameters estimation method",
+                                                    PAR_optim_distance);
+                    if (PAR_optim_distance == "init") PAR_optim_distance = Optimizators::DISTANCEMETHOD_INIT;
+                    else if (PAR_optim_distance == "pairwise")
+                        PAR_optim_distance = Optimizators::DISTANCEMETHOD_PAIRWISE;
+                    else if (PAR_optim_distance == "iterations")
+                        PAR_optim_distance = Optimizators::DISTANCEMETHOD_ITERATIONS;
+                    else throw Exception("Unknown parameter estimation procedure '" + PAR_optim_distance + "'.");
+
+                    // Optimisation method verbosity
+                    auto optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose",
+                                                                                   castorapp.getParams(), 2);
+                    string mhPath = ApplicationTools::getAFilePath("optimization.message_handler", castorapp.getParams(),
+                                                                   false, false);
+                    auto *messenger = (mhPath == "none") ? nullptr : (mhPath == "std") ? ApplicationTools::message.get()
+                                                                                       : new StlOutputStream(
+                                    new ofstream(mhPath.c_str(), ios::out));
+                    ApplicationTools::displayResult("Initial tree optimization handler", mhPath);
+
+                    // Optimisation method profiler
+                    string prPath = ApplicationTools::getAFilePath("optimization.profiler", castorapp.getParams(), false,
+                                                                   false);
+                    auto *profiler = (prPath == "none") ? nullptr : (prPath == "std") ? ApplicationTools::message.get()
+                                                                                      : new StlOutputStream(
+                                    new ofstream(prPath.c_str(), ios::out));
+                    if (profiler) profiler->setPrecision(20);
+                    ApplicationTools::displayResult("Initial tree optimization profiler", prPath);
+
+                    // Should I ignore some parameters?
+                    ParameterList allParameters = dmodel->getParameters();
+                    allParameters.addParameters(rDist->getParameters());
+
+                    ParameterList parametersToIgnore;
+                    string paramListDesc = ApplicationTools::getStringParameter(
+                            "init.distance.optimization.ignore_parameter", castorapp.getParams(),
+                            "", "", true, false);
+                    bool ignoreBrLen = false;
+                    StringTokenizer st(paramListDesc, ",");
+
+                    while (st.hasMoreToken()) {
+                        try {
+                            string param = st.nextToken();
+                            if (param == "BrLen")
+                                ignoreBrLen = true;
+                            else {
+                                if (allParameters.hasParameter(param)) {
+                                    Parameter *p = &allParameters.getParameter(param);
+                                    parametersToIgnore.addParameter(*p);
+                                } else ApplicationTools::displayWarning("Parameter '" + param + "' not found.");
+                            }
+                        } catch (ParameterNotFoundException &pnfe) {
+                            ApplicationTools::displayError(
+                                    "Parameter '" + pnfe.getParameter() + "' not found, and so can't be ignored!");
+                        }
+                    }
+
+                    auto nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval",
+                                                                                  castorapp.getParams(), 1000000);
+                    ApplicationTools::displayResult("Initial tree optimization | max # ML evaluations",
+                                                    TextTools::toString(nbEvalMax));
+
+                    double tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance",
+                                                                            castorapp.getParams(), .000001);
+                    ApplicationTools::displayResult("Initial tree optimization | Tolerance",
+                                                    TextTools::toString(tolerance));
+
+                    //Here it is:
+                    tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
+                                                                  !ignoreBrLen, PAR_optim_distance,
+                                                                  tolerance, nbEvalMax, profiler, messenger,
+                                                                  optVerbose);
+
+                } else {
+                    // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
+
+                    if(!tree) {
+                        // LORENZO version
+                        distEstimation.computeMatrix();
+                        DistanceMatrix *dm = distEstimation.getMatrix();
+                        distMethod->setDistanceMatrix((*dm));
+                        distMethod->computeTree();
+                        tree = distMethod->getTree();
+                    }
+
+                }
+                /**/
+
+                delete sitesDistMethod;
+                delete distMethod;
+
+    //            } else {
+    //
+    //                // Use a distance matrix provided by the user
+    //
+    //                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
+    //                std::string PAR_distance_matrix;
+    //                try {
+    //                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
+    //                                                                         castorapp.getParams(), true, true, "", false, "",
+    //                                                                         0);
+    //                } catch (bpp::Exception &e) {
+    //                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
+    //                }
+    //
+    //                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
+    //                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
+    //                bpp::BioNJ bionj(*distances, true, true, false);
+    //                tree = bionj.getTree();
+    //            }
+
+
+            } //m@x
+        //----------------------------------------------------------------
 
         } else throw Exception("Unknown init tree method.");
 
@@ -783,6 +801,8 @@ int main(int argc, char *argv[]) {
                 if (modelMap["initFreqs"] == "observed") {
                     estimatePIPparameters = true;
                 }
+            } else if( (modelMap.find("lambda") == modelMap.end()) || (modelMap.find("mu") == modelMap.end())) {
+                estimatePIPparameters = true;
             }
 
             if (estimatePIPparameters) {
