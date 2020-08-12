@@ -52,7 +52,6 @@ miniJATI depends on the following libraries
 - [2.0] [Compiling on your local machine](Compiling_localenv.md)
 - [2.1] [Compiling on a shared machine (i.e. cluster)](Compiling_sharedenv.md)
 - [2.2] [Compiling on AWS](Compiling_aws.md)
-- [2.3] [Compiling in a docker image](Compiling_docker.md)
 
 
 ### How to update
