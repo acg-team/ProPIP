@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
 #  Initial tree options
@@ -38,4 +38,4 @@
 
 
 
-If the `init.tree metod=user`, then refer to the option you find [here](./Input)  
+If the `init.tree metod=user`, then refer to the option you find [here](./Input.md)  
