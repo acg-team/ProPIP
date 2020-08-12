@@ -1,13 +1,13 @@
-# Castor (Indel-Aware Phylogenetic Tree Inference)
+# ProPIP (Indel-Aware Phylogenetic Tree Inference)
 
-Castor is a phylogenetic tree inference software that implements a new class of indel-aware substitution models in the Maximum Likelihood framework.
+ProPIP is a phylogenetic tree inference software that implements a new class of indel-aware substitution models in the Maximum Likelihood framework.
 
 
 ---
 
 ### Documentation
 
-1. **[Compiling Castor](./Compiling/Index)**
+1. **[Compiling ProPIP](./Compiling/Index)**
 2. **[Features and project structure](./Features/Index)**
 3. **[Executing an analysis](./Examples/Index)**
 4. **[Open issues](./Issues/Index)**
