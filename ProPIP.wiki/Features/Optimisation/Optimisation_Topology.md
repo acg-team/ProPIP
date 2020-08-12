@@ -7,7 +7,7 @@
 
 To perform a tree-search optimisation step, one should add the following arguments:
 
-    optimisation.topology=<bool>        						Enable the tree-search
+    optimisation.topology=<bool> 						Enable the tree-search
     optimisation.topology.algorithm={Swap(),Phyml(),Mixed()}	Method to use during the tree-search
 
 
