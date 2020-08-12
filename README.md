@@ -1,8 +1,8 @@
-## ProPIP - Indel-aware phylogenetic tree inference
+## ProPIP - ProPIP: Progressive Multiple Sequence Alignment with Poisson Indel Process
 
 ----
 
-ProPIP is a phylogenetic tree inference software that implements a new class of
+ProPIP is a Multiple Sequence Alignment inference software that implements a new class of
 indel-aware substitution models in the Maximum Likelihood framework.
 
 ----
@@ -13,9 +13,9 @@ You can find tutorial, examples and guides on our [Wikipages](https://github.com
 ----
 #### Licence
 
-     * ProPIP is a computer program whose purpose is to infer phylogentic trees
-     * under indel-aware and indel-non-aware substitution models for nucleotide,
-     * protein, and codon datasets
+     * ProPIP is a computer program whose purpose is to infer Multiple Sequence 
+     * Alignment under indel-aware and indel-non-aware substitution models for 
+     * nucleotide and protein datasets
      *
      * This software is based and extends the following libraries:
      *
@@ -41,12 +41,7 @@ You can find tutorial, examples and guides on our [Wikipages](https://github.com
 #### Support
 In case of bugs or improvement suggestions feel free to:
     
-- File an issue using via our issue collector [here](http://track.lorenzogatti.me/issuetracking_minijati.html)
-    
 - Write to [Lorenzo Gatti](mailto:lorenzo.gatti@alumni.ethz.ch)
     
 - Write to [Massimo Maiolo](mailto:massimo.maiolo@zhaw.ch)
-
-
-We use Google Analytics to study the traffic of this website. Please find information about the data usage [here](https://policies.google.com/technologies/partner-sites?hl=en).
 
