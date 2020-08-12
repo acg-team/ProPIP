@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
 #  Input options
