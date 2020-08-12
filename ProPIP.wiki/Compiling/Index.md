@@ -18,7 +18,7 @@
 - icpc (ICC) 18.0.2 20180210
 
 
-[More infos here](Compilers_info)
+[More infos here](Compilers_info.md)
 
 
 You can try to compile the project with other compilers or compilers' versions, however you are *completely* on your own.
