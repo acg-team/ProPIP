@@ -10,7 +10,7 @@
     input.sequence.file={path}                              The sequence file to use. (These sequences can also be not aligned).
     input.sequence.format={format}                          The sequence file format.
     input.sequence.sites_to_use={all|nogap|complete}        Tells which sites to use
-    input.sequence.remove_stop_codons={boolean}             Removes the sites where there is a stop codon (default: â€™yesâ€™)
+    input.sequence.remove_stop_codons={boolean}             Removes the sites where there is a stop codon (default: 'yes')
     input.sequence.max_gap_allowed=100%                     It specifies the maximum amount of gap allowed per site.
     input.sequence.max_unresolved_allowed=100%              It specifies the maximum amount of unresolved states per site.
     input.site.selection={list of integers}                 Will only consider sites in the given list of positions, in extended format :
