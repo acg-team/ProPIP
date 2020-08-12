@@ -1,4 +1,4 @@
-[Home](../Home) | [Features](Index) |
+[Home](../Home.md) | [Features](Index.md) |
 
 ---
 
