@@ -1,20 +1,9 @@
-## Castor - Indel-aware phylogenetic tree inference
+## ProPIP - Indel-aware phylogenetic tree inference
 
 ----
 
-Castor is a phylogenetic tree inference software that implements a new class of
+ProPIP is a phylogenetic tree inference software that implements a new class of
 indel-aware substitution models in the Maximum Likelihood framework.
-
-There are two stories about the origin of the name Castor. The first one:
-
-> Indels leaves traces of their presence on the alignment in the form of small (or big)
-> stretches of gap characters (-), thus generating sequence alignments made of several
-> unconnected segments. These marks resemble those left by beavers (lat. genus name Castor)
-> on logs and trees, which they use to build dams and lodges. Since sequence
-> alignment and tree inference are two interdipendent inference steps, we pictured
-> our indel-aware (the nibbles) phylogeny inferring software as a beaver (Castor)
-> nibbling at the (phylogenetic) trees in the attempt of building a damn.
-
 
 ----
 #### Documentation
@@ -24,7 +13,7 @@ You can find tutorial, examples and guides on our [Wikipages](https://github.com
 ----
 #### Licence
 
-     * Castor is a computer program whose purpose is to infer phylogentic trees
+     * ProPIP is a computer program whose purpose is to infer phylogentic trees
      * under indel-aware and indel-non-aware substitution models for nucleotide,
      * protein, and codon datasets
      *
@@ -36,11 +25,11 @@ You can find tutorial, examples and guides on our [Wikipages](https://github.com
      * - The Tree Search Heuristic Library (TSH-LIB)
      *   developed by L. Gatti & M. Maiolo <http://bit.ly/tsh-lib>
      *
-     * Castor is distributed in the hope that it will be useful, but WITHOUT
+     * ProPIP is distributed in the hope that it will be useful, but WITHOUT
      * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
      * FITNESS FOR A PARTICULAR PURPOSE.
      *
-     * Castor is a free software: you can redistribute it and/or modify it
+     * ProPIP is a free software: you can redistribute it and/or modify it
      * under the terms of the GNU Lesser General Public License as published
      * by the Free Software Foundation, either version 3 of the License, or
      * (at your option) any later version.
