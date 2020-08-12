@@ -7,7 +7,7 @@ ProPIP is a phylogenetic tree inference software that implements a new class of 
 
 ### Documentation
 
-1. **[Compiling ProPIP](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Compiling/Index)**
+1. **[Compiling ProPIP](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/Compiling/Index.md)**
 2. **[Features and project structure](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Features/Index)**
 3. **[Executing an analysis](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Examples/Index)**
 4. **[Open issues](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Issues/Index)**
