@@ -29,7 +29,7 @@ output.estimates.format=json
 ### Execute the analysis
 ```
 $ ProPIP params=/directory/of/the/indel_aware.txt
-
+```
 
 ## 2: Inferring an MSA using an indel-aware substitution model from amino-acids input sequences
 
@@ -61,7 +61,7 @@ output.estimates.file=../tests/output/test_08/estimates.log
 ### Execute the analysis
 ```
 $ ProPIP params=/directory/of/the/indel_aware.txt
-
+```
 
 ## 3: Inferring an MSA using an indel-aware substitution model from amino-acids input sequences.
       The tree and the indel rates are not provided and therefore inferred from the input sequences.  
@@ -108,5 +108,5 @@ output.estimates.file=../tests/output/test_08/estimates.log
 ### Execute the analysis
 ```
 $ ProPIP params=/directory/of/the/indel_aware.txt
-
+```
 
