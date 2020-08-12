@@ -4,7 +4,7 @@
 
 ### Log files verbosity
 
-miniJATI takes advantage of the Google Log libraries to generate debugging informations about the program execution. To tune the options according to the need of the user here a short list of the options:
+ProPIP takes advantage of the Google Log libraries to generate debugging informations about the program execution. To tune the options according to the need of the user here a short list of the options:
 
 #### 1. Output device
 
