@@ -57,4 +57,4 @@ miniJATI depends on the following libraries
 ### How to update
 
 
-[Update castor following this how-to](Updating.md)
+[Update ProPIP following this how-to](Updating.md)
