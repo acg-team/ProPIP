@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
 # Compilation on AWS environment with EFS
@@ -207,7 +207,7 @@ git clone https://github.com/google/glog; cd glog; cmake -H. -Bbuild -G "Unix Ma
 cd /mnt/efs/projects/source/
 git clone https://${BITBUCKET_USERNAME}:${BITBUCKET_PASSWORD}@bitbucket.org/acg-team/tshlib.git; cd tshlib; git checkout master; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; sudo make install;
 # ---------------
-# miniJATI executable
+# ProPIP executable
 cd /mnt/efs/projects/source/
 git clone https://${BITBUCKET_USERNAME}:${BITBUCKET_PASSWORD}@bitbucket.org/acg-team/minijati.git; cd minijati; git checkout master; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make;
 
@@ -228,5 +228,5 @@ cd /mnt/efs/projects/tshlib/
 cmake -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SharedLibraryPath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 sudo make install
 cd /mnt/efs/projects/minijati/
-cmake --target miniJATI -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 ```

@@ -1,4 +1,4 @@
-[Back](../Index) | [Home](../../Home)
+[Back](../Index.md) | [Home](../../Home.md)
 
 ---
 #  Topology optimisation options
@@ -7,7 +7,7 @@
 
 To perform a tree-search optimisation step, one should add the following arguments:
 
-    optimisation.topology=<bool>        						Enable the tree-search
+    optimisation.topology=<bool>	                            Enable the tree-search
     optimisation.topology.algorithm={Swap(),Phyml(),Mixed()}	Method to use during the tree-search
 
 
@@ -54,4 +54,4 @@ Automatically the algorithm instantiates analytical or numerical derivatives to 
 
 ### Examples
 
-    optimization.topology=true optimization.topology.algorithm=Swap(coverage="best-search",starting_nodes=Greedy(),max_cycles=50,tolerance=0.1,brlen_optimisation=Brent)
+optimization.topology=true optimization.topology.algorithm=Swap(coverage="best-search",starting_nodes=Greedy(),max_cycles=50,tolerance=0.1,brlen_optimisation=Brent)

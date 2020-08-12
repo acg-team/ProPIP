@@ -1,17 +1,16 @@
-# Castor (Indel-Aware Phylogenetic Tree Inference)
+# ProPIP: Progressive Multiple Sequence Alignment with Poisson Indel Process
 
-Castor is a phylogenetic tree inference software that implements a new class of indel-aware substitution models in the Maximum Likelihood framework.
+ProPIP is a Multiple Sequence Alignment inference software that implements a new class of indel-aware substitution models in the Maximum Likelihood framework.
 
 
 ---
 
 ### Documentation
 
-1. **[Compiling Castor](./Compiling/Index)**
-2. **[Features and project structure](./Features/Index)**
-3. **[Executing an analysis](./Examples/Index)**
-4. **[Open issues](./Issues/Index)**
-5. **[Contributing to Castor (for developers)](./Developers/Index)**
+1. **[Compiling ProPIP](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/Compiling/Index.md)**
+2. **[Features and project structure](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Features/Index.md)**
+3. **[Executing an analysis](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Examples/Index.md)**
+4. **[Contributing to Castor (for developers)](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Developers/Index.md)**
 
 ---
 ### Supported platforms
@@ -22,18 +21,9 @@ Castor is a phylogenetic tree inference software that implements a new class of 
 - Mac OS (10.13)
 
 ---
-### Roadmap
 
-[Check here the roadmap with the upcoming features](./Roadmap)
-
----
-### Bugs and Feature Requests
-
-[Report a bug or request a feature here](https://bitbucket.org/lorenzogatti89/castor/issues)
-
----
-
-### How to cite Castor
+### How to cite ProPIP
 
 - [L. Gatti, *Realistic evolutionary models for phylogenetic-guided analyses*, PhD Dissertation, University of Zurich, 2019](https://opac.nebis.ch/F/?local_base=NEBIS&CON_LNG=GER&func=find-b&find_code=SYS&request=011452190)
 - L. Gatti and M. Maiolo, et al., Phylogenetic inference under indel-aware evolutionary model increases tree reliability and robustness, manuscript in preparation
+- M. Maiolo, X. Zhang, M. Gil, and M. Anisimova. Progressive multiple sequence alignment with indel evolution. BMC Bioinformatics, 19(1), 2018

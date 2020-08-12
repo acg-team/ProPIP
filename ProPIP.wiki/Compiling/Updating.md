@@ -1,10 +1,10 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
-# Updating miniJATI executable
+# Updating ProPIP executable
 ---
 
-The updating process is divided into two steps. When updating check first the branch to checkout on both TSHLib and Castor repositories and substitute the `<branch>` tag with an appropriate one (i.e. `master`).
+The updating process is divided into two steps. When updating check first the branch to checkout on both TSHLib and ProPIP repositories and substitute the `<branch>` tag with an appropriate one (i.e. `master`).
 
 
 ### Update TSHLib

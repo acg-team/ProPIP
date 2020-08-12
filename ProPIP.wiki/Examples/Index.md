@@ -40,7 +40,7 @@ support=none
 
 ### Execute the analysis
 ```
-$ Castor params=/directory/of/the/indel_aware.txt
+$ ProPIP params=/directory/of/the/indel_aware.txt
 
 ```
 
@@ -118,7 +118,7 @@ support=none
 
 ### Execute the analysis
 ```
-$ Castor params=/directory/of/the/indel_non_aware.txt
+$ ProPIP params=/directory/of/the/indel_non_aware.txt
 ```
 
 

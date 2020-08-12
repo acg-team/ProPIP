@@ -1,4 +1,4 @@
-[Back](../Index) | [Home](../../Home)
+[Back](../Index.md) | [Home](../../Home.md)
 
 ---
 #  Numerical parameter optimisation options
@@ -83,5 +83,5 @@ This program allows to (re-)estimate numerical parameters, including
                                                                   name should include there 'namespace', that is their model name, for
                                                                   instance K80.kappa,TN93.theta, GTR.a, Gamma.alpha, etc.'BrLen' will
                                                                   ignore all branch lengths and 'Model' will ignore all model parameters.
-                                                                  The â€™*â€™ wildcard can be used, as in *theta* for all the parameters whose
+                                                                  The '*' wildcard can be used, as in *theta* for all the parameters whose
                                                                   name has theta in it.

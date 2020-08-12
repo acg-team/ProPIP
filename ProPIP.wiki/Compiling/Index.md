@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
 # Dependencies, Compilation, Install
@@ -18,7 +18,7 @@
 - icpc (ICC) 18.0.2 20180210
 
 
-[More infos here](Compilers_info)
+[More infos here](Compilers_info.md)
 
 
 You can try to compile the project with other compilers or compilers' versions, however you are *completely* on your own.
@@ -47,15 +47,14 @@ miniJATI depends on the following libraries
 
 ### How to compile
 
-- [1] [Preparing your system](Preparing_system)
+- [1] [Preparing your system](Preparing_system.md)
 
-- [2.0] [Compiling on your local machine](Compiling_localenv)
-- [2.1] [Compiling on a shared machine (i.e. cluster)](Compiling_sharedenv)
-- [2.2] [Compiling on AWS](Compiling_aws)
-- [2.3] [Compiling in a docker image](Compiling_docker)
+- [2.0] [Compiling on your local machine](Compiling_localenv.md)
+- [2.1] [Compiling on a shared machine (i.e. cluster)](Compiling_sharedenv.md)
+- [2.2] [Compiling on AWS](Compiling_aws.md)
 
 
 ### How to update
 
 
-[Update castor following this how-to](Updating)
+[Update ProPIP following this how-to](Updating.md)
