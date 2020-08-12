@@ -19,7 +19,7 @@ There are two stories about the origin of the name Castor. The first one:
 ----
 #### Documentation
 
-You can find tutorial, examples and guides on our [Wikipages](https://bitbucket.org/lorenzogatti89/castor/wiki)
+You can find tutorial, examples and guides on our [Wikipages](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/Home.md)
 
 ----
 #### Licence
