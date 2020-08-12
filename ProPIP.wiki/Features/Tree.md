@@ -23,11 +23,11 @@
 
     Clock                                                   Coerce to a clock tree.
 
-    Grafen(height={{real>0}|input}, rho = {real>0})         Uses Grafenâ€™s method to compute branch lengths.
-                                                            In Grafenâ€™s method, each node is given a weight equal to the number of underlying
+    Grafen(height={{real>0}|input}, rho = {real>0})         Uses Grafen's method to compute branch lengths.
+                                                            In Grafen's method, each node is given a weight equal to the number of underlying
                                                             leaves. The length of each branch is then computed as the difference of the weights
                                                             of the connected nodes, and further divided by the number of leaves in the tree.
-                                                            The height of all nodes are then raised to the power of â€™rhoâ€™, a user specified value.
+                                                            The height of all nodes are then raised to the power of 'rho', a user specified value.
                                                             The tree is finally scaled to match a given total height, which can be the original
                                                             one (height=input), or fixed to a certain value (usually height=1). A value of
                                                             rho=0 provides a star tree, and the greater the value of rho, the more recent the
