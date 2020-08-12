@@ -30,7 +30,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-set(CASTOR_SOFTWARENAME "Castor")
+set(CASTOR_SOFTWARENAME "ProPIP")
 set(CASTOR_DESCRIPTION "Indel-Aware Phylogenetic Tree Inference")
 
 project(${CASTOR_SOFTWARENAME}
