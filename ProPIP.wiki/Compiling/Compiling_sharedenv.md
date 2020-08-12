@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
 # Compilation on a shared environment
@@ -124,16 +124,16 @@ xvfb-run ete3 build check
 *Dynamic linking*
 ```
 #!bash
-git clone https://bitbucket.org/lorenzogatti89/castor/
+git clone https://github.com/acg-team/ProPIP/
 cd castor
-cmake --target castor -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${SharedIncludePath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${SharedIncludePath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 make
 ```
 *Static linking*
 ```
 #!bash
-git clone https://bitbucket.org/lorenzogatti89/castor/
+git clone https://github.com/acg-team/ProPIP/
 cd castor
-cmake --target castor -- -DCMAKE_BUILD_TYPE=Release-static -DCMAKE_PREFIX_PATH=${SharedIncludePath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release-static -DCMAKE_PREFIX_PATH=${SharedIncludePath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 make
 ```
