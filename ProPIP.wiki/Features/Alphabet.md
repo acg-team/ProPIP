@@ -10,7 +10,7 @@
                                                             an argument: **bangAsgap={bool}**
                                                             Tell is exclamation mark should be considered as a gap character. The default
                                                             is to consider it as an unknown character such as 'N' or '?'.
-    genetic_code={translation table}                        Where â€™translation tableâ€™ specifies the code to use, either as a text description,
+    genetic_code={translation table}                        Where the translation table specifies the code to use, either as a text description,
                                                             or as the NCBI number. The following table give the currently implemented codes
                                                             with their corresponding names:
                                                             Standard                    1
