@@ -63,8 +63,7 @@ output.estimates.file=../tests/output/test_08/estimates.log
 $ ProPIP params=/directory/of/the/indel_aware.txt
 ```
 
-## 3: Inferring an MSA using an indel-aware substitution model from amino-acids input sequences.
-      The tree and the indel rates are not provided and therefore inferred from the input sequences.  
+## 3: Inferring an MSA using an indel-aware substitution model from amino-acids input sequences. The tree and the indel rates are not provided and therefore inferred from the input sequences.  
 
 
 The initial values of insertion and deletion rates of the PIP model are inferred from the unaligned 
