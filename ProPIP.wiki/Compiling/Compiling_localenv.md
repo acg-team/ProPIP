@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index.md) | [Home](../Home.md)
 
 ---
 # Compilation on a local environment
@@ -119,24 +119,24 @@ conda install -c etetoolkit ete3 ete_toolchain
 xvfb-run ete3 build check
 ```
 
-### Compiling Castor
+### Compiling ProPIP
 
 
 *Dynamic linking*
 ```
 #!bash
-git clone https://bitbucket.org/lorenzogatti89/castor/
+git clone https://github.com/acg-team/ProPIP/
 cd castor
-cmake --target castor -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
 make
 ```
 
 *Static linking* (executable is about 140mb)
 ```
 #!bash
-git clone https://bitbucket.org/lorenzogatti89/castor/
+git clone https://github.com/acg-team/ProPIP/
 cd castor
-cmake --target castor -- -DCMAKE_BUILD_TYPE=Release-static CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release-static CMakeLists.txt
 make
 ```
 
@@ -146,17 +146,17 @@ If *Intel TBB* is required, then cmake must be invoked as follows:
 *Dynamic linking*
 ```
 #!bash
-git clone https://bitbucket.org/lorenzogatti89/castor/
+git clone https://github.com/acg-team/ProPIP/
 cd castor
-cmake --target castor -- -DCMAKE_BUILD_TYPE=Release -DPATH_INTELTBB=/opt/<path-to-tbb> CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release -DPATH_INTELTBB=/opt/<path-to-tbb> CMakeLists.txt
 make
 ```
 
 *Static linking* (executable is about 140mb)
 ```
 #!bash
-git clone https://bitbucket.org/lorenzogatti89/castor/
+git clone https://github.com/acg-team/ProPIP/
 cd castor
-cmake --target castor -- -DCMAKE_BUILD_TYPE=Release-static -DPATH_INTELTBB=/opt/<path-to-tbb> CMakeLists.txt
+cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release-static -DPATH_INTELTBB=/opt/<path-to-tbb> CMakeLists.txt
 make
 ```
