@@ -24,6 +24,5 @@ ProPIP is a Multiple Sequence Alignment inference software that implements the P
 
 ### How to cite ProPIP
 
-- [L. Gatti, *Realistic evolutionary models for phylogenetic-guided analyses*, PhD Dissertation, University of Zurich, 2019](https://opac.nebis.ch/F/?local_base=NEBIS&CON_LNG=GER&func=find-b&find_code=SYS&request=011452190)
-- L. Gatti and M. Maiolo, et al., Phylogenetic inference under indel-aware evolutionary model increases tree reliability and robustness, manuscript in preparation
 - M. Maiolo, X. Zhang, M. Gil, and M. Anisimova. Progressive multiple sequence alignment with indel evolution. BMC Bioinformatics, 19(1), 2018
+- [L. Gatti, *Realistic evolutionary models for phylogenetic-guided analyses*, PhD Dissertation, University of Zurich, 2019](https://opac.nebis.ch/F/?local_base=NEBIS&CON_LNG=GER&func=find-b&find_code=SYS&request=011452190)
