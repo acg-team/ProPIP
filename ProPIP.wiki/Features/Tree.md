@@ -11,7 +11,10 @@
                                                             to test convergence.  This may however slows down significantly the optimization
                                                             process.
     init.distance.matrix.file={path}                        A distance matrix can be supplied instead of being computed from the alignment.
-    init.distance.method={wpgma|upgma|nj|bionj}             When distance method is required, the user can specify which algorithm to use.
+    init.distance.method={wpgma|upgma|nj|bionj|
+                              infere_distance_matrix}       When distance method is required, the user can specify which algorithm to use.
+                                                            With the option 'infere_distance_matrix' the algorithm calculates the distance 
+                                                            matrix from the pairwise alignments and then with bionj algorithm infers the tree.
     init.brlen.method={method description}                  Set how to initialize the branch lengths. Available methods include:
 
     Input(midpoint_root_branch={boolean})                   Keep initial branch lengths as is. Additional argument specifies if the root
