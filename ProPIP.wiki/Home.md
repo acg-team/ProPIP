@@ -10,7 +10,7 @@ ProPIP is a Multiple Sequence Alignment inference software that implements the P
 1. **[Compiling ProPIP](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/Compiling/Index.md)**
 2. **[Features and project structure](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Features/Index.md)**
 3. **[Executing an analysis](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Examples/Index.md)**
-4. **[Contributing to Castor (for developers)](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Developers/Index.md)**
+4. **[Contributing to ProPIP (for developers)](https://github.com/acg-team/ProPIP/tree/master/ProPIP.wiki/Developers/Index.md)**
 
 ---
 ### Supported platforms
