@@ -85,23 +85,19 @@ We list all the parameters required by ProPIP in a text file named `indel_aware.
 (the order of the parameters is not relevant). For more information on the syntax of the parameter.
 
 ```
-analysis_name = TEST
-model_description = WAG01+PIP
 alphabet=Protein
-seed=1
 alignment=true
 alignment.version=ram
-input.sequence.file=../tests/input/test_08/seqs.fasta
+input.sequence.file=../tests/input/test_10/seqs.fasta
 input.sequence.sites_to_use=all
-init.tree=user
-input.tree.file=../tests/input/test_07/tree.newick
-model=PIP(model=WAG01,lambda=15.8,mu=0.06)
+init.tree=distance
+init.distance.method=infere_distance_matrix
+model=PIP(model=WAG01)
 rate_distribution=Constant
 optimization=None
-output.msa.file=../tests/output/test_08/msa.fasta
-output.tree.file=../tests/output/test_08/tree.nwk
-output.estimates.file=../tests/output/test_08/estimates.log
-
+output.msa.file=../tests/output/test_10/msa.fasta
+output.tree.file=../tests/output/test_10/tree.nwk
+output.estimates.file=../tests/output/test_10/estimates.log
 ```
 
 ### Execute the analysis
