@@ -14,16 +14,16 @@ alphabet=DNA
 seed=1
 alignment=true
 alignment.version=ram
-input.sequence.file=../tests/input/test_07/seqs.fasta
+input.sequence.file=../tests/input/test_01/seqs.fasta
 input.sequence.sites_to_use=all
 init.tree=user
-input.tree.file=../tests/input/test_07/tree.newick
+input.tree.file=../tests/input/test_01/tree.newick
 model=PIP(model=JC69,lambda=15.8,mu=0.06)
 rate_distribution=Constant
 optimization=None
-output.msa.file=../tests/output/test_07/msa.fasta
-output.tree.file=../tests/output/test_07/tree.nwk
-output.estimates.file=../tests/output/test_07/estimates.log
+output.msa.file=../tests/output/test_01/msa.fasta
+output.tree.file=../tests/output/test_01/tree.nwk
+output.estimates.file=../tests/output/test_01/estimates.log
 output.estimates.format=json
 
 ```
@@ -47,16 +47,16 @@ alphabet=Protein
 seed=1
 alignment=true
 alignment.version=ram
-input.sequence.file=../tests/input/test_08/seqs.fasta
+input.sequence.file=../tests/input/test_02/seqs.fasta
 input.sequence.sites_to_use=all
 init.tree=user
-input.tree.file=../tests/input/test_07/tree.newick
+input.tree.file=../tests/input/test_01/tree.newick
 model=PIP(model=WAG01,lambda=15.8,mu=0.06)
 rate_distribution=Constant
 optimization=None
-output.msa.file=../tests/output/test_08/msa.fasta
-output.tree.file=../tests/output/test_08/tree.nwk
-output.estimates.file=../tests/output/test_08/estimates.log
+output.msa.file=../tests/output/test_02/msa.fasta
+output.tree.file=../tests/output/test_02/tree.nwk
+output.estimates.file=../tests/output/test_02/estimates.log
 
 ```
 
@@ -90,20 +90,19 @@ We list all the parameters required by ProPIP in a text file named `indel_aware.
 alphabet=Protein
 alignment=true
 alignment.version=ram
-input.sequence.file=../tests/input/test_10/seqs.fasta
+input.sequence.file=../tests/input/test_04/seqs.fasta
 input.sequence.sites_to_use=all
 init.tree=distance
 init.distance.method=infere_distance_matrix
 model=PIP(model=WAG01)
 rate_distribution=Constant
 optimization=None
-output.msa.file=../tests/output/test_10/msa.fasta
-output.tree.file=../tests/output/test_10/tree.nwk
-output.estimates.file=../tests/output/test_10/estimates.log
+output.msa.file=../tests/output/test_04/msa.fasta
+output.tree.file=../tests/output/test_04/tree.nwk
+output.estimates.file=../tests/output/test_04/estimates.log
 ```
 
 ### Execute the analysis
 ```
 $ ProPIP params=/directory/of/the/indel_aware.txt
 ```
-
