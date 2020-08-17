@@ -126,7 +126,7 @@ xvfb-run ete3 build check
 ```
 #!bash
 git clone https://github.com/acg-team/ProPIP/
-cd castor
+cd ProPIP
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
 make
 ```
@@ -135,7 +135,7 @@ make
 ```
 #!bash
 git clone https://github.com/acg-team/ProPIP/
-cd castor
+cd ProPIP
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release-static CMakeLists.txt
 make
 ```
@@ -147,7 +147,7 @@ If *Intel TBB* is required, then cmake must be invoked as follows:
 ```
 #!bash
 git clone https://github.com/acg-team/ProPIP/
-cd castor
+cd ProPIP
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release -DPATH_INTELTBB=/opt/<path-to-tbb> CMakeLists.txt
 make
 ```
@@ -156,7 +156,7 @@ make
 ```
 #!bash
 git clone https://github.com/acg-team/ProPIP/
-cd castor
+cd ProPIP
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release-static -DPATH_INTELTBB=/opt/<path-to-tbb> CMakeLists.txt
 make
 ```
