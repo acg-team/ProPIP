@@ -44,7 +44,7 @@ You can find tutorial, examples and guides on our [Wikipages](https://github.com
 #### Support
 In case of bugs or improvement suggestions feel free to:
     
-- Write to [Lorenzo Gatti](mailto:lorenzo.gatti@alumni.ethz.ch)
+- Write to [Lorenzo Gatti](mailto:lorenzo.gatti.89@gmail.com)
     
 - Write to [Massimo Maiolo](mailto:massimo.maiolo@zhaw.ch)
 
