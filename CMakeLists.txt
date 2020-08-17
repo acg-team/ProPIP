@@ -1,11 +1,10 @@
 # Licensed Materials - Property of Lorenzo Gatti & Massimo Maiolo
 # Copyright (C) 2015-2019 by Lorenzo Gatti & Massimo Maiolo
 # -------------------------------------------------------------------------
-# This file is part of Castor
+# This file is part of ProPIP
 #
-# Castor is a computer program whose purpose is to infer phylogentic trees
-# under indel-aware and indel-non-aware substitution models for nucleotide,
-# protein, and codon datasets
+# ProPIP is a computer program whose purpose is to infer Multiple Sequence 
+# Alignment under an indel-aware model for nucleotide and protein datasets.
 #
 # This software is based and extends the following libraries:
 # - the Bio++ libraries
@@ -18,7 +17,7 @@
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 # FITNESS FOR A PARTICULAR PURPOSE.
 #
-# Castor is a free software: you can redistribute it and/or modify it
+# ProPIP is a free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
