@@ -1,4 +1,4 @@
-[Back](./Index.md) | [Home](../ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
+[Back](./Index.md) | [Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
 
 ---
 # Compilation on a local environment
