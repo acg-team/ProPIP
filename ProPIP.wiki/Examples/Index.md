@@ -1,4 +1,4 @@
-[Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
+[Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
 
 ## 1: Inferring an MSA using an indel-aware substitution model from nucleotide input sequences
 
