@@ -6,7 +6,7 @@
 
 ## Development tools
 
-Compiling Castor and its dependencies requires the basic development tools. Most of the times these tools are already present in the system.
+Compiling ProPIP and its dependencies requires the basic development tools. Most of the times these tools are already present in the system.
 
 
 ### On Ubuntu 14.04/16.04
