@@ -29,6 +29,6 @@ ProPIP is a Multiple Sequence Alignment inference software that implements the P
 
 ---
 
-#### Reference
+### Reference
 
 [1] Alexandre Bouchard-Côté and Michael I. Jordan. Evolutionary inference via the Poisson Indel Process.Proc. Natl. Acad. Sci. U.S.A., 110(4):1160, 2013.
