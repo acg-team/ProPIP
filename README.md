@@ -7,7 +7,7 @@ ProPIP is a Multiple Sequence Alignment inference software that implements the P
 
 #### Documentation
 
-You can find tutorial, examples and guides on our [Wikipages](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
+You can find tutorial, examples and guides on our [Wikipages](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
 
 ---
 #### Licence

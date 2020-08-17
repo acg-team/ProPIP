@@ -1,4 +1,4 @@
-[Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
+[Home](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
 
 ---
 # Dependencies, Compilation, Install
