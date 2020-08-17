@@ -1,4 +1,4 @@
-[Back](./Index.md) | [Home](../Home.md)
+[Back](./Index.md) | [Home](../ProPIP/-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
 
 ---
 # Compilation on a shared environment
