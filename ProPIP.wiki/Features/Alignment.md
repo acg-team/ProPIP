@@ -1,4 +1,4 @@
-[Back](./Index) | [Home](../Home)
+[Back](./Index) | [Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
 
 ---
 #  Alignment options
