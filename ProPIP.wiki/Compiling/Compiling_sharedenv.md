@@ -1,4 +1,4 @@
-[Back](./Index.md) | [Home](../ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
+[Back](./Index.md) | [Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
 
 ---
 # Compilation on a shared environment
@@ -125,7 +125,7 @@ xvfb-run ete3 build check
 ```
 #!bash
 git clone https://github.com/acg-team/ProPIP/
-cd castor
+cd ProPIP
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${SharedIncludePath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 make
 ```
@@ -133,7 +133,7 @@ make
 ```
 #!bash
 git clone https://github.com/acg-team/ProPIP/
-cd castor
+cd ProPIP
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release-static -DCMAKE_PREFIX_PATH=${SharedIncludePath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 make
 ```
