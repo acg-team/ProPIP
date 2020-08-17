@@ -52,7 +52,7 @@ source scl_source enable devtoolset-2
 
 ## Cmake (all the platforms)
 
-Castor depends on any version of CMake above 3.8.1
+ProPIP depends on any version of CMake above 3.8.1
 
 
 **cmake 3.10.3** http://cmake.org/

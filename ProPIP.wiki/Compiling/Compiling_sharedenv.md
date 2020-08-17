@@ -118,7 +118,7 @@ conda install -c etetoolkit ete3 ete_toolchain
 xvfb-run ete3 build check
 ```
 
-### Compiling Castor
+### Compiling ProPIP
 
 
 *Dynamic linking*

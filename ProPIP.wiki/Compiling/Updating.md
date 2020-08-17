@@ -23,7 +23,7 @@ cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; sudo make install;
 ```
 #!bash
 
-cd /source/folder/castor
+cd /source/folder/ProPIP
 git checkout <branch>
 git pull
 cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make;
