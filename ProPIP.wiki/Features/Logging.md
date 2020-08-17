@@ -1,4 +1,4 @@
-[Home](../ProPIP/-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md) | [Features](Index.md) |
+[Home](../ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md) | [Features](Index.md) |
 
 ---
 
