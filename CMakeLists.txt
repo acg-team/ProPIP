@@ -241,8 +241,8 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 # Files to compile
 file(GLOB SOURCES src/*.cpp src/*.cc)
 file(GLOB HEADERS include/*.hpp include/*.h)
-add_executable(Castor ${SOURCES} ${HEADERS} include/DistanceFactory.hpp src/DistanceFactory.cpp include/DistanceFactoryML.hpp include/DistanceFactoryAlign.hpp include/DistanceFactoryAngle.hpp include/DistanceFactoryPrealigned.hpp src/DistanceFactoryAngle.cpp src/DistanceFactoryML.cpp src/DistanceFactoryPrealigned.cpp src/DistanceFactoryAlign.cpp)
-set_target_properties(Castor PROPERTIES PUBLIC_HEADER "${HEADERS}")
+add_executable(ProPIP ${SOURCES} ${HEADERS} include/DistanceFactory.hpp src/DistanceFactory.cpp include/DistanceFactoryML.hpp include/DistanceFactoryAlign.hpp include/DistanceFactoryAngle.hpp include/DistanceFactoryPrealigned.hpp src/DistanceFactoryAngle.cpp src/DistanceFactoryML.cpp src/DistanceFactoryPrealigned.cpp src/DistanceFactoryAlign.cpp)
+set_target_properties(ProPIP PROPERTIES PUBLIC_HEADER "${HEADERS}")
 
 # EIGEN3
 SET(EIGEN_INCLUDE_DIR "/usr/local/include/eigen3/" CACHE STRING "path to libEigen3 headers")
@@ -261,39 +261,39 @@ if (STATIC GREATER 0)
         SET(CMAKE_C_FLAGS_DEBUGINTEL "${CMAKE_C_FLAGS_DEBUGINTEL} -static-intel -static")
     endif()
 
-    set_target_properties(Castor PROPERTIES LINK_FLAGS "-static")
-    target_link_libraries(Castor tshlib-static)
-    target_link_libraries(Castor glog::glog)
-    target_link_libraries(Castor ${INTEL_LIBS_STATIC})
-    target_link_libraries(Castor ${BPP_LIBS_STATIC})
-    target_link_libraries(Castor ${Boost_LIBRARIES})
-    target_link_libraries(Castor ${OpenMP_CXX_LIBRARIES_STATIC})
+    set_target_properties(ProPIP PROPERTIES LINK_FLAGS "-static")
+    target_link_libraries(ProPIP tshlib-static)
+    target_link_libraries(ProPIP glog::glog)
+    target_link_libraries(ProPIP ${INTEL_LIBS_STATIC})
+    target_link_libraries(ProPIP ${BPP_LIBS_STATIC})
+    target_link_libraries(ProPIP ${Boost_LIBRARIES})
+    target_link_libraries(ProPIP ${OpenMP_CXX_LIBRARIES_STATIC})
 
     # GSL
     find_package(GSL REQUIRED)
     message("Libraries: ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES}")
-    include_directories(Castor ${GSL_INCLUDE_DIR})
-    target_link_libraries(Castor ${GSL_LIBRARIES})
+    include_directories(ProPIP ${GSL_INCLUDE_DIR})
+    target_link_libraries(ProPIP ${GSL_LIBRARIES})
 
 else ()
 
-    target_link_libraries(Castor tshlib)
-    target_link_libraries(Castor glog::glog)
-    target_link_libraries(Castor ${INTEL_LIBS_SHARED})
-    target_link_libraries(Castor ${BPP_LIBS_SHARED})
-    target_link_libraries(Castor ${Boost_LIBRARIES})
-    target_link_libraries(Castor ${OpenMP_CXX_LIBRARIES})
+    target_link_libraries(ProPIP tshlib)
+    target_link_libraries(ProPIP glog::glog)
+    target_link_libraries(ProPIP ${INTEL_LIBS_SHARED})
+    target_link_libraries(ProPIP ${BPP_LIBS_SHARED})
+    target_link_libraries(ProPIP ${Boost_LIBRARIES})
+    target_link_libraries(ProPIP ${OpenMP_CXX_LIBRARIES})
 
     # GSL
     find_package(GSL REQUIRED)
     message("Libraries: ${GSL_LIBRARIES} ${GSLCBLAS_LIBRARIES}")
-    include_directories(Castor ${GSL_INCLUDE_DIR})
-    target_link_libraries(Castor ${GSL_LIBRARIES})
+    include_directories(ProPIP ${GSL_INCLUDE_DIR})
+    target_link_libraries(ProPIP ${GSL_LIBRARIES})
 
 endif()
 
 include (CTest)
-add_test(example_test Castor)
+add_test(example_test ProPIP)
 
 # Test target
 #enable_testing()
