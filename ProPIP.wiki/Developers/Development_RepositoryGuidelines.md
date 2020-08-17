@@ -1,3 +1,5 @@
+[Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
+
 ## How to commit to the repository
 
 This repository follows the [GitFlow Workflow Guidelines](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow). We use the following branches:
