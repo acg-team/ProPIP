@@ -227,6 +227,6 @@ export PATH=/mnt/efs/projects/source/cmake-3.10.2-Linux-x86_64/bin:$PATH;
 cd /mnt/efs/projects/tshlib/
 cmake -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${SharedLibraryPath} -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 sudo make install
-cd /mnt/efs/projects/minijati/
+cd /mnt/efs/projects/ProPIP/
 cmake --target ProPIP -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${SharedLibraryPath} CMakeLists.txt
 ```
