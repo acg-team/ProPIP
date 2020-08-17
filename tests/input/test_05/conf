@@ -1,13 +1,13 @@
 alphabet=DNA
 alignment=true
 alignment.version=ram
-input.sequence.file=../tests/input/test_11/seqs.fasta
+input.sequence.file=../tests/input/test_05/seqs.fasta
 input.sequence.sites_to_use=all
 init.tree=distance
 init.distance.method=infere_distance_matrix
 model=PIP(model=JC69)
 rate_distribution=Constant
 optimization=None
-output.msa.file=../tests/output/test_11/msa.fasta
-output.tree.file=../tests/output/test_11/tree.nwk
-output.estimates.file=../tests/output/test_11/estimates.log
+output.msa.file=../tests/output/test_05/msa.fasta
+output.tree.file=../tests/output/test_05/tree.nwk
+output.estimates.file=../tests/output/test_05/estimates.log
