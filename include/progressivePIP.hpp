@@ -61,6 +61,9 @@
 #define ERR_STATE (-999)
 #define DBL_EPSILON std::numeric_limits<double>::min()
 
+// REMARK DF: debug force distribution to chose always first case
+#define DEBUG_DISABLE_DISTRIBUTION 0
+
 
 
 
@@ -117,7 +120,8 @@ namespace bpp {
     // CPU: more CPU less memory
     // RAM: less CPU more memory
     // SB: stochastic backtracing version
-    enum enumDP3Dversion{CPU,RAM,SB};
+    // TBB: TBB parallel tasks version
+    enum enumDP3Dversion{CPU,RAM,RAM_BLOCK,SB,TBB_FOR_TASK,TBB_FOR_BLOCK, TBB_FOR_TASKBLOCK,TBB_TASK,TBB_BLOCK, TBB_TASKBLOCK};
     //*******************************
 
     class CompositePIPnode; // forward declaration
@@ -219,6 +223,8 @@ namespace bpp {
                             enumDP3Dversion DPversion, // DP3D version
                             int num_sb, // number of sub. optimal solutions (MSAs)
                             double temperature);  // to tune the greedyness of the sub-optimal solution
+
+        void setSTFT_size(int size);
 
         void PIPnodeAlign();
 

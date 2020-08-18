@@ -128,6 +128,114 @@ using namespace tshlib;
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
 
+/*
+ * From Intel TBB
+ */
+#include <tbb/task_scheduler_init.h>
+#include <tbb/task_scheduler_observer.h>
+#include <sched.h>
+
+class pinning_observer: public tbb::task_scheduler_observer {
+    cpu_set_t *mask;
+    int ncpus;
+
+    const int pinning_step;
+    tbb::atomic<int> thread_index;
+public:
+    pinning_observer( int pinning_step=1 ) : pinning_step(pinning_step), thread_index() {
+        for ( ncpus = sizeof(cpu_set_t)/CHAR_BIT; ncpus < 16*1024 /* some reasonable limit */; ncpus <<= 1 ) {
+            mask = CPU_ALLOC( ncpus );
+            if ( !mask ) break;
+            const size_t size = CPU_ALLOC_SIZE( ncpus );
+            CPU_ZERO_S( size, mask );
+            const int err = sched_getaffinity( 0, size, mask );
+            if ( !err ) break;
+
+            CPU_FREE( mask );
+            mask = NULL;
+            if ( errno != EINVAL )  break;
+        }
+        if ( !mask )
+            LOG(WARNING) << "Warning: Failed to obtain process affinity mask. Thread affinitization is disabled.";
+    }
+
+/*override*/ void on_scheduler_entry( bool ) {
+    if ( !mask ) return;
+
+    const size_t size = CPU_ALLOC_SIZE( ncpus );
+    const int num_cpus = CPU_COUNT_S( size, mask );
+    int thr_idx =
+#if USE_TASK_ARENA_CURRENT_SLOT
+        tbb::task_arena::current_slot();
+#else
+        thread_index++;
+#endif
+#if __MIC__
+    thr_idx += 1; // To avoid logical thread zero for the master thread on Intel(R) Xeon Phi(tm)
+#endif
+    thr_idx %= num_cpus; // To limit unique number in [0; num_cpus-1] range
+
+        // Place threads with specified step
+        int cpu_idx = 0;
+        for ( int i = 0, offset = 0; i<thr_idx; ++i ) {
+            cpu_idx += pinning_step;
+            if ( cpu_idx >= num_cpus )
+                cpu_idx = ++offset;
+        }
+
+        // Find index of 'cpu_idx'-th bit equal to 1
+        int mapped_idx = -1;
+        while ( cpu_idx >= 0 ) {
+            if ( CPU_ISSET_S( ++mapped_idx, size, mask ) )
+                --cpu_idx;
+        }
+
+        cpu_set_t *target_mask = CPU_ALLOC( ncpus );
+        CPU_ZERO_S( size, target_mask );
+        CPU_SET_S( mapped_idx, size, target_mask );
+        const int err = sched_setaffinity( 0, size, target_mask );
+
+        if ( err ) {
+            LOG(ERROR) << "Failed to set thread affinity!n";
+           // exit( EXIT_FAILURE );
+        }
+        else {
+            std::stringstream ss;
+            ss << "Set thread affinity: Thread " << thr_idx << ": CPU " << mapped_idx ;
+            LOG(INFO) << ss.str();
+        }
+        CPU_FREE( target_mask );
+    }
+
+    ~pinning_observer() {
+        if ( mask )
+            CPU_FREE( mask );
+    }
+};
+
+class concurrency_tracker: public tbb::task_scheduler_observer {
+  tbb::atomic<int> num_threads;
+
+public:
+  concurrency_tracker():
+    num_threads(0)
+  {
+    observe(true);
+  }
+
+  void on_scheduler_entry(bool) 
+  {
+    ++num_threads;
+    LOG(INFO) << "Active threads (++) " << num_threads;
+  }
+  
+  void on_scheduler_exit(bool) 
+  {
+    --num_threads;
+    LOG(INFO) << "Active threads (--) " << num_threads;
+  }
+
+};
 #include "inference_indel_rates.hpp"
 
 /*
@@ -174,6 +282,22 @@ int main(int argc, char *argv[]) {
         std::string PAR_model_substitution = ApplicationTools::getStringParameter("model", castorapp.getParams(), "JC69",
                                                                                   "", true, true);
 
+        // REMARK DF: TBB SUPPORT
+		const size_t defaultParallelism = tbb::task_scheduler_init::default_num_threads();
+		size_t parallelism = (size_t) ApplicationTools::getIntParameter("tbbparallelism", castorapp.getParams(), defaultParallelism, "", true, true);
+		if (defaultParallelism != parallelism) {
+			ApplicationTools::displayResult("Overriding TBB max parallelism", parallelism);
+		}
+        tbb::task_scheduler_init task_scheduler(parallelism);
+		concurrency_tracker tracker;
+
+		// TBB Pinning (thread affinity). If -1 disabled, if > 0 specifies step for Hyperthreading. Ex 2 will set cpus 0, 2, 4 (skipping virtual cores)
+		int pinning = ApplicationTools::getIntParameter("tbbpinning", castorapp.getParams(), -1, "", true, true);
+		pinning_observer pinner( pinning /* the number of hyper threads on each core */ );
+		if (pinning > 0) {
+		    pinner.observe( true );
+			ApplicationTools::displayResult("Overriding TBB pinning", pinning);
+		}
 
         bool PAR_alignment = ApplicationTools::getBooleanParameter("alignment", castorapp.getParams(), false);
 
@@ -979,6 +1103,31 @@ int main(int argc, char *argv[]) {
             if (PAR_alignment_version.find("cpu") != std::string::npos) {
                 DPversion = CPU; // slower but uses less memory
                 num_sb = 1;
+            }
+            // TBB parallel_for
+            else if (PAR_alignment_version.find("tbbfortaskblock") != std::string::npos) {
+                DPversion = TBB_FOR_TASKBLOCK; // faster but uses more memory
+                num_sb = 1;
+            } else if (PAR_alignment_version.find("tbbforblock") != std::string::npos) {
+                DPversion = TBB_FOR_BLOCK; // faster but uses more memory
+                num_sb = 1;
+            } else if (PAR_alignment_version.find("tbbfortask") != std::string::npos) {
+                DPversion = TBB_FOR_TASK; // faster but uses more memory
+                num_sb = 1;
+            }
+            // TBB No parallel_for
+			 else if (PAR_alignment_version.find("tbbtaskblock") != std::string::npos) {
+                DPversion = TBB_TASKBLOCK; // faster but uses more memory
+                num_sb = 1;
+            } else if (PAR_alignment_version.find("tbbblock") != std::string::npos) {
+                DPversion = TBB_BLOCK; // faster but uses more memory
+                num_sb = 1;
+            } else if (PAR_alignment_version.find("tbbtask") != std::string::npos) {
+                DPversion = TBB_TASK; // faster but uses more memory
+                num_sb = 1;
+            } else if (PAR_alignment_version.find("ramblock") != std::string::npos) {
+                DPversion = RAM_BLOCK; // faster but uses more memory
+                num_sb = 1;
             } else if (PAR_alignment_version.find("ram") != std::string::npos) {
                 DPversion = RAM; // faster but uses more memory
                 num_sb = 1;
@@ -1005,6 +1154,12 @@ int main(int argc, char *argv[]) {
                                    DPversion,    // version of the alignment algorithm
                                    num_sb,       // number of suboptimal MSAs
                                    temperature); // to tune the greedyness of the sub-optimal solution
+
+            // REMARK DF: (start) added to support runtime stft size benchmarking
+            int STFT_size = ApplicationTools::getIntParameter("optimization.stft.size", castorapp.getParams(), -1);
+            if (STFT_size > 1)
+                proPIP->setSTFT_size(STFT_size);
+            // REMARK DF: (end)
 
             proPIP->PIPnodeAlign(); // align input sequences with a DP algorithm under PIP
 

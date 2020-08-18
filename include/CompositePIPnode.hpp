@@ -81,7 +81,7 @@ namespace bpp {
                                             // by the PIPnode Id (same as bpp Node Id). The array
                                             // of PIPnodes is pre-allocated in the constructor
 
-        void PIPnodeAlign(); // align all the input sequences under the PIP model
+        virtual void PIPnodeAlign(); // align all the input sequences under the PIP model
 
     };
 

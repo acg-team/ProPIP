@@ -107,6 +107,10 @@ namespace bpp {
 
         double distanceToRoot_; // length of the path from this node to root (sum of branch length)
 
+        // REMARK DF: added to support STFT at runtime
+        bool isClone;
+        int stft_size; // Size of STFT
+
         //***************************************************************************************
         // PUBLIC METHODS
         //***************************************************************************************
@@ -121,6 +125,8 @@ namespace bpp {
 
         tshlib::VirtualNode *_getVnode(){ return vnode_; }; // get the tshlib node pointer
         bpp:: Node *_getBnode(){ return bnode_; }; // get the bpp node pointer
+
+        void _setSTFT_size(int size);
 
         bool _isRootNode(); // true if is the PIPnode root, false otherwise
 

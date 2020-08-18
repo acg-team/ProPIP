@@ -697,7 +697,12 @@ void nodeSB::_backward(LKdata &lkdata,
     // RANDOM NUMBERS GENERATOR
     //***************************************************************************************
     std::default_random_engine generator(progressivePIP_->getSeed()); // jatiapp seed
-    std::uniform_real_distribution<double> distribution(0.0, 1.0); // uniform distribution for the selection
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
+    std::uniform_real_distribution<double> distribution(0.0, 1.0); // Uniform distribution for the selection of lks with the same value
+#endif
     //***************************************************************************************
     // GAMMA VARIABLES
     //***************************************************************************************
@@ -886,7 +891,12 @@ void nodeSB::DP3D_PIP_node(int position) {
     // RANDOM NUMBERS GENERATOR
     //***************************************************************************************
     std::default_random_engine generator(progressivePIP_->getSeed()); // jatiapp seed
-    std::uniform_real_distribution<double> distribution(0.0, 1.0); // uniform distribution for the selection
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
+    std::uniform_real_distribution<double> distribution(0.0, 1.0); // Uniform distribution for the selection of lks with the same value
+#endif
     // of lks with the same value
     //***************************************************************************************
     // GAMMA VARIABLES

@@ -2982,7 +2982,12 @@ void pPIP::DP3D_PIP_RAM_FAST_SB(bpp::Node *node,int msa_idx_L, int msa_idx_R,int
     // RANDOM NUMBERS GENERATOR
     //***************************************************************************************
     std::default_random_engine generator(seed_); // jatiapp seed
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
     std::uniform_real_distribution<double> distribution(0.0,1.0); // Uniform distribution for the selection of lks with the same value
+#endif
     //***************************************************************************************
     // EARLY STOP VARIABLES
     //***************************************************************************************
@@ -3641,7 +3646,12 @@ void pPIP::DP3D_PIP_RAM_FAST(bpp::Node *node) {
     // RANDOM NUMBERS GENERATOR
     //***************************************************************************************
     std::default_random_engine generator(seed_); // jatiapp seed
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
     std::uniform_real_distribution<double> distribution(0.0,1.0); // Uniform distribution for the selection of lks with the same value
+#endif
     //***************************************************************************************
     // EARLY STOP VARIABLES
     //***************************************************************************************
@@ -4019,6 +4029,8 @@ void pPIP::DP3D_PIP_RAM_FAST(bpp::Node *node) {
     // level (k position) in the DP matrix that contains the highest lk value
     score_.at(nodeID).resize(num_sb_);
     score_.at(nodeID).at(0) = curr_best_score;
+    VLOG(1) << "Node " << node->getName() << " scored " << curr_best_score;
+
     //***************************************************************************************
     // TRACEBACK ALGORITHM
     //***************************************************************************************
@@ -5078,8 +5090,12 @@ void pPIP::DP3D_PIP(bpp::Node *node, bool local,bool flag_map) {
     col_gap_Rs = createGapCol(numLeavesRight); // create column of gaps for the right sub-tree
 
     std::default_random_engine generator(seed_);                   // jatiapp seed
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
     std::uniform_real_distribution<double> distribution(0.0, 1.0); // Uniform distribution for the selection of lks with the same value
-
+#endif
     auto epsilon = DBL_EPSILON;
 
 

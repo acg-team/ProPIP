@@ -198,6 +198,17 @@ endif()
 
 endif()
 
+# Find TBB
+find_package(TBB COMPONENTS tbb )
+if (TBB_FOUND)
+   message(STATUS "TBB ${TBB_VERSION} found:")
+   message(STATUS "Intel TBB Library ${TBB_VERSION} ${TBB_INTERFACE_VERSION} found:")
+   message(STATUS "  directory: ${PATH_INTELTBB}")
+   message(STATUS "  targets: ${TBB_IMPORTED_TARGETS}")
+else()
+  message(STATUS "TBB not found")
+endif()
+
 # Find Tree-Search Heuristic Library
 find_package(TshLib 3.0.0 REQUIRED)
 if (TSHLIB_FOUND)
@@ -268,6 +279,7 @@ if (STATIC GREATER 0)
     target_link_libraries(ProPIP ${BPP_LIBS_STATIC})
     target_link_libraries(ProPIP ${Boost_LIBRARIES})
     target_link_libraries(ProPIP ${OpenMP_CXX_LIBRARIES_STATIC})
+    target_link_libraries(ProPIP ${TBB_IMPORTED_TARGETS})
 
     # GSL
     find_package(GSL REQUIRED)
@@ -283,6 +295,7 @@ else ()
     target_link_libraries(ProPIP ${BPP_LIBS_SHARED})
     target_link_libraries(ProPIP ${Boost_LIBRARIES})
     target_link_libraries(ProPIP ${OpenMP_CXX_LIBRARIES})
+    target_link_libraries(ProPIP ${TBB_IMPORTED_TARGETS})
 
     # GSL
     find_package(GSL REQUIRED)

@@ -76,6 +76,13 @@ PIPnode::PIPnode(const progressivePIP *pPIP,
 
     nodeID_ = bnode->getId();
 
+    // REMARK DF: runtime stft support.
+    isClone = false;
+    stft_size = 1;
+}
+
+void PIPnode::_setSTFT_size(int size) {
+    stft_size = size;
 }
 
 bool PIPnode::_isRootNode(){

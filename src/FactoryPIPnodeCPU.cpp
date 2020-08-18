@@ -1183,7 +1183,12 @@ void nodeCPU::DP3D_PIP_node() {
     col_gap_Rs = createGapCol(numLeavesRight); // create column of gaps for the right sub-tree
 
     std::default_random_engine generator(progressivePIP_->getSeed()); // jatiapp seed
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
     std::uniform_real_distribution<double> distribution(0.0, 1.0); // Uniform distribution for the selection of lks with the same value
+#endif
 
     auto epsilon = DBL_EPSILON;
 

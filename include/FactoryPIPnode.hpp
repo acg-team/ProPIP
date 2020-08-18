@@ -49,6 +49,7 @@
 #include "FactoryPIPnodeCPU.hpp"
 #include "FactoryPIPnodeRAM.hpp"
 #include "FactoryPIPnodeSB.hpp"
+#include "FactoryPIPnodeTBB.hpp"
 
 namespace bpp {
 
@@ -73,9 +74,27 @@ namespace bpp {
                 case RAM:
                     return new nodeRAM(pPIP, vnode, bnode);
                     break;
+                case RAM_BLOCK:
+                {
+                    PIPnode *node = new nodeRAM(pPIP, vnode, bnode);
+                    node->_setSTFT_size(4);
+                    return node;
+                }
                 case SB:
                     return new nodeSB(pPIP, vnode, bnode);
                     break;
+                case TBB_FOR_TASK:      /* fall through */
+                case TBB_TASK:          /* fall through */
+                    return new nodeTBB(pPIP, vnode, bnode);
+                case TBB_BLOCK:         /* fall through */
+                case TBB_TASKBLOCK:     /* fall through */
+                case TBB_FOR_TASKBLOCK: /* fall through */
+                case TBB_FOR_BLOCK:     /* fall through */
+                {
+                    PIPnode *node = new nodeTBB(pPIP, vnode, bnode);
+                    node->_setSTFT_size(4);
+                    return node;
+                }
                 default:
                     LOG(FATAL) << "\nERROR DP3D version not recognized";
                     return NULL;

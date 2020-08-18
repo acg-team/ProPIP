@@ -49,11 +49,28 @@
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPmsa.hpp"
 
+#include "tbb/task.h"
+#include "tbb/task_group.h"
+#include "tbb/atomic.h"
+#include "tbb/parallel_for.h"
+#include "tbb/mutex.h"
+#include "tbb/tick_count.h"
+
+#include "DebugUtils.hpp"
+
 using namespace bpp;
 
 #define EARLY_STOP_THR 10
 
-char nodeRAM::setTRvalCompressed(int j4,int r4,char TR,char STATE){
+tbb::atomic<int> shared_progress(0);
+// REMARK DF: hack using root node's ID.
+tbb::atomic<int> shared_numnodes(0);
+
+// static init
+bool    nodeTBB::doTasks(false);
+bool    nodeTBB::doParallelFor(false);
+
+char nodeTBB::setTRvalCompressed(int j4,int r4,char TR,char STATE){
 
     char trb=TR;
     char state;
@@ -73,7 +90,7 @@ char nodeRAM::setTRvalCompressed(int j4,int r4,char TR,char STATE){
     return state;
 }
 
-int nodeRAM::getTRvalCompressed(int j4,int r4,char TR){
+int nodeTBB::getTRvalCompressed(int j4,int r4,char TR){
 
     char mask = 0b00000011;
     char state;
@@ -93,13 +110,12 @@ int nodeRAM::getTRvalCompressed(int j4,int r4,char TR){
     return (int)state;
 }
 
-double nodeRAM::max_of_three(double m,
+double nodeTBB::max_of_three(double m,
                              double x,
                              double y,
                              double epsilon) {
 
     // get max value among the three input values (m,x,y)
-
     if (fabs(m) < epsilon) { // if a cell has been initialized to 0 then its lk is -inf
         m = -std::numeric_limits<double>::infinity();
     }
@@ -133,7 +149,7 @@ double nodeRAM::max_of_three(double m,
 
 }
 
-double nodeRAM::_computeLK_MXY(double log_phi_gamma,
+double nodeTBB::_computeLK_MXY(double log_phi_gamma,
                                double valM,
                                double valX,
                                double valY,
@@ -146,7 +162,7 @@ double nodeRAM::_computeLK_MXY(double log_phi_gamma,
     return log_phi_gamma + log_pr + max_of_three(valM, valX, valY, DBL_EPSILON);
 }
 
-void nodeRAM::DP3D_PIP_leaf() {
+void nodeTBB::DP3D_PIP_leaf() {
 
     //*******************************************************************************
     // ALIGNS LEAVES
@@ -157,6 +173,8 @@ void nodeRAM::DP3D_PIP_leaf() {
 
     // get sequence name from vnodeId
     std::string seqname = progressivePIP_->sequences_->getSequencesNames().at(vnodeId);
+
+    VLOG(1) << "nodeTBB::DP3D_PIP_leaf() Node=" << bnode_->getName();
 
     // associates the sequence name to the leaf node
     MSA_->getMSA()->_setSeqNameLeaf(seqname);
@@ -207,7 +225,298 @@ void nodeRAM::DP3D_PIP_leaf() {
 
 }
 
-void nodeRAM::DP3D(LKdata &lkdata,
+
+
+void nodeTBB::DP3D_TBB(LKdata &lkdata,
+                       double log_phi_gamma,
+                       double log_nu_gamma,
+                       double &curr_best_score, // best likelihood value at this node
+                       int &level_max_lk){      // depth in M,X,Y with the highest lk value
+
+    //***************************************************************************************
+    // 3D DYNAMIC PROGRAMMING
+    //***************************************************************************************
+
+    //***************************************************************************************
+    // DP VARIABLES
+    //***************************************************************************************
+    int m_binary_this; // Level Index during computation / current
+    int m_binary_prev; // Level Index during computation / old
+    auto epsilon = DBL_EPSILON; // very small number
+    double min_inf = -std::numeric_limits<double>::infinity(); // -inf
+    //***************************************************************************************
+    // TRACEBACK VARIABLES
+    //***************************************************************************************
+    bool flag_exit = false; // early stop condition flag
+    double prev_best_score = min_inf; // previuous best value at this node
+    int tr_index = (int)STOP_STATE; // traceback index: 1=MATCH, 2=GAPX, 3=GAPY
+    double max_lk_val = min_inf; // best lk value
+    //***************************************************************************************
+    // RANDOM NUMBERS GENERATOR
+    //***************************************************************************************
+    std::default_random_engine generator(progressivePIP_->getSeed()); // jatiapp seed
+#if defined(DEBUG_DISABLE_DISTRIBUTION) && (DEBUG_DISABLE_DISTRIBUTION == 1)
+    // REMARK setting distribution max below 1/3 assures that when used, always the first case will be used
+    std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
+#else
+    std::uniform_real_distribution<double> distribution(0.0, 1.0); // Uniform distribution for the selection of lks with the same value
+#endif  // of lks with the same value
+    //***************************************************************************************
+    // EARLY STOP VARIABLES
+    //***************************************************************************************
+    int counter_to_early_stop = 0; // current number of consecutive steps where the lk decreases
+    int max_decrease_before_stop = EARLY_STOP_THR; // hardcoded to prevent early-stops
+    //***************************************************************************************
+    // WORKING VARIABLES
+    //***************************************************************************************
+    //int i,j;
+    //int id1m,id2m;
+    //int id1x,id2y;
+    //***************************************************************************************
+    // GET SONS
+    //***************************************************************************************
+    std::vector<int> *map_compr_L = &(childL_->MSA_->getMSA()->map_compressed_seqs_);
+    std::vector<int> *map_compr_R = &(childR_->MSA_->getMSA()->map_compressed_seqs_);
+
+
+    //***************************************************************************************
+    // For each slice of the 3D cube, compute the values of each cell
+    lkdata.Log3DM[0][0][0] = log_phi_gamma;
+    lkdata.Log3DX[0][0][0] = log_phi_gamma;
+    lkdata.Log3DY[0][0][0] = log_phi_gamma;
+    lkdata.TR[0][0][0] = STOP_STATE;
+
+#ifdef DEBUG_PROFILE
+    auto all_gap_duration = 0;
+    auto all_ls_duration = 0;
+    auto all_duration = 0;
+    std::chrono::high_resolution_clock::time_point t_start = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point t_end;
+    std::chrono::high_resolution_clock::time_point t_gap_start;
+    std::chrono::high_resolution_clock::time_point t_gap_end;
+    std::chrono::high_resolution_clock::time_point t_ls_start;
+    std::chrono::high_resolution_clock::time_point t_ls_end;
+#endif
+
+    tbb::mutex dataMutex;
+
+    for (int m = 1; m < lkdata.d_; m++) {
+
+        // if lk doesn't increase anymore for K steps (EARLY_STOP_THR) exit
+        if (flag_exit) {
+            break;
+        }
+
+        //***********************************************************************************
+        // alternate the two layers
+        m_binary_this = m % 2;
+        m_binary_prev = (m + 1) % 2;
+        //***********************************************************************************
+
+        //***********************************************************************************
+        // delta phi to add
+        log_phi_gamma = - log((long double) m) + log_nu_gamma;
+        //***********************************************************************************
+
+#ifdef DEBUG_PROFILE
+        t_gap_start = std::chrono::high_resolution_clock::now();
+#endif
+
+
+        //***************************************************************************
+        // GAPX[i][0]
+        tbb::parallel_for( tbb::blocked_range<int>(1,  lkdata.h_), [&] (const tbb::blocked_range<int> range) {
+            for (int i = range.begin(); i  != range.end(); ++i) {
+                //for (int i = 1; i < lkdata.h_; i++) {
+
+                // COMPUTE
+                const int id1x = map_compr_L->at(i - 1);
+                const double result = _computeLK_MXY(log_phi_gamma,
+                                                     min_inf,
+                                                     lkdata.Log3DX[m_binary_prev][i - 1][0],
+                                                     min_inf,
+                                                     lkdata.Log2DX_fp[id1x]);
+
+                // WRITE
+//dataMutex.lock();
+                lkdata.Log3DM[m_binary_this][i - 1][0] = min_inf;
+                lkdata.Log3DY[m_binary_this][i - 1][0] = min_inf;
+                lkdata.Log3DX[m_binary_this][i][0] = result;
+                lkdata.TR[m][i][0] = (int)GAP_X_STATE;
+//dataMutex.unlock();
+
+            }
+        }); // tbb::parallel_for
+
+        //***********************************************************************************
+        // GAPY[0][j]
+        tbb::parallel_for( tbb::blocked_range<int>(1,  lkdata.w_), [&] (const tbb::blocked_range<int> range) {
+            for (int j = range.begin(); j  != range.end(); ++j) {
+//        for (int j = 1; j < lkdata.w_; j++) {
+                const int id2y = map_compr_R->at(j - 1);
+                const double result = _computeLK_MXY(log_phi_gamma,
+                                                     min_inf,
+                                                     min_inf,
+                                                     lkdata.Log3DY[m_binary_prev][0][j - 1],
+                                                     lkdata.Log2DY_fp[id2y]);
+
+                // WRITE
+//		dataMutex.lock();
+                lkdata.Log3DM[m_binary_this][0][j - 1] = min_inf;
+                lkdata.Log3DX[m_binary_this][0][j - 1] = min_inf;
+                lkdata.Log3DY[m_binary_this][0][j] = result;
+                lkdata.TR[m][0][j] = (int)GAP_Y_STATE;
+//		dataMutex.unlock();
+
+            }
+        }); // tbb::parallel_for
+
+
+#ifdef DEBUG_PROFILE
+        t_gap_end = std::chrono::high_resolution_clock::now();
+    auto duration_gapx_gapy = std::chrono::duration_cast<std::chrono::microseconds>(t_gap_end - t_gap_start).count();
+    all_gap_duration += duration_gapx_gapy;
+    t_ls_start = std::chrono::high_resolution_clock::now();
+#endif
+
+
+        //***********************************************************************************
+#ifdef DO_PARALLEL_LOCALSEARCH
+        tbb::parallel_for( tbb::blocked_range<int>(1,  lkdata.h_), [&] (const tbb::blocked_range<int> range) {
+          for (int i = range.begin(); i != range.end(); i++) {
+#else
+        for (int i = 1; i < lkdata.h_; i++) {
+#endif
+            for (int j = 1; j < lkdata.w_; j++) {
+                //***************************************************************************
+                // MATCH[i][j]
+                const int id1m = map_compr_L->at(i - 1);
+                const int id2m = map_compr_R->at(j - 1);
+
+                const double Log3DM = _computeLK_MXY(log_phi_gamma,
+                                                     lkdata.Log3DM[m_binary_prev][i - 1][j - 1],
+                                                     lkdata.Log3DX[m_binary_prev][i - 1][j - 1],
+                                                     lkdata.Log3DY[m_binary_prev][i - 1][j - 1],
+                                                     lkdata.Log2DM_fp[id1m][id2m]);
+                //***************************************************************************
+                // GAPX[i][j]
+                const int id1x = map_compr_L->at(i - 1);
+
+                const double Log3DX = _computeLK_MXY(log_phi_gamma,
+                                                     lkdata.Log3DM[m_binary_prev][i - 1][j],
+                                                     lkdata.Log3DX[m_binary_prev][i - 1][j],
+                                                     lkdata.Log3DY[m_binary_prev][i - 1][j],
+                                                     lkdata.Log2DX_fp[id1x]);
+                //***************************************************************************
+                // GAPY[i][j]
+                const int id2y = map_compr_R->at(j - 1);
+
+                const double Log3DY = _computeLK_MXY(log_phi_gamma,
+                                                     lkdata.Log3DM[m_binary_prev][i][j - 1],
+                                                     lkdata.Log3DX[m_binary_prev][i][j - 1],
+                                                     lkdata.Log3DY[m_binary_prev][i][j - 1],
+                                                     lkdata.Log2DY_fp[id2y]);
+                //***************************************************************************
+                // TR[i][j]
+                // Find which matrix contains the best value of LK found until this point.
+                int threadlocal_tr_index = (int)STOP_STATE;
+                double threadlocal_max_lk_val = min_inf; // best lk value
+
+                _index_of_max(Log3DM,
+                              Log3DX,
+                              Log3DY,
+                              epsilon,
+                              generator,
+                              distribution,
+                              threadlocal_tr_index, 	// --> writing!!
+                              threadlocal_max_lk_val);	// --> writing!!
+
+//dataMutex.lock();
+                lkdata.Log3DM[m_binary_this][i][j] = Log3DM;
+                lkdata.Log3DX[m_binary_this][i][j] = Log3DX;
+                lkdata.Log3DY[m_binary_this][i][j] = Log3DY;
+                // Store the index for the traceback
+                lkdata.TR[m][i][j] = threadlocal_tr_index;
+//dataMutex.unlock();
+
+
+
+                // If we reached the corner of the 3D cube, then:
+                if ( (m>=(lkdata.h_-1)) && (m>=(lkdata.w_-1)) && (i == (lkdata.h_ - 1)) && (j == (lkdata.w_ - 1))  ) {
+                    // the algorithm is filling the last column of 3D DP matrix where
+                    // all the characters are in the MSA
+
+                    if(threadlocal_tr_index==(int)STOP_STATE){
+                        LOG(FATAL) <<"\nSomething went wrong in reading the TR value. "
+                                     "TR is neither MATCH, nor GAPX, nor GAPY. ";
+                    }
+
+                    // REMARK DF: this check needs to be performed
+                    dataMutex.lock();
+                    if (threadlocal_max_lk_val > curr_best_score) {
+                        curr_best_score = threadlocal_max_lk_val;
+                        level_max_lk = m;
+                    }
+
+                    //***********************************************************************
+                    // early stop condition
+                    if (curr_best_score < prev_best_score) {
+                        prev_best_score = curr_best_score;
+                        counter_to_early_stop++;
+                        if (counter_to_early_stop > max_decrease_before_stop) {
+                            // if for max_decrease_before_stop consecutive times
+                            // the lk decrease then exit, the maximum lk has been reached
+                            flag_exit = true;
+                        }
+                    } else {
+                        counter_to_early_stop = 0;
+                    }
+                    dataMutex.unlock();
+
+                    //***************************************************************************
+
+                }
+            }
+        }
+
+#ifdef DO_PARALLEL_LOCALSEARCH
+        }); // tbb::parallel_for
+#endif
+
+
+#ifdef DEBUG_PROFILE
+        t_ls_end = std::chrono::high_resolution_clock::now();
+    auto duration_localSearch = std::chrono::duration_cast<std::chrono::microseconds>(t_ls_end - t_ls_start).count();
+    all_ls_duration += duration_localSearch;
+#endif
+
+    }
+
+#ifdef DEBUG_PROFILE
+    t_end = std::chrono::high_resolution_clock::now();
+    all_duration = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+
+    LOG(INFO) << "DP3D lkdata[d_, w_ h_]={"
+		<< lkdata.d_ << ", "
+		<< lkdata.w_ << ", "
+		<< lkdata.h_ << "} timings[gap, localsearch, total] us {"
+		<< all_gap_duration << ", "
+		<< all_ls_duration << ", "
+		<< all_duration << "} avg time per layer "
+		<< (float) all_duration / (float) (lkdata.d_ * 1000)
+		<< " ms"
+#ifdef DO_PARALLEL_LOCALSEARCH
+		<< " localsearch TBB"
+#else
+		<< " localsearch serial"
+#endif
+		<< "";
+
+#endif
+}
+
+
+void nodeTBB::DP3D(LKdata &lkdata,
                    double log_phi_gamma,
                    double log_nu_gamma,
                    double &curr_best_score, // best likelihood value at this node
@@ -241,7 +550,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
     std::uniform_real_distribution<double> distribution(0.0, 0.0001); // Uniform distribution for the selection of lks with the same value
 #else
     std::uniform_real_distribution<double> distribution(0.0, 1.0); // Uniform distribution for the selection of lks with the same value
-#endif    // of lks with the same value
+#endif  // of lks with the same value
     //***************************************************************************************
     // EARLY STOP VARIABLES
     //***************************************************************************************
@@ -271,44 +580,11 @@ void nodeRAM::DP3D(LKdata &lkdata,
     lkdata.TR[0][0][0] = STOP_STATE;
 
 
-    //***************************************************************************
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    /*
-    FILE *fidM;
-    FILE *fidX;
-    FILE *fidY;
-    if(this->_isRootNode()){
-
-        char strM[5];
-        sprintf(strM, "%04d", this->progressivePIP_->getSeed());
-        char* txtM="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/M_";
-        char* sM=(char *)malloc(strlen(txtM)+1+4);
-        strcpy(sM,txtM);
-        strcat(sM,strM);
-
-        char strX[5];
-        sprintf(strX, "%04d", this->progressivePIP_->getSeed());
-        char* txtX="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/X_";
-        char* sX=(char *)malloc(strlen(txtX)+1+4);
-        strcpy(sX,txtX);
-        strcat(sX,strX);
-
-        char strY[5];
-        sprintf(strY, "%04d", this->progressivePIP_->getSeed());
-        char* txtY="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/Y_";
-        char* sY=(char *)malloc(strlen(txtY)+1+4);
-        strcpy(sY,txtY);
-        strcat(sY,strY);
-
-        fidM=fopen(sM,"w");
-        fidX=fopen(sX,"w");
-        fidY=fopen(sY,"w");
-    }
-     */
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //***************************************************************************
+    //***************************************************************************************
+    //printf("\n");
+    //FILE *fid;
+    //fid=fopen("/Users/max/castor/data/output/LK","w");
+    //***************************************************************************************
 
     for (int m = 1; m < lkdata.d_; m++) {
 
@@ -509,20 +785,19 @@ void nodeRAM::DP3D(LKdata &lkdata,
                         level_max_lk = m;
                     }
 
-
                     //***********************************************************************
                     // early stop condition
-                        if (curr_best_score < prev_best_score) {
-                            prev_best_score = curr_best_score;
-                            counter_to_early_stop++;
-                            if (counter_to_early_stop > max_decrease_before_stop) {
-                                // if for max_decrease_before_stop consecutive times
-                                // the lk decrease then exit, the maximum lk has been reached
-                                flag_exit = true;
-                            }
-                        } else {
-                            counter_to_early_stop = 0;
+                    if (curr_best_score < prev_best_score) {
+                        prev_best_score = curr_best_score;
+                        counter_to_early_stop++;
+                        if (counter_to_early_stop > max_decrease_before_stop) {
+                            // if for max_decrease_before_stop consecutive times
+                            // the lk decrease then exit, the maximum lk has been reached
+                            flag_exit = true;
                         }
+                    } else {
+                        counter_to_early_stop = 0;
+                    }
                     //***************************************************************************
 
                 }
@@ -530,21 +805,34 @@ void nodeRAM::DP3D(LKdata &lkdata,
         }
 
 
-
-        //***************************************************************************
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         /*
-        if(this->_isRootNode()) {
-            fprintf(fidM, "%16.14lf\n", lkdata.Log3DM[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
-            fprintf(fidX, "%16.14lf\n", lkdata.Log3DX[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
-            fprintf(fidY, "%16.14lf\n", lkdata.Log3DY[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
-        }
-        */
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         //***************************************************************************
-
+        fprintf(fid,"M%d=[\n",m);
+        for (i = 1; i < lkdata.h_; i++) {
+            for (j = 1; j < lkdata.w_; j++) {
+                fprintf(fid,"%8.6lf ",lkdata.Log3DM[m_binary_this][i][j]);
+            }
+            fprintf(fid,"\n");
+        }
+        fprintf(fid,"];\n");
+        fprintf(fid,"X%d=[\n",m);
+        for (i = 1; i < lkdata.h_; i++) {
+            for (j = 1; j < lkdata.w_; j++) {
+                fprintf(fid,"%8.6lf ",lkdata.Log3DX[m_binary_this][i][j]);
+            }
+            fprintf(fid,"\n");
+        }
+        fprintf(fid,"];\n");
+        fprintf(fid,"Y%d=[\n",m);
+        for (i = 1; i < lkdata.h_; i++) {
+            for (j = 1; j < lkdata.w_; j++) {
+                fprintf(fid,"%8.6lf ",lkdata.Log3DY[m_binary_this][i][j]);
+            }
+            fprintf(fid,"\n");
+        }
+        fprintf(fid,"];\n");
+        //***************************************************************************
+        */
 
 
 
@@ -552,29 +840,19 @@ void nodeRAM::DP3D(LKdata &lkdata,
 
 
     //***************************************************************************
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    /*
-    if(this->_isRootNode()) {
-        fclose(fidM);
-        fclose(fidX);
-        fclose(fidY);
-    }
-    */
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    //fclose(fid);
     //***************************************************************************
 
 
 }
 
-void nodeRAM::DP3D_PIP_node() {
+void nodeTBB::DP3D_PIP_node() {
 
     //*******************************************************************************
     // ALIGNS INTERNAL NODE
     //*******************************************************************************
 
-    DVLOG(1) << "DP3D_PIP at node: " << bnode_->getName();
+    VLOG(1) << "nodeTBB::DP3D_PIP_node(): " << bnode_->getName() << " parallel_for: " << nodeTBB::isDoParallelFor();
 
     //***************************************************************************************
     // DP VARIABLES
@@ -618,6 +896,16 @@ void nodeRAM::DP3D_PIP_node() {
     //***************************************************************************************
     // Initialisation of the data structure
     LKdata lkdata(d, h, h_compr, w, w_compr, numCatg, true);
+    VLOG(1) << "DP3D_PIP at node: " << bnode_->getName()
+        << " lkdata size=" << DebugUtils::debugMemsizeMB(lkdata)
+        <<" d=" << d
+        <<" h=" << h
+        <<" h_compr=" << h_compr
+        <<" w=" << w
+        <<" w_compr=" << w_compr
+        <<" numCatg=" << numCatg
+        <<" sparse=" << true;
+
     //***************************************************************************************
     // LK COMPUTATION OF AN EMPTY COLUMNS (FULL OF GAPS)
     //***************************************************************************************
@@ -677,16 +965,26 @@ void nodeRAM::DP3D_PIP_node() {
     //***************************************************************************************
     // 3D DYNAMIC PROGRAMMING
     //***************************************************************************************
-    DP3D(lkdata,
-         log_phi_gamma,
-         log_nu_gamma,
-         curr_best_score, // best likelihood value at this node
-         level_max_lk);   // depth in M,X,Y with the highest lk value
+	if (nodeTBB::isDoParallelFor()) {
+		DP3D_TBB(lkdata,
+		     log_phi_gamma,
+		     log_nu_gamma,
+		     curr_best_score, // best likelihood value at this node
+		     level_max_lk);   // depth in M,X,Y with the highest lk value
+	} else {
+		DP3D(lkdata,
+		     log_phi_gamma,
+		     log_nu_gamma,
+		     curr_best_score, // best likelihood value at this node
+		     level_max_lk);   // depth in M,X,Y with the highest lk value
+	}
     //***************************************************************************************
     // STORE THE SCORE
     //***************************************************************************************
     // level (k position) in the DP matrix that contains the highest lk value
     MSA_->getMSA()->score_ = curr_best_score;
+    VLOG(1) << "Node " << bnode_->getName() << " scored " << curr_best_score;
+
     //***************************************************************************************
     // TRACEBACK ALGORITHM
     //***************************************************************************************
@@ -847,24 +1145,25 @@ void nodeRAM::DP3D_PIP_node() {
     // COMPRESS INFO
     //***************************************************************************************
 
+// REMARK DF: added after compare with FactoryPIPnodeRAM.cpp
     // REMARK DF: clone results are compressed after computation in the gatherResults method
     if (isClone) {
 
-    MSA_->getMSA()->log_lk_down_ = lk_down_not_compressed;
-    MSA_->getMSA()->fv_data_ = fv_data_not_compressed;
-    MSA_->getMSA()->fv_sigma_ = fv_sigma_not_compressed;
+        MSA_->getMSA()->log_lk_down_ = lk_down_not_compressed;
+        MSA_->getMSA()->fv_data_ = fv_data_not_compressed;
+        MSA_->getMSA()->fv_sigma_ = fv_sigma_not_compressed;
 
     } else {
 
-    // compress the MSA
-    MSA_->getMSA()->_compressMSA(progressivePIP_->alphabet_);
+        // compress the MSA
+        MSA_->getMSA()->_compressMSA(progressivePIP_->alphabet_);
 
-    // compress fv values and lk_down
-    MSA_->getMSA()->_compressLK(lk_down_not_compressed);
-    MSA_->getMSA()->_compressFv(fv_data_not_compressed);
-    MSA_->getMSA()->_compressFvSigma(fv_sigma_not_compressed);
-
+        // compress fv values and lk_down
+        MSA_->getMSA()->_compressLK(lk_down_not_compressed);
+        MSA_->getMSA()->_compressFv(fv_data_not_compressed);
+        MSA_->getMSA()->_compressFvSigma(fv_sigma_not_compressed);
     }
+
     //***************************************************************************************
     // FREE MEMORY
     //***************************************************************************************
@@ -878,11 +1177,11 @@ void nodeRAM::DP3D_PIP_node() {
 
 }
 
-void nodeRAM::DP3D_PIP_node(int numBlocks) {
+void nodeTBB::DP3D_PIP_node(int numBlocks) {
 
-    VLOG(1) << "nodeRAM::DP3D_PIP_node("<< numBlocks << "): " << bnode_->getName();
+    VLOG(1) << "nodeTBB::DP3D_PIP_node("<< numBlocks << "): " << bnode_->getName() << " parallel_for: " << nodeTBB::isDoParallelFor();
 
-    std::vector< nodeRAM* > nodeRAMvec;
+    std::vector< nodeTBB* > nodeRAMvec;
 
     int lenL,lenR;
     int deltaL,deltaR;
@@ -913,24 +1212,24 @@ void nodeRAM::DP3D_PIP_node(int numBlocks) {
         //----------------------------------------------------------------------------------------------//
 
         if(i== (numBlocks-1)){
-            lenL = this->childL_->MSA_->getMSA(0)->map_compressed_seqs_.size()-\
-               (numBlocks-1)*floor(this->childL_->MSA_->getMSA(0)->map_compressed_seqs_.size()/numBlocks);
-            lenR = this->childR_->MSA_->getMSA(0)->map_compressed_seqs_.size()-\
-               (numBlocks-1)*floor(this->childR_->MSA_->getMSA(0)->map_compressed_seqs_.size()/numBlocks);
+            lenL = childL_size - (numBlocks-1) * floor(childL_size / numBlocks);
+            lenR = childR_size - (numBlocks-1) * floor(childR_size / numBlocks);
         }
         //---------------------------------------------------------------------------------------------//
 
         nodeRAMvec.at(i) = cloneNodeRAM( (i*deltaL) ,lenL, (i*deltaR) ,lenR);
 
-}
-
-    //*******************************************************************************************************//
-    //*******************************************************************************************************//
-    //*******************************************************************************************************//
-
-    for(int i=0;i<numBlocks;i++){
-        nodeRAMvec.at(i)->DP3D_PIP_node();
     }
+
+    //*******************************************************************************************************//
+    //*******************************************************************************************************//
+    //*******************************************************************************************************//
+    tbb::task_group group;
+    for(int i=0;i<numBlocks;i++){
+        nodeTBB *clone = nodeRAMvec.at(i);
+        group.run([=] { clone->DP3D_PIP_nodeTask(); });
+    }
+    group.wait();
 
     //*******************************************************************************************************//
     //*******************************************************************************************************//
@@ -940,9 +1239,340 @@ void nodeRAM::DP3D_PIP_node(int numBlocks) {
 }
 
 
-PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
+void nodeTBB::DP3D_PIP_nodeTask() {
 
-    nodeRAM *R = new nodeRAM(ref->progressivePIP_,ref->vnode_,ref->bnode_);
+    //*******************************************************************************
+    // ALIGNS INTERNAL NODE
+    //*******************************************************************************
+
+    VLOG(1) << "nodeTBB::DP3D_PIP_nodeTask(): " << bnode_->getName() << " parallel_for: " << nodeTBB::isDoParallelFor();
+
+    //***************************************************************************************
+    // DP VARIABLES
+    //***************************************************************************************
+    double min_inf = -std::numeric_limits<double>::infinity(); // -inf
+    //***************************************************************************************
+    // TRACEBACK VARIABLES
+    //***************************************************************************************
+    double curr_best_score = min_inf; // best likelihood value at this node
+    int level_max_lk = INT_MIN; // depth in M,X,Y with the highest lk value
+    //***************************************************************************************
+    // GAMMA VARIABLES
+    //***************************************************************************************
+    // number of discrete gamma categories
+    size_t numCatg = progressivePIP_->numCatg_;
+    //***************************************************************************************
+    // GET SONS
+    //***************************************************************************************
+    std::vector<int> *map_compr_L = &(childL_->MSA_->getMSA()->map_compressed_seqs_);
+    std::vector<int> *map_compr_R = &(childR_->MSA_->getMSA()->map_compressed_seqs_);
+    //***************************************************************************************
+    // DP SIZES
+    //***************************************************************************************
+    // Compute dimensions of the 3D block at current internal node.
+    int h = childL_->MSA_->getMSA()->_getMSAlength() + 1; // dimension of the alignment on the left side
+    int w = childR_->MSA_->getMSA()->_getMSAlength() + 1; // dimension of the alignment on the right side
+    int d = (h - 1) + (w - 1) + 1; // third dimension of the DP matrix
+    int h_compr = childL_->MSA_->getMSA()->_getCompressedMSAlength(); // dimension of the compressed alignment on the left side
+    int w_compr = childR_->MSA_->getMSA()->_getCompressedMSAlength(); // dimension of the compressed alignment on the right side
+    //***************************************************************************************
+    // WORKING VARIABLES
+    //***************************************************************************************
+    int i, j;
+    //***************************************************************************************
+    // COMPRESS_TR VARIABLES
+    //***************************************************************************************
+    int j4;
+    int r4;
+    //***************************************************************************************
+    // MEMORY ALLOCATION
+    //***************************************************************************************
+    // Initialisation of the data structure
+    LKdata lkdata(d, h, h_compr, w, w_compr, numCatg, true);
+    VLOG(1) << "DP3D_PIP at node: " << bnode_->getName()
+        << " lkdata size=" << DebugUtils::debugMemsizeMB(lkdata)
+        <<" d=" << d
+        <<" h=" << h
+        <<" h_compr=" << h_compr
+        <<" w=" << w
+        <<" w_compr=" << w_compr
+        <<" numCatg=" << numCatg
+        <<" sparse=" << true;
+
+    //***************************************************************************************
+    // LK COMPUTATION OF AN EMPTY COLUMNS (FULL OF GAPS)
+    //***************************************************************************************
+    // computes the lk of an empty column in the two subtrees
+    MSA_->getMSA()->lk_empty_.resize(numCatg);
+    MSA_->getMSA()->fv_empty_data_.resize(numCatg);
+    MSA_->getMSA()->fv_empty_sigma_.resize(numCatg);
+
+    std::vector<bpp::ColMatrix<double> > &fvL = childL_->MSA_->getMSA()->fv_empty_data_;
+    std::vector<bpp::ColMatrix<double> > &fvR = childR_->MSA_->getMSA()->fv_empty_data_;
+
+    std::vector<bpp::ColMatrix<double> > &fv_empty_data = MSA_->getMSA()->fv_empty_data_;
+    std::vector<double> &fv_empty_sigma = MSA_->getMSA()->fv_empty_sigma_;
+
+    std::vector<double> &lk_emptyL = childL_->MSA_->getMSA()->lk_empty_;
+    std::vector<double> &lk_emptyR = childR_->MSA_->getMSA()->lk_empty_;
+
+    std::vector<double> &lk_empty = MSA_->getMSA()->lk_empty_;
+
+    std::vector<double> pc0 = _computeLkEmptyNode(fvL,
+                                                  fvR,
+                                                  fv_empty_data,
+                                                  fv_empty_sigma,
+                                                  lk_emptyL,
+                                                  lk_emptyR,
+                                                  lk_empty);
+
+    //***************************************************************************************
+    // COMPUTES LOG(PHI(0))
+    //***************************************************************************************
+    // marginal likelihood for all empty columns with rate variation (gamma distribution)
+    // phi(m,pc0,r) depends on the MSA length m
+    // marginal phi marginalized over gamma categories
+    double nu_gamma = 0.0;
+    double log_phi_gamma = 0.0;
+    for (int catg = 0; catg < numCatg; catg++) {
+        // log( P_gamma(r) * phi(0,pc0(r),r) ): marginal lk for all empty columns of an alignment of size 0
+
+        nu_gamma += progressivePIP_->rDist_->getProbability((size_t) catg) * \
+                    progressivePIP_->nu_.at(catg);
+
+        log_phi_gamma += progressivePIP_->rDist_->getProbability((size_t) catg) * \
+                         (progressivePIP_->nu_.at(catg) * \
+                         (pc0.at(catg) - 1));
+    }
+
+    double log_nu_gamma = log(nu_gamma);
+    //***************************************************************************************
+    // 2D LK COMPUTATION
+    //***************************************************************************************
+    PIPmsa *pipmsaL = childL_->MSA_->getMSA();
+    PIPmsa *pipmsaR = childR_->MSA_->getMSA();
+
+    _alignStateMatrices2D(pipmsaL,
+                          pipmsaR,
+                          lkdata);
+    //***************************************************************************************
+    // 3D DYNAMIC PROGRAMMING
+    //***************************************************************************************
+	if (nodeTBB::isDoParallelFor()) {
+		DP3D_TBB(lkdata,
+		     log_phi_gamma,
+		     log_nu_gamma,
+		     curr_best_score, // best likelihood value at this node
+		     level_max_lk);   // depth in M,X,Y with the highest lk value
+	} else {
+		DP3D(lkdata,
+		     log_phi_gamma,
+		     log_nu_gamma,
+		     curr_best_score, // best likelihood value at this node
+		     level_max_lk);   // depth in M,X,Y with the highest lk value
+	}
+    //***************************************************************************************
+    // STORE THE SCORE
+    //***************************************************************************************
+    // level (k position) in the DP matrix that contains the highest lk value
+    MSA_->getMSA()->score_ = curr_best_score;
+    VLOG(1) << "Node " << bnode_->getName() << " scored " << curr_best_score;
+
+    //***************************************************************************************
+    // TRACEBACK ALGORITHM
+    //***************************************************************************************
+    std::vector<vector<bpp::ColMatrix<double> > > fv_data_not_compressed;
+    fv_data_not_compressed.resize(level_max_lk);
+
+    std::vector<std::vector<double>> fv_sigma_not_compressed;
+    fv_sigma_not_compressed.resize(level_max_lk);
+
+    std::vector<double> lk_down_not_compressed;
+    lk_down_not_compressed.resize(level_max_lk);
+
+    // start backtracing the 3 matrices (MATCH, GAPX, GAPY)
+    MSA_->getMSA()->traceback_path_.resize(level_max_lk);
+
+    i = h - 1;
+    j = w - 1;
+    int idmL, idmR;
+    int state;
+    for (int lev = level_max_lk; lev > 0; lev--) {
+
+
+#ifdef COMPRESS_TR
+        j4=j/4;
+        r4=j%4;
+        state = getTRvalCompressed(j4,r4,lkdata.TR[lev][i][j4]);
+#else
+        state = lkdata.TR[lev][i][j];
+#endif
+
+#ifdef EXTRA_TR
+        printf("%d ",state);
+#endif
+
+#ifdef EXTRA_TR
+
+        switch (state) {
+            case MATCH_STATE:
+            case MX_STATE:
+            case MY_STATE:
+            case MXY_STATE:
+
+
+
+                idmL = map_compr_L->at(i - 1);
+                idmR = map_compr_R->at(j - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_M[idmL][idmR];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_M[idmL][idmR];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DM[idmL][idmR];
+
+                i = i - 1;
+                j = j - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) MATCH_STATE;
+
+                break;
+            case GAP_X_STATE:
+            case XM_STATE:
+            case XY_STATE:
+            case XMY_STATE:
+                idmL = map_compr_L->at(i - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_X[idmL];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_X[idmL];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DX[idmL];
+
+                i = i - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) GAP_X_STATE;
+
+                break;
+            case GAP_Y_STATE:
+            case YX_STATE:
+            case YM_STATE:
+            case YMX_STATE:
+                idmR = map_compr_R->at(j - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_Y[idmR];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_Y[idmR];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DY[idmR];
+
+                j = j - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) GAP_Y_STATE;
+
+                break;
+            default:
+                LOG(FATAL) << "\nSomething went wrong during the alignment reconstruction in function "
+                              "pPIP::DP3D_PIP. Check call stack below.";
+        }
+
+#else
+
+        switch (state) {
+            case MATCH_STATE:
+
+                idmL = map_compr_L->at(i - 1);
+                idmR = map_compr_R->at(j - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_M[idmL][idmR];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_M[idmL][idmR];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DM[idmL][idmR];
+
+                i = i - 1;
+                j = j - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) MATCH_STATE;
+
+                break;
+            case GAP_X_STATE:
+
+                idmL = map_compr_L->at(i - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_X[idmL];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_X[idmL];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DX[idmL];
+
+                i = i - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) GAP_X_STATE;
+
+                break;
+            case GAP_Y_STATE:
+
+                idmR = map_compr_R->at(j - 1);
+
+                fv_data_not_compressed.at(lev - 1) = lkdata.Fv_Y[idmR];
+                fv_sigma_not_compressed.at(lev - 1) = lkdata.Fv_sigma_Y[idmR];
+                lk_down_not_compressed.at(lev - 1) = lkdata.Log2DY[idmR];
+
+                j = j - 1;
+
+                MSA_->getMSA()->traceback_path_.at(lev - 1) = (int) GAP_Y_STATE;
+
+                break;
+            default:
+                LOG(FATAL) << "\nSomething went wrong during the alignment reconstruction in function "
+                              "pPIP::DP3D_PIP. Check call stack below.";
+        }
+
+#endif
+
+    }
+    //***************************************************************************************
+    // BUILD NEW MSA
+    //***************************************************************************************
+    // converts traceback path into an MSA
+    MSA_t *msaL = childL_->MSA_->getMSA()->_getMSA();
+    MSA_t *msaR = childR_->MSA_->getMSA()->_getMSA();
+    MSA_->getMSA()->_build_MSA(*msaL, *msaR);
+
+    // assigns the sequence names of the new alligned sequences to the current MSA
+    std::vector<string> *seqNameL = &(childL_->MSA_->getMSA()->seqNames_);
+    std::vector<string> *seqNameR = &(childR_->MSA_->getMSA()->seqNames_);
+    MSA_->getMSA()->_setSeqNameNode(*seqNameL, *seqNameR);
+    //***************************************************************************************
+    // COMPRESS INFO
+    //***************************************************************************************
+
+//#ifdef STFT
+
+    // REMARK DF: clone results are compressed after computation in the gatherResults method
+    if (isClone) {
+
+
+        MSA_->getMSA()->log_lk_down_ = lk_down_not_compressed;
+        MSA_->getMSA()->fv_data_ = fv_data_not_compressed;
+        MSA_->getMSA()->fv_sigma_ = fv_sigma_not_compressed;
+    } else {
+
+        // compress the MSA
+        MSA_->getMSA()->_compressMSA(progressivePIP_->alphabet_);
+
+        // compress fv values and lk_down
+        MSA_->getMSA()->_compressLK(lk_down_not_compressed);
+        MSA_->getMSA()->_compressFv(fv_data_not_compressed);
+        MSA_->getMSA()->_compressFvSigma(fv_sigma_not_compressed);
+    }
+
+    //***************************************************************************************
+    // FREE MEMORY
+    //***************************************************************************************
+    // free memory
+    lkdata.freeMemory(true);
+
+
+    delete childL_;
+    delete childR_;
+
+}
+
+PIPnode *nodeTBB::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
+
+    nodeTBB *R = new nodeTBB(ref->progressivePIP_,ref->vnode_,ref->bnode_);
 
     R->MSA_->getMSA(0)->lk_empty_ = ref->MSA_->getMSA(0)->lk_empty_;
 
@@ -988,11 +1618,12 @@ PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
     return R;
 }
 
-nodeRAM *nodeRAM::cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR) {
+nodeTBB *nodeTBB::cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR) {
 
-    nodeRAM *R = new nodeRAM(this->progressivePIP_,this->vnode_,this->bnode_);
+    nodeTBB *R = new nodeTBB(this->progressivePIP_,this->vnode_,this->bnode_);
 
-    R->isClone = true; // REMARK DF: TBB Block Support
+    R->isClone = true;
+
     R->parent_=this->parent_;
 
     R->subTreeLenL_=this->subTreeLenL_;
@@ -1012,7 +1643,7 @@ nodeRAM *nodeRAM::cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR) {
     return R;
 }
 
-void nodeRAM::gatherResults(std::vector< nodeRAM* > &nodeRAMvec){
+void nodeTBB::gatherResults(std::vector< nodeTBB* > &nodeRAMvec){
 
     std::vector<double> lk_down_not_compressed;
     std::vector<std::vector<bpp::ColMatrix<double>>> fv_data_not_compressed;
@@ -1083,25 +1714,117 @@ void nodeRAM::gatherResults(std::vector< nodeRAM* > &nodeRAMvec){
 }
 
 
-void nodeRAM::DP3D_PIP() {
+void nodeTBB::DP3D_PIP() {
 
-    if (_isTerminalNode()) {
-        // align leaf (prepare data)
-        DP3D_PIP_leaf();
-    } else {
+    if (nodeTBB::isDoTasks()) {
+        // REMARK DF: hack: using root node's id as nodes'counter
+        if (this->parent_ == nullptr) {
+            VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_root() set numnodes=" << this->_getId();
+            shared_numnodes.store(this->_getId());
+        }
 
-        if (stft_size > 1) {
-        //*******************************************************************************************************//
-        //*******************************************************************************************************//
-        //*******************************************************************************************************//
-            DP3D_PIP_node(stft_size);
-        //*******************************************************************************************************//
-        //*******************************************************************************************************//
-        //*******************************************************************************************************//
+        if (_isTerminalNode()) {
+            VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_leaf() ";
+            tbb::tick_count t0 = tbb::tick_count::now();
+            DP3D_PIP_leaf();
+            tbb::tick_count t1 = tbb::tick_count::now();
+            VLOG(2) << "Node= " << bnode_->getName() << " DP3D_PIP_leaf() " << (t1-t0).seconds() <<  " seconds ";
         } else {
-        // align internal node
-        DP3D_PIP_node();
+            VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_node(" << stft_size << ")";
+            nodeTBB* nodeL = static_cast<nodeTBB*> (this->childL_);
+            nodeTBB* nodeR = static_cast<nodeTBB*> (this->childR_);
+
+
+            tbb::task_group childrenGroup;
+            childrenGroup.run(  [=] { nodeL->DP3D_PIP(); } );
+            childrenGroup.run(  [=] { nodeR->DP3D_PIP(); } );
+            childrenGroup.wait();
+
+            // After children nodes have been computed, proceed with local computation.
+            tbb::tick_count t0 = tbb::tick_count::now();
+            if (stft_size > 1) {
+                // Split into numBlocks and process each block using a tbb::task
+                DP3D_PIP_node(stft_size);
+            } else {
+                // Process whole blocks
+                DP3D_PIP_node();
+            }
+            tbb::tick_count t1 = tbb::tick_count::now();
+            VLOG(2) << "Node= " << bnode_->getName() << " DP3D_PIP_node(" << stft_size << ")  work took " << (t1-t0).seconds() <<  " seconds ";
+        }
+        // Update progress bar:
+        const int curStep = shared_progress.fetch_and_add(1);
+        ApplicationTools::displayGauge(curStep, shared_numnodes);
+    } else {
+        // Non Tasks version
+        if (_isTerminalNode()) {
+            VLOG(1) << "Node= " << bnode_->getName() << " nonTask DP3D_PIP_leaf() ";
+            // align leaf (prepare data)
+            tbb::tick_count t0 = tbb::tick_count::now();
+            DP3D_PIP_leaf();
+            tbb::tick_count t1 = tbb::tick_count::now();
+            VLOG(2) << "Node= " << bnode_->getName() << " nonTask DP3D_PIP_leaf() " << (t1-t0).seconds() <<  " seconds ";
+        } else {
+            VLOG(1) << "Node= " << bnode_->getName() << " nonTask DP3D_PIP_node(" << stft_size << ")";
+            tbb::tick_count t0 = tbb::tick_count::now();
+            if (stft_size > 1) {
+                DP3D_PIP_node(stft_size);
+            } else {
+                DP3D_PIP_node();
+            }
+            tbb::tick_count t1 = tbb::tick_count::now();
+            VLOG(2) << "Node= " << bnode_->getName() << " nonTask DP3D_PIP_node(" << stft_size << ")  work took " << (t1-t0).seconds() <<  " seconds ";
         }
     }
 
+}
+
+
+// REMARK DF: alternative
+void nodeTBB::DP3D_PIP_bottomUp()
+{
+    if (_isTerminalNode()) {
+        VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_leaf() ";
+        if (VLOG_IS_ON(2)) {
+            tbb::tick_count t0 = tbb::tick_count::now();
+            DP3D_PIP_leaf();
+            tbb::tick_count t1 = tbb::tick_count::now();
+            VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_leaf() " << (t1 - t0).seconds() << " seconds ";
+        }else{
+            DP3D_PIP_leaf();
+        }
+    } else {
+        VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_node(" << stft_size << ")";
+        if (VLOG_IS_ON(2)) {
+            tbb::tick_count t0 = tbb::tick_count::now();
+            if (stft_size > 1) {
+                // Split into numBlocks and process each block using a tbb::task
+                DP3D_PIP_node(stft_size);
+            } else {
+                // Process whole blocks
+                DP3D_PIP_node();
+            }
+            tbb::tick_count t1 = tbb::tick_count::now();
+            VLOG(1) << "Node= " << bnode_->getName() << " DP3D_PIP_node(" << stft_size << ")  work took " << (t1-t0).seconds() <<  " seconds ";
+        } else {
+            if (stft_size > 1)
+                DP3D_PIP_node(stft_size);
+            else
+                DP3D_PIP_node();
+        }
+    }
+
+    // Root
+    if (this->parent_ == nullptr) {
+        return;
+    }
+    // Navigate and compute parent if completeCounter == 1 (both children have completed)
+    nodeTBB* parent = static_cast<nodeTBB*> (this->parent_);
+    const int numCompleted = parent->completedChildren.fetch_and_increment();
+    if (numCompleted == 1) {
+        VLOG(1) << "Node= " << bnode_->getName() << " goto parent(" << parent->bnode_->getName() << ") numCompleted=" << numCompleted;
+        parent->DP3D_PIP_bottomUp();
+    } else {
+        VLOG(1) << "Node= " << bnode_->getName() << " skip parent("<< parent->bnode_->getName() << ") numCompleted=" << numCompleted;
+    }
 }

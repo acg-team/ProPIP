@@ -22,7 +22,7 @@ RUN git clone https://github.com/google/glog; cd glog; cmake -H. -Bbuild -G "Uni
 RUN git clone https://www.bitbucket.org/lorenzogatti89/tshlib.git; cd tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd .. ;
 RUN wget https://fossies.org/linux/misc/gsl-2.6.tar.gz; tar xfz gsl-2.6.tar.gz ; cd gsl-2.6 ; ./configure ; make all ; make install ; cd .. ; rm -rf gsl-2.6* ;
 RUN git clone https://gitlab.com/libeigen/eigen.git; cd eigen; git checkout tags/3.3.7 -b v3.3.7; mkdir -p /usr/local/include/eigen3/ ; mv Eigen /usr/local/include/eigen3/ ; cd ..; rm -rf eigen ;
+RUN wget https://github.com/01org/tbb/releases/download/2018_U5/tbb2018_20180618oss_lin.tgz;  tar xfz tbb2018_20180618oss_lin.tgz -C /opt/ ; rm -rf tbb2018_20180618oss_lin.tgz;
 
 # Build ProPIP
-RUN git clone https://github.com/acg-team/ProPIP.git; cd ProPIP; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make all; mv ProPIP /bin/ ; cd .. ;
-
+RUN git clone https://github.com/acg-team/ProPIP.git; cd ProPIP; git checkout tbb; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release  -DTBB_DIR=/opt/tbb2018_20180618oss/cmake/ CMakeLists.txt; make all; mv ProPIP /bin/ ; cd .. ;

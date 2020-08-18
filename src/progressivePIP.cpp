@@ -52,6 +52,7 @@
 #include "progressivePIP.hpp"
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
+#include "CompositePIPnodeTBB.hpp"
 
 using namespace bpp;
 
@@ -73,7 +74,6 @@ progressivePIP::progressivePIP(tshlib::Utree *utree,
     alphabetSize_ = alphabet_->getSize() - 1;   // original alphabet size
     extendedAlphabetSize_ = alphabet_->getSize();   // extended alphabet size
     seed_ = seed;   // seed for random number generation
-
 };
 
 void progressivePIP::_setLambda(double lambda) {
@@ -459,7 +459,31 @@ void progressivePIP::_initializePIP(std::vector<tshlib::VirtualNode *> &list_vno
 
     nodeFactory *nodeFactory = new bpp::nodeFactory(); // Factory pattern for DP3D-CPU, DP3D-RAM,...
 
-    compositePIPaligner_ = new CompositePIPnode(numNodes_); // Composite pattern with array of PIPnodes
+    switch (DPversion) {
+        // TBB parallel_for cases
+        case TBB_FOR_TASK:
+            compositePIPaligner_ = new CompositePIPnodeTBB(numNodes_, true, true); // Composite pattern with array of PIPnodes
+            break;
+        case TBB_FOR_TASKBLOCK:
+            compositePIPaligner_ = new CompositePIPnodeTBB(numNodes_, true, true); // Composite pattern with array of PIPnodes
+            break;
+        case TBB_FOR_BLOCK:
+            compositePIPaligner_ = new CompositePIPnodeTBB(numNodes_, false, true); // Composite pattern with array of PIPnodes
+            break;
+            // TBB no parallel_for cases
+        case TBB_TASK:
+            compositePIPaligner_ = new CompositePIPnodeTBB(numNodes_, true, false); // Composite pattern with array of PIPnodes
+            break;
+        case TBB_TASKBLOCK:
+            compositePIPaligner_ = new CompositePIPnodeTBB(numNodes_, true, false); // Composite pattern with array of PIPnodes
+            break;
+        case TBB_BLOCK:
+            compositePIPaligner_ = new CompositePIPnodeTBB(numNodes_, false, false); // Composite pattern with array of PIPnodes
+            break;
+        default:
+            compositePIPaligner_ = new CompositePIPnode(numNodes_); // Composite pattern with array of PIPnodes
+            break;
+    }
 
     for (auto &vnode:list_vnode_to_root) {
 
@@ -501,6 +525,16 @@ void progressivePIP::_initializePIP(std::vector<tshlib::VirtualNode *> &list_vno
 
     _setAllEtas();
 }
+
+void progressivePIP::setSTFT_size(int size)
+{
+    for (auto &node : compositePIPaligner_->pip_nodes_)
+    {
+        if (node->_isTerminalNode() == false)
+            node->_setSTFT_size(size);
+    }
+}
+
 
 void progressivePIP::PIPnodeAlign(){
 

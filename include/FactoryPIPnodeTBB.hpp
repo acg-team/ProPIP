@@ -22,7 +22,7 @@
  *******************************************************************************/
 
 /**
- * @file FactoryPIPnodeRAM.hpp
+ * @file FactoryPIPnodeTBB.hpp
  * @author Lorenzo Gatti
  * @author Massimo Maiolo
  * @date 19 02 2018
@@ -54,12 +54,18 @@
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPmsa.hpp"
 
-#ifndef MINIJATI_FACTORYNODERAM_HPP
-#define MINIJATI_FACTORYNODERAM_HPP
+#ifndef MINIJATI_FACTORYNODETBB_HPP
+#define MINIJATI_FACTORYNODETBB_HPP
+
+/*
+ * To consider: https://link.springer.com/chapter/10.1007/978-1-4842-4398-5_13
+ */
+
+#include "tbb/atomic.h"
 
 namespace bpp {
 
-    class nodeRAM : public PIPnode {
+class nodeTBB : public PIPnode {
 
     private:
 
@@ -67,7 +73,14 @@ namespace bpp {
         // PRIVATE FIELDS
         //***************************************************************************************
 
-        //***************************************************************************************
+        static bool doTasks;
+
+		static bool doParallelFor;
+
+        // bottomUp approach
+        tbb::atomic<int> completedChildren;
+
+    //***************************************************************************************
         // PRIVATE METHODS
         //***************************************************************************************
 
@@ -94,14 +107,23 @@ namespace bpp {
                   double &curr_best_score, // best likelihood value at this node
                   int &level_max_lk); // depth in M,X,Y with the highest lk value
 
+        void DP3D_TBB(LKdata &lkdata,
+                  double log_phi_gamma,
+                  double log_nu_gamma,
+                  double &curr_best_score, // best likelihood value at this node
+                  int &level_max_lk); // depth in M,X,Y with the highest lk value
+
         void DP3D_PIP_leaf(); // DP method to align a sequence at a leaf PIPnode
                               // (which reduces to data preparation)
 
         void DP3D_PIP_node(); // DP method to align 2 MSAs at an internal node
 
-        void DP3D_PIP_node(const int numBlocks); //REMARK DF: DP method to split a node into subnodes 
+        void DP3D_PIP_node(const int numBlocks);
+        void DP3D_PIP_nodeTask(); // DP method to align 2 MSAs at an internal node
 
-    public:
+
+
+public:
 
         //***************************************************************************************
         // PUBLIC FIELDS
@@ -112,26 +134,46 @@ namespace bpp {
         //***************************************************************************************
 
         // constructor
-        nodeRAM(const progressivePIP *pPIP, tshlib::VirtualNode *vnode, bpp::Node *bnode) : PIPnode(pPIP,
-                                                                                                    vnode,
-                                                                                                    bnode) {
+        nodeTBB(const progressivePIP *pPIP, tshlib::VirtualNode *vnode, bpp::Node *bnode)
+        : PIPnode(pPIP, vnode, bnode)
+        {
                 // create a PIPmsaSingle object
                 MSA_  = new PIPmsaSingle();
 
                 // create a new PIPmsa
                 dynamic_cast<PIPmsaSingle *>(MSA_)->pipmsa = new PIPmsa();
 
+                completedChildren = 0;
+
         }
 
-        ~nodeRAM(){ delete MSA_; };
+        ~nodeTBB(){ delete MSA_; };
+
 
         void DP3D_PIP(); // DP algorithm to align (leaf/internal node) under the PIP model
 
+        void DP3D_PIP_bottomUp();
+
+        static void setDoTasks(const bool doTasks) {
+            nodeTBB::doTasks = doTasks;
+        }
+
+        static bool isDoTasks() {
+            return nodeTBB::doTasks;
+        }
+
+        static void setDoParallelFor(const bool doParallelFor) {
+            nodeTBB::doParallelFor = doParallelFor;
+        }
+
+        static bool isDoParallelFor() {
+            return nodeTBB::doParallelFor;
+        }
 
 
-        nodeRAM *cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR);
+        nodeTBB *cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR);
         PIPnode *cloneChildNodeRAM(PIPnode *ref,int delta,int len);
-        void gatherResults(std::vector< nodeRAM* > &nodeRAMvec);
+        void gatherResults(std::vector< nodeTBB* > &nodeRAMvec);
         /*
         virtual std::unique_ptr<PIPnode> clone() const override
         {
@@ -143,4 +185,4 @@ namespace bpp {
 
 }
 
-#endif //MINIJATI_FACTORYNODERAM_HPP
+#endif //MINIJATI_FACTORYNODETBB_HPP
