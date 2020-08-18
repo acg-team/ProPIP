@@ -20,3 +20,9 @@ RUN git clone https://github.com/BioPP/bpp-seq; cd bpp-seq; git checkout tags/v2
 RUN git clone https://github.com/BioPP/bpp-phyl; cd bpp-phyl; git checkout tags/v2.4.0 -b v240; mkdir build; cd build; cmake ..; make install; cd ../.. ; rm -r bpp-phyl;
 RUN git clone https://github.com/google/glog; cd glog; cmake -H. -Bbuild -G "Unix Makefiles"; cmake --build build --target install;
 RUN git clone https://www.bitbucket.org/lorenzogatti89/tshlib.git; cd tshlib; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make install; cd .. ;
+RUN wget https://fossies.org/linux/misc/gsl-2.6.tar.gz; tar xfz gsl-2.6.tar.gz ; cd gsl-2.6 ; ./configure ; make all ; make install ; cd .. ; rm -rf gsl-2.6* ;
+RUN git clone https://gitlab.com/libeigen/eigen.git; cd eigen; git checkout tags/3.3.7 -b v3.3.7; mkdir -p /usr/local/include/eigen3/ ; mv Eigen /usr/local/include/eigen3/ ; cd ..; rm -rf eigen ;
+
+# Build ProPIP
+RUN git clone https://github.com/acg-team/ProPIP.git; cd ProPIP; git checkout master; git pull; cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make all; mv ProPIP /bin/ ; cd .. ;
+
