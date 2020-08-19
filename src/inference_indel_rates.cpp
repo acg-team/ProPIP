@@ -182,13 +182,13 @@ void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fd
 void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_input_sequences,
                                                               std::string PAR_Alphabet,
                                                               bpp::Tree *tree,
-                                                              double *lambda_from_pairs,
-                                                              double *mu_from_pairs,
+                                                              double lambda_from_pairs,
+                                                              double mu_from_pairs,
                                                               const bpp::GeneticCode*  gCode,
                                                               std::map<std::string, std::string> modelMap){
 
-    *lambda_from_pairs=0.0;
-    *mu_from_pairs=0.0;
+    lambda_from_pairs=0.0;
+    mu_from_pairs=0.0;
 
     bpp::Fasta seqReader;
     bpp::SequenceContainer *sequencesCanonical = nullptr;
@@ -312,13 +312,13 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
             gsl_vector_free(f);
             gsl_vector_free(x);
 
-            *lambda_from_pairs+=lambda_0;
-            *mu_from_pairs+=mu_0;
+            lambda_from_pairs+=lambda_0;
+            mu_from_pairs+=mu_0;
             count_pairs+=1.0;
         }
     }
 
-    *lambda_from_pairs=(*lambda_from_pairs/count_pairs);
-    *mu_from_pairs=(*mu_from_pairs/count_pairs);
+    lambda_from_pairs=(lambda_from_pairs/count_pairs);
+    mu_from_pairs=(mu_from_pairs/count_pairs);
 
 }

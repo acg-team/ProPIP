@@ -81,8 +81,8 @@ namespace inference_indel_rates{
     void infere_indel_rates_from_sequences(std::string PAR_input_sequences,
                                            std::string PAR_Alphabet,
                                            bpp::Tree *tree,
-                                           double *lambda_from_pairs,
-                                           double *mu_from_pairs,
+                                           double lambda_from_pairs,
+                                           double mu_from_pairs,
                                            const bpp::GeneticCode*  gCode,
                                            std::map<std::string, std::string> modelMap);
 
