@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 
     try {
 
-        //////////////////////////////////////////////
+        /////////////////////////////////////////
         // START THE APP
 
         bpp::CastorApplication castorapp(argc,
@@ -114,12 +114,12 @@ int main(int argc, char *argv[]) {
         bpp::ApplicationTools::displayResult("Random seed set to", castorapp.getSeed());
         ApplicationTools::displayResult("Log files location", std::string("current execution path"));
 
-        //////////////////////////////////////////////
+        /////////////////////////////////////////
         // CLI ARGUMENTS
 
         castorapp.getCLIarguments(modelMap);
 
-        //////////////////////////////////////////////
+        /////////////////////////////////////////
         // ALPHABET
         // The alphabet object contains the not-extended alphabet as requested by the user,
         // while alpha contains the extended version of the same alphabet.
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
         ApplicationTools::displayBooleanResult("Allow gaps as extra character", castorapp.PAR_model_indels);
         DLOG(INFO) << "alphabet:  " << castorapp.PAR_Alphabet << " | gap-extention " << (int) castorapp.PAR_model_indels;
 
-        //////////////////////////////////////////////
+        /////////////////////////////////////////
         // GET DATA
 
         ApplicationTools::displayMessage("\n[Preparing input data]");
@@ -146,24 +146,24 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayResult("Initial tree total length", TextTools::toString(tree->getTotalLength(), 6));
 
-        /////////////////////////
+        /////////////////////////////////////////
         // SUBSTITUTION MODEL
 
         ApplicationTools::displayMessage("\n[Setting up substitution model]");
 
         castorapp.getSubstitutionModel(modelMap,smodel,model,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // GET PARAMETERS
 
         castorapp.getParameters(parameters,smodel);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // AMONG-SITE-RATE-VARIATION
 
         castorapp.getASVR(rDist,smodel);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
 
         if (castorapp.PAR_alignment) {
@@ -173,21 +173,21 @@ int main(int argc, char *argv[]) {
             ApplicationTools::displayResult("Alignment log likelihood", TextTools::toString(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore(), 15));
         }
 
-        /////////////////////////
+        /////////////////////////////////////////
         // HOMOGENEOUS MODELING - INITIALIZATION LIKELIHOOD FUNCTIONS
 
         ApplicationTools::displayMessage("\n[Setting up likelihood functions]");
 
         castorapp.initLK(model,smodel,tl,tm,rDist,gCode,alphabet,sites,tree,utree);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // PARAMETER SANITY CHECK
 
         ApplicationTools::displayMessage("\n[Parameter sanity check]");
 
         castorapp.getParSanityCheck(tl,sites,gCode);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // OPTIMISE PARAMETERS (numerical + topology) according to user parameters
         // Optimise parameters automatically following standard pipeline
 
@@ -195,12 +195,12 @@ int main(int argc, char *argv[]) {
 
         castorapp.getOptParams(tl);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // OUTPUT
 
         castorapp.output(tree,utree,sites,tl,tm,parameters,rDist);
 
-        /////////////////////////
+        /////////////////////////////////////////
         // DELETE OBJECTS AND FREE MEMORY
 
         delete sequences;
@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
         delete model;
         delete proPIP;
 
-        /////////////////////////
+        /////////////////////////////////////////
         // CLOSE APP
         castorapp.done();
         google::ShutdownGoogleLogging();
