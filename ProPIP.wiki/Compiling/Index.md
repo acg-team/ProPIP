@@ -21,9 +21,6 @@
 [More infos here](Compilers_info.md)
 
 
-You can try to compile the project with other compilers or compilers' versions, however you are *completely* on your own.
-
-
 ### Supported linkers
 
 - ld64-351.8 provieded with Apple LLVM version 9.1.0 (clang-902.0.39.1)
