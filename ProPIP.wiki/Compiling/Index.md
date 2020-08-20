@@ -29,7 +29,7 @@ You can try to compile the project with other compilers or compilers' versions, 
 - ld64-351.8 provieded with Apple LLVM version 9.1.0 (clang-902.0.39.1)
 
 
-You can try to compile the project with other dynamic linkers or dynamic linkers' versions, however you are *completely* on your own.
+The project can also be compiled with other dynamic linkers or dynamic linker versions but unfortunately at the moment we cannot guarantee that problems will not be encountered.
 
 
 ### Libraries (dependencies)
