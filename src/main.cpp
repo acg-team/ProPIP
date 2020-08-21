@@ -121,14 +121,15 @@ int main(int argc, char *argv[]) {
 
         /////////////////////////////////////////
         // ALPHABET
-        // The alphabet object contains the not-extended alphabet as requested by the user,
-        // while alpha contains the extended version of the same alphabet.
+        // The alphabetNoGaps object contains the not-extended alphabet as requested by the user,
+        // while alphabet contains the extended version of the same alphabet.
 
         castorapp.getAlphabet(alphabetNoGaps,gCode,alphabet);
 
         ApplicationTools::displayResult("Alphabet", TextTools::toString(alphabetNoGaps->getAlphabetType()));
-        ApplicationTools::displayBooleanResult("Allow gaps as extra character", castorapp.PAR_model_indels);
-        DLOG(INFO) << "alphabet:  " << castorapp.PAR_Alphabet << " | gap-extention " << (int) castorapp.PAR_model_indels;
+        ApplicationTools::displayBooleanResult("Allow gaps as extra character", castorapp.PAR_model_indels_);
+
+        DLOG(INFO) << "alphabet:  " << castorapp.PAR_alphabet_ << " | gap-extention " << (int) castorapp.PAR_model_indels_;
 
         /////////////////////////////////////////
         // GET DATA
@@ -143,7 +144,6 @@ int main(int argc, char *argv[]) {
 
         castorapp.getTree(alphabet,alphabetNoGaps,tree,sites,sequences,modelMap,gCode,tm,utree);
 
-
         ApplicationTools::displayResult("Initial tree total length", TextTools::toString(tree->getTotalLength(), 6));
 
         /////////////////////////////////////////
@@ -151,22 +151,24 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Setting up substitution model]");
 
-        castorapp.getSubstitutionModel(modelMap,smodel,model,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
+        castorapp.getSubstitutionModel(modelMap,smodel,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
 
         /////////////////////////////////////////
         // GET PARAMETERS
 
-        castorapp.getParameters(parameters,smodel);
+        parameters = castorapp.getParameters(smodel);
+
+        CastorApplicationUtils::printParameters(parameters,smodel);
 
         /////////////////////////////////////////
         // AMONG-SITE-RATE-VARIATION
 
-        castorapp.getASVR(rDist,smodel);
+        rDist = castorapp.getASVR(smodel);
 
         /////////////////////////////////////////
         // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
 
-        if (castorapp.PAR_alignment) {
+        if (castorapp.PAR_alignment_) {
 
             castorapp.getMSA(proPIP,sites,sequences,rDist,smodel,tm,tree,utree);
 
@@ -188,12 +190,17 @@ int main(int argc, char *argv[]) {
         castorapp.getParSanityCheck(tl,sites,gCode);
 
         /////////////////////////////////////////
-        // OPTIMISE PARAMETERS (numerical + topology) according to user parameters
-        // Optimise parameters automatically following standard pipeline
+        // OPTIMISE PARAMETERS
 
         ApplicationTools::displayMessage("\n[Executing numerical parameters and topology optimization]");
 
+        // Optimise parameters (numerical + topology) automatically following standard pipeline according to user parameters
         castorapp.getOptParams(tl);
+
+        /////////////////////////////////////////
+        // BOOTSTRAP
+
+        castorapp.getBootstrap(utree,tl,sites,tm,rDist);
 
         /////////////////////////////////////////
         // OUTPUT

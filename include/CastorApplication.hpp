@@ -133,29 +133,33 @@ namespace bpp {
 
     public:
 
-        std::string PAR_model_substitution;
-        bool PAR_alignment;
-        bool PAR_model_indels;
-        std::string PAR_Alphabet;
-        std::string PAR_input_sequences;
-        std::string PAR_distance_method;
-        std::string PAR_output_file_msa;
-        std::string PAR_alignment_version;
-        std::string PAR_output_tree_format;
-        std::string PAR_output_annotation_file;
-        std::string PAR_support;
-        std::string PAR_initTreeOpt;
+        std::string PAR_model_substitution_;
 
-        int PAR_alignment_sbsolutions;
-        double PAR_alignment_sbtemperature;
-        bool PAR_estimatePIPparameters;
-        bool PAR_computeFrequenciesFromData;
+        std::string PAR_alphabet_;
+        std::string PAR_input_sequences_;
+        std::string PAR_distance_method_;
+        std::string PAR_distance_matrix_;
+        std::string PAR_output_file_msa_;
+        std::string PAR_alignment_version_;
+        std::string PAR_output_tree_format_;
+        std::string PAR_output_annotation_file_;
+        std::string PAR_support_;
+        std::string PAR_init_tree_opt_;
 
-        bool codonAlphabet;
+        int PAR_alignment_sb_solutions_;
 
-        double lambda;
-        double mu;
-        double logL;
+        double PAR_alignment_sb_temperature_;
+
+        bool PAR_estimate_pip_parameters_;
+        bool PAR_compute_frequencies_from_data_;
+        bool PAR_alignment_;
+        bool PAR_model_indels_;
+
+        bool PAR_codon_alphabet_;
+
+        double lambda_;
+        double mu_;
+        double logL_;
 
         void startTimer();
 
@@ -200,21 +204,21 @@ namespace bpp {
             std::cout << appBuild_ << std::endl;
         }
 
-        void checkInputArgument(int argc) {
+        void checkInputArgument(int argc);
 
-            if (argc < 2) {
-                this->help();
-                exit(0);
-            } else {
-                this->banner();
-                this->startTimer();
-            }
-
-        }
+        bool isPIP(std::map<std::string, std::string> &modelMap);
 
         void getCLIarguments(std::map<std::string, std::string> &modelMap);
 
+        bpp::Alphabet* getAlphabetIndel();
+
+        bpp::Alphabet* getAlphabetNoIndel();
+
         void getAlphabet(bpp::Alphabet *alphabetNoGaps,std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet);
+
+        bpp::SiteContainer* getAlignedSequences(bpp::Alphabet *alphabet);
+
+        bpp::SequenceContainer* getUnalignedSequences(bpp::Alphabet *alphabet);
 
         void getData(bpp::SequenceContainer *sequences,bpp::SiteContainer *sites,bpp::Alphabet *alphabet);
 
@@ -234,6 +238,8 @@ namespace bpp {
 
         void getInfere_distance_matrix_Tree(bpp::Tree *tree,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
 
+        void renameInternalNodes(bpp::Tree *tree);
+
         void getTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::Tree *tree,
                      bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
                      std::unique_ptr<GeneticCode> &gCode,UtreeBppUtils::treemap &tm,tshlib::Utree *utree);
@@ -245,23 +251,32 @@ namespace bpp {
                                                 bpp::DistanceMethod *distMethod);
         */
 
-        void getModelMap(std::map<std::string, std::string> &modelMap,bpp::SubstitutionModel *smodel);
+        std::map<std::string, std::string> getModelMap();
 
         void getIndelRates(std::map<std::string, std::string> &modelMap,bpp::Tree *tree,std::unique_ptr<GeneticCode> &gCode);
 
         void getSubstitutionModel(std::map<std::string, std::string> &modelMap,bpp::SubstitutionModel *smodel,
-                                  bpp::TransitionModel *model,std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
+                                  std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
                                   bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
                                   bpp::Tree *tree);
 
-        void getSubstitutionModelIndel(std::map<std::string, std::string> &modelMap,bpp::SubstitutionModel *smodel,
-                                                          bpp::TransitionModel *model,std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
-                                                          bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
-                                                          bpp::Tree *tree);
+        bpp::SubstitutionModel* initCanonicalSubstitutionModel(bpp::Alphabet *alphabetNoGaps,std::unique_ptr<GeneticCode> &gCode,
+                                                               bpp::SiteContainer *sites,std::map<std::string, std::string> &modelMap,
+                                                               bpp::Alphabet *alphabet);
 
-        void getParameters(ParameterList &parameters,bpp::SubstitutionModel *smodel);
+        bpp::SubstitutionModel* initPIPsubstitutionModel(bpp::Alphabet *alphabet,bpp::SubstitutionModel *smodel_init,
+                                                                            const bpp::SequenceContainer *data,std::unique_ptr<GeneticCode> &gCode);
 
-        void getASVR(bpp::DiscreteDistribution *rDist,bpp::SubstitutionModel *smodel);
+        bpp::SubstitutionModel* getSubstitutionModelIndel(std::map<std::string, std::string> &modelMap,
+                                                                             std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
+                                                                             bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
+                                                                             bpp::Tree *tree);
+
+        bpp::SubstitutionModel* getSubstitutionModelNoIndel(std::unique_ptr<GeneticCode> &gCode,bpp::SiteContainer *sites,bpp::Alphabet *alphabet);
+
+        ParameterList getParameters(bpp::SubstitutionModel *smodel);
+
+        DiscreteDistribution* getASVR(bpp::SubstitutionModel *smodel);
 
         void getMSA(progressivePIP *proPIP,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::DiscreteDistribution *rDist,
                     bpp::SubstitutionModel *smodel,UtreeBppUtils::treemap &tm,bpp::Tree *tree,UtreeBppUtils::Utree *utree);
@@ -274,6 +289,9 @@ namespace bpp {
 
         void getParSanityCheck(bpp::AbstractHomogeneousTreeLikelihood *tl,bpp::SiteContainer *sites,std::unique_ptr<GeneticCode> &gCode);
 
+        void getBootstrap(UtreeBppUtils::Utree *utree,bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                             bpp::SiteContainer *sites,UtreeBppUtils::treemap &tm,bpp::DiscreteDistribution *rDist);
+
         void output(bpp::Tree *tree,UtreeBppUtils::Utree *utree,bpp::SiteContainer *sites,bpp::AbstractHomogeneousTreeLikelihood *tl,
                     UtreeBppUtils::treemap &tm,ParameterList &parameters,bpp::DiscreteDistribution *rDist);
 
@@ -282,6 +300,10 @@ namespace bpp {
 
 } //end of namespace bpp;
 
+namespace CastorApplicationUtils {
 
+    void printParameters(ParameterList &parameters,bpp::SubstitutionModel *smodel);
+
+}
 
 #endif //CASTOR_JATIAPPLICATION_HPP
