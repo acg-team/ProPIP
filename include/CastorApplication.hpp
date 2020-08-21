@@ -139,6 +139,7 @@ namespace bpp {
         std::string PAR_input_sequences_;
         std::string PAR_distance_method_;
         std::string PAR_distance_matrix_;
+        std::string PAR_optim_distance_;
         std::string PAR_output_file_msa_;
         std::string PAR_alignment_version_;
         std::string PAR_output_tree_format_;
@@ -222,34 +223,28 @@ namespace bpp {
 
         void getData(bpp::SequenceContainer *sequences,bpp::SiteContainer *sites,bpp::Alphabet *alphabet);
 
-        void getInitTree(bpp::Tree *tree,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
+        bpp::Tree* getInitTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
 
         void initBranchLength(bpp::Tree *tree);
 
         void resolveMultifurcation(bpp::Tree *tree);
 
-        void getUserTree(bpp::Tree *tree);
+        bpp::Tree * getUserTree();
 
-        void getRandomTree(bpp::Tree *tree,bpp::SiteContainer *sites);
+        bpp::Tree * getRandomTree(bpp::SiteContainer *sites);
 
-        void getDistanceTree(bpp::Tree *tree,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
+        bpp::Tree* getDistanceTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
 
-        void getDistmatrixTree(bpp::Tree *tree);
+        bpp::Tree* getUserDistmatrixTree();
 
-        void getInfere_distance_matrix_Tree(bpp::Tree *tree,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
+        bpp::Tree* infereDistanceMatrixTree(bpp::SequenceContainer *sequences, bpp::Alphabet *alphabet);
 
         void renameInternalNodes(bpp::Tree *tree);
 
-        void getTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::Tree *tree,
-                     bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
-                     std::unique_ptr<GeneticCode> &gCode,UtreeBppUtils::treemap &tm,tshlib::Utree *utree);
+        bpp::Tree* getTree(bpp::Alphabet *alphabet,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences);
 
-        /*
-        void check_this_code(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::Tree *tree,
-                                                bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
-                                                std::unique_ptr<GeneticCode> &gCode,UtreeBppUtils::treemap &tm,tshlib::Utree *utree,
-                                                bpp::DistanceMethod *distMethod);
-        */
+        tshlib::Utree* getUtree(bpp::Tree *tree,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
+                                UtreeBppUtils::treemap &tm);
 
         std::map<std::string, std::string> getModelMap();
 
@@ -294,6 +289,12 @@ namespace bpp {
 
         void output(bpp::Tree *tree,UtreeBppUtils::Utree *utree,bpp::SiteContainer *sites,bpp::AbstractHomogeneousTreeLikelihood *tl,
                     UtreeBppUtils::treemap &tm,ParameterList &parameters,bpp::DiscreteDistribution *rDist);
+
+
+        void check_this_code(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::Tree *tree,
+                                                bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
+                                                std::unique_ptr<GeneticCode> &gCode,UtreeBppUtils::treemap &tm,tshlib::Utree *utree,
+                                                bpp::DistanceMethod *distMethod);
 
     };
 

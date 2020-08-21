@@ -142,8 +142,11 @@ int main(int argc, char *argv[]) {
         // INITIAL TREE
         ApplicationTools::displayMessage("\n[Preparing initial tree]");
 
-        castorapp.getTree(alphabet,alphabetNoGaps,tree,sites,sequences,modelMap,gCode,tm,utree);
+        tree = castorapp.getTree(alphabet,sites,sequences);
 
+        utree = castorapp.getUtree(tree,sites,sequences,tm);
+
+        DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
         ApplicationTools::displayResult("Initial tree total length", TextTools::toString(tree->getTotalLength(), 6));
 
         /////////////////////////////////////////
