@@ -207,23 +207,33 @@ namespace bpp {
 
         void checkInputArgument(int argc);
 
-        bool isPIP(std::map<std::string, std::string> &modelMap);
+        void getParseProcedure(std::map<std::string, std::string> &modelMap,std::string &modelStringName);
 
-        void getCLIarguments(std::map<std::string, std::string> &modelMap);
+        bool isPIP(std::string modelStringName);
+
+        std::map<std::string, std::string> getCLIarguments();
 
         bpp::Alphabet* getAlphabetIndel();
 
         bpp::Alphabet* getAlphabetNoIndel();
 
-        void getAlphabet(bpp::Alphabet *alphabetNoGaps,std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet);
+        bpp::Alphabet* getAlphabetNoGaps();
+
+        bpp::Alphabet* getAlphabet();
+
+        std::unique_ptr<GeneticCode> getGcode(bpp::Alphabet *alphabetNoGaps);
 
         bpp::SiteContainer* getAlignedSequences(bpp::Alphabet *alphabet);
 
         bpp::SequenceContainer* getUnalignedSequences(bpp::Alphabet *alphabet);
 
-        void getData(bpp::SequenceContainer *sequences,bpp::SiteContainer *sites,bpp::Alphabet *alphabet);
+        bpp::SequenceContainer* getSequences(bpp::Alphabet *alphabet);
 
-        bpp::Tree* getInitTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
+        bpp::SiteContainer* getSites(bpp::Alphabet *alphabet);
+
+        bpp::Tree* getInitTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+                               bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
+                               std::unique_ptr<GeneticCode> &gCode);
 
         void initBranchLength(bpp::Tree *tree);
 
@@ -233,7 +243,9 @@ namespace bpp {
 
         bpp::Tree * getRandomTree(bpp::SiteContainer *sites);
 
-        bpp::Tree* getDistanceTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet);
+        bpp::Tree* getDistanceTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+                                   bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
+                                   std::unique_ptr<GeneticCode> &gCode);
 
         bpp::Tree* getUserDistmatrixTree();
 
@@ -241,7 +253,13 @@ namespace bpp {
 
         void renameInternalNodes(bpp::Tree *tree);
 
-        bpp::Tree* getTree(bpp::Alphabet *alphabet,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences);
+        bpp::Tree * infereInitTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
+                                   bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
+                                   std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod);
+
+        bpp::Tree* getTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+                           bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
+                           std::unique_ptr<GeneticCode> &gCode);
 
         tshlib::Utree* getUtree(bpp::Tree *tree,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
                                 UtreeBppUtils::treemap &tm);
@@ -250,7 +268,7 @@ namespace bpp {
 
         void getIndelRates(std::map<std::string, std::string> &modelMap,bpp::Tree *tree,std::unique_ptr<GeneticCode> &gCode);
 
-        void getSubstitutionModel(std::map<std::string, std::string> &modelMap,bpp::SubstitutionModel *smodel,
+        bpp::SubstitutionModel* getSubstitutionModel(std::map<std::string, std::string> &modelMap,
                                   std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
                                   bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
                                   bpp::Tree *tree);
@@ -273,12 +291,12 @@ namespace bpp {
 
         DiscreteDistribution* getASVR(bpp::SubstitutionModel *smodel);
 
-        void getMSA(progressivePIP *proPIP,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::DiscreteDistribution *rDist,
-                    bpp::SubstitutionModel *smodel,UtreeBppUtils::treemap &tm,bpp::Tree *tree,UtreeBppUtils::Utree *utree);
+        bpp::SiteContainer* getMSA(bpp::SequenceContainer *sequences,bpp::DiscreteDistribution *rDist,bpp::SubstitutionModel *smodel,
+                                   UtreeBppUtils::treemap &tm,bpp::Tree *tree,UtreeBppUtils::Utree *utree);
 
         void getOptParams(bpp::AbstractHomogeneousTreeLikelihood *tl);
 
-        void initLK(bpp::TransitionModel *model,bpp::SubstitutionModel *smodel,bpp::AbstractHomogeneousTreeLikelihood *tl,
+        bpp::AbstractHomogeneousTreeLikelihood* initLK(bpp::TransitionModel *model,bpp::SubstitutionModel *smodel,
                     UtreeBppUtils::treemap &tm,bpp::DiscreteDistribution *rDist,std::unique_ptr<GeneticCode> &gCode,
                     bpp::Alphabet *alphabet,bpp::SiteContainer *sites,bpp::Tree *tree,UtreeBppUtils::Utree *utree);
 
@@ -291,10 +309,11 @@ namespace bpp {
                     UtreeBppUtils::treemap &tm,ParameterList &parameters,bpp::DiscreteDistribution *rDist);
 
 
-        void check_this_code(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::Tree *tree,
-                                                bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
-                                                std::unique_ptr<GeneticCode> &gCode,UtreeBppUtils::treemap &tm,tshlib::Utree *utree,
-                                                bpp::DistanceMethod *distMethod);
+        TransitionModel* getTransitionModel(bpp::SubstitutionModel *smodel,bpp::Alphabet *alphabetDistMethod,
+                                                               std::unique_ptr<GeneticCode> &gCode,VectorSiteContainer *sitesDistMethod,
+                                                               map<std::string, std::string> &parmap);
+
+        void getIgnoreParams(ParameterList &parametersToIgnore,bool &ignoreBrLen,bpp::TransitionModel *dmodel,bpp::DiscreteDistribution *rDist);
 
     };
 

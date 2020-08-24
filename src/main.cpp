@@ -93,7 +93,6 @@ int main(int argc, char *argv[]) {
     bpp::SubstitutionModel *smodel = nullptr;
     bpp::TransitionModel *model = nullptr;
     bpp::DiscreteDistribution *rDist = nullptr;
-    progressivePIP *proPIP = nullptr;
     bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
 
     try {
@@ -117,16 +116,22 @@ int main(int argc, char *argv[]) {
         /////////////////////////////////////////
         // CLI ARGUMENTS
 
-        castorapp.getCLIarguments(modelMap);
+        modelMap = castorapp.getCLIarguments();
 
         /////////////////////////////////////////
         // ALPHABET
+
         // The alphabetNoGaps object contains the not-extended alphabet as requested by the user,
         // while alphabet contains the extended version of the same alphabet.
+        alphabetNoGaps = castorapp.getAlphabetNoGaps();
 
-        castorapp.getAlphabet(alphabetNoGaps,gCode,alphabet);
+        alphabet = castorapp.getAlphabet();
+
+        // Alphabet used for codon models
+        gCode = castorapp.getGcode(alphabetNoGaps);
 
         ApplicationTools::displayResult("Alphabet", TextTools::toString(alphabetNoGaps->getAlphabetType()));
+
         ApplicationTools::displayBooleanResult("Allow gaps as extra character", castorapp.PAR_model_indels_);
 
         DLOG(INFO) << "alphabet:  " << castorapp.PAR_alphabet_ << " | gap-extention " << (int) castorapp.PAR_model_indels_;
@@ -136,17 +141,24 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Preparing input data]");
 
-        castorapp.getData(sequences,sites,alphabet);
+        ApplicationTools::displayBooleanResult("Aligned sequences", !castorapp.PAR_alignment_);
+
+        sequences = castorapp.getSequences(alphabet);
+
+        sites = castorapp.getSites(alphabet);
+
+        ApplicationTools::displayResult("Number of sequences",TextTools::toString(sites->getNumberOfSequences()));
 
         /////////////////////////////////////////
         // INITIAL TREE
         ApplicationTools::displayMessage("\n[Preparing initial tree]");
 
-        tree = castorapp.getTree(alphabet,sites,sequences);
+        tree = castorapp.getTree(sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode);
 
         utree = castorapp.getUtree(tree,sites,sequences,tm);
 
         DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
+
         ApplicationTools::displayResult("Initial tree total length", TextTools::toString(tree->getTotalLength(), 6));
 
         /////////////////////////////////////////
@@ -154,7 +166,7 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Setting up substitution model]");
 
-        castorapp.getSubstitutionModel(modelMap,smodel,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
+        smodel = castorapp.getSubstitutionModel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
 
         /////////////////////////////////////////
         // GET PARAMETERS
@@ -173,9 +185,8 @@ int main(int argc, char *argv[]) {
 
         if (castorapp.PAR_alignment_) {
 
-            castorapp.getMSA(proPIP,sites,sequences,rDist,smodel,tm,tree,utree);
+            sites = castorapp.getMSA(sequences,rDist,smodel,tm,tree,utree);
 
-            ApplicationTools::displayResult("Alignment log likelihood", TextTools::toString(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore(), 15));
         }
 
         /////////////////////////////////////////
@@ -183,7 +194,7 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Setting up likelihood functions]");
 
-        castorapp.initLK(model,smodel,tl,tm,rDist,gCode,alphabet,sites,tree,utree);
+        tl = castorapp.initLK(model,smodel,tm,rDist,gCode,alphabet,sites,tree,utree);
 
         /////////////////////////////////////////
         // PARAMETER SANITY CHECK
@@ -223,7 +234,6 @@ int main(int argc, char *argv[]) {
         delete utree;
         delete smodel;
         delete model;
-        delete proPIP;
 
         /////////////////////////////////////////
         // CLOSE APP
