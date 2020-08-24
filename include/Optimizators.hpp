@@ -67,6 +67,34 @@ namespace bpp {
 
         virtual ~Optimizators();
 
+
+        static void scaleTreeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,std::map<std::string, std::string> &params,const std::string &suffix,bool suffixIsOptional,
+                                             bool verbose,int warn,OutputStream *messageHandler,OutputStream *profiler);
+
+        static ParameterList getIgnorParamsList(const ParameterList &parameters,std::map<std::string, std::string> &params,
+                                                bpp::AbstractHomogeneousTreeLikelihood *tl,const std::string &suffix,
+                                                bool suffixIsOptional,bool verbose,int warn,string &paramListDesc,vector<string> &parNames);
+
+        static void constrainParameters(ParameterList &parametersToEstimate,std::map<std::string, std::string> &params,
+                                                           bpp::AbstractHomogeneousTreeLikelihood *tl,const std::string &suffix,
+                                                           bool suffixIsOptional,int warn,string &paramListDesc,vector<string> &parNames);
+
+        static void setBackUp(bpp::AbstractHomogeneousTreeLikelihood *tl,std::map<std::string, std::string> &params,
+                              const std::string &suffix,bool suffixIsOptional,int warn,unique_ptr<BackupListener> &backupListener,
+                              std::string &backupFile);
+
+        static void optimizeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,std::map<std::string, std::string> &params,
+                                     unique_ptr<BackupListener> &backupListener,
+                                     const std::string &suffix,bool suffixIsOptional,bool verbose,int warn,
+                                     std::map<std::string, std::string> &optArgs,std::string optName,
+                                     ParameterList parametersToEstimate,OutputStream * messageHandler,OutputStream *profiler,
+                                     unsigned int nbEvalMax,double tolerance,unsigned int optVerbose,
+                                     Optimizer *finalOptimizer,unsigned int &n);
+
+        static void finalOptimization(bpp::AbstractHomogeneousTreeLikelihood *tl,ParameterList parametersToEstimate,
+                                      OutputStream * messageHandler,OutputStream *profiler,unsigned int nbEvalMax,
+                                      double tolerance,bool verbose,Optimizer *finalOptimizer,unsigned int &n);
+
         /**
        * @brief Optimize parameters according to options.
        *

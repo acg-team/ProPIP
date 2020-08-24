@@ -91,90 +91,57 @@ namespace bpp {
     std::string Optimizators::OPTIMIZATION_BRENT = "Brent";
     std::string Optimizators::OPTIMIZATION_BFGS = "BFGS";
 
-    TreeLikelihood *Optimizators::optimizeParameters(
-            bpp::AbstractHomogeneousTreeLikelihood *inTL,
-            const ParameterList &parameters,
-            std::map<std::string, std::string> &params,
-            const std::string &suffix,
-            bool suffixIsOptional,
-            bool verbose,
-            int warn)
-    throw(Exception) {
 
+    void Optimizators::scaleTreeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,std::map<std::string, std::string> &params,
+                                         const std::string &suffix,bool suffixIsOptional,bool verbose,int warn,
+                                         OutputStream *messageHandler,OutputStream *profiler){
 
-        bpp::AbstractHomogeneousTreeLikelihood *tl = inTL;
-
-        // -------------------------------------------------------------------------
-        //  Entry point for optimization routines (both numerical and topology)
-        std::string optimization = ApplicationTools::getStringParameter("optimization", params, "FullD(derivatives=Newton)", suffix, suffixIsOptional,
-                                                                        warn);
-        if (optimization == "None" || optimization == "none") {
-            ApplicationTools::displayResult("Optimisations requested:", optimization);
-            return tl;
-        }
-
-        // -------------------------------------------------------------------------
-        // Parsing arguments
-        std::string optName;
-        std::map<std::string, std::string> optArgs;
-        KeyvalTools::parseProcedure(optimization, optName, optArgs);
-
-        // -------------------------------------------------------------------------
-        // Verbosity of the optimization routines
-        auto optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose", params, 2, suffix, suffixIsOptional, warn + 1);
-
-        // -------------------------------------------------------------------------
-        // Message handler
-        std::string mhPath = ApplicationTools::getAFilePath("optimization.message_handler", params, false, false, suffix, suffixIsOptional, "none",
-                                                            warn + 1);
-        auto *messageHandler = static_cast<OutputStream *>((mhPath == "none") ? 0 : (mhPath == "std") ? ApplicationTools::message.get()
-                                                                                                      : new StlOutputStream(
-                        new std::ofstream(mhPath.c_str(), std::ios::out)));
-
-        if (verbose) ApplicationTools::displayResult("Numerical opt. | Message handler", mhPath);
-
-        // -------------------------------------------------------------------------
-        // Profiler
-        std::string prPath = ApplicationTools::getAFilePath("optimization.profiler", params, false, false, suffix, suffixIsOptional, "none",
-                                                            warn + 1);
-        auto *profiler = static_cast<OutputStream *>((prPath == "none") ? nullptr : (prPath == "std") ? ApplicationTools::message.get()
-                                                                                                      : new StlOutputStream(
-                        new std::ofstream(prPath.c_str(), std::ios::app)));
-        if (profiler) profiler->setPrecision(20);
-
-        if (verbose) ApplicationTools::displayResult("Numerical opt. | Optimizator profiler", prPath);
-
-        // -------------------------------------------------------------------------
-        // Scaling tree topology
         bool scaleFirst = ApplicationTools::getBooleanParameter("optimization.scale_first", params, false, suffix, suffixIsOptional, warn + 1);
         if (scaleFirst) {
             // We scale the tree before optimizing each branch length separately:
-            if (verbose) ApplicationTools::displayMessage("Scaling the tree before optimizing each branch length separately.");
+            if (verbose){
+                ApplicationTools::displayMessage("Scaling the tree before optimizing each branch length separately.");
+            }
 
 
             double tolerance = ApplicationTools::getDoubleParameter("optimization.scale_first.tolerance", params, .0001, suffix, suffixIsOptional,
                                                                     warn + 1);
-            if (verbose) ApplicationTools::displayResult("Numerical opt. | Scaling tolerance:", tolerance);
+            if (verbose){
+                ApplicationTools::displayResult("Numerical opt. | Scaling tolerance:", tolerance);
+            }
 
 
             auto nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.scale_first.max_number_f_eval", params, 1000000, suffix,
                                                                           suffixIsOptional, warn + 1);
-            if (verbose) ApplicationTools::displayResult("Numerical opt. | Scaling max # f eval:", nbEvalMax);
+            if (verbose){
+                ApplicationTools::displayResult("Numerical opt. | Scaling max # f eval:", nbEvalMax);
+            }
 
 
             OptimizationTools::optimizeTreeScale(tl, tolerance, nbEvalMax, messageHandler, profiler);
-            if (verbose) ApplicationTools::displayResult("Numerical opt. | New tree likelihood:", -tl->getValue());
+            if (verbose){
+                ApplicationTools::displayResult("Numerical opt. | New tree likelihood:", -tl->getValue());
+            }
 
         }
 
-        // -------------------------------------------------------------------------
-        // Ignoring parameters: should I ignore some parameters?
-        ParameterList parametersToEstimate = parameters;
-        vector<string> parNames = parametersToEstimate.getParameterNames();
+    }
 
-        if (params.find("optimization.ignore_parameter") != params.end())
+
+    ParameterList Optimizators::getIgnorParamsList(const ParameterList &parameters,std::map<std::string, std::string> &params,
+                                          bpp::AbstractHomogeneousTreeLikelihood *tl,const std::string &suffix,
+                                          bool suffixIsOptional,bool verbose,int warn,string &paramListDesc,vector<string> &parNames){
+
+        ParameterList parametersToEstimate = parameters;
+
+        parNames = parametersToEstimate.getParameterNames();
+
+        if (params.find("optimization.ignore_parameter") != params.end()){
             throw Exception("optimization.ignore_parameter is deprecated, use optimization.ignore_parameters instead!");
-        string paramListDesc = ApplicationTools::getStringParameter("optimization.ignore_parameters", params, "", suffix, suffixIsOptional, warn + 1);
+        }
+
+        paramListDesc = ApplicationTools::getStringParameter("optimization.ignore_parameters", params, "", suffix, suffixIsOptional, warn + 1);
+
         StringTokenizer st(paramListDesc, ",");
         while (st.hasMoreToken()) {
             try {
@@ -228,11 +195,18 @@ namespace bpp {
 
             }
         }
-        // -------------------------------------------------------------------------
-        // Constrains: should I constrain some parameters?
+
+        return parametersToEstimate;
+    }
+
+    void Optimizators::constrainParameters(ParameterList &parametersToEstimate,std::map<std::string, std::string> &params,
+                                           bpp::AbstractHomogeneousTreeLikelihood *tl,const std::string &suffix,
+                                           bool suffixIsOptional,int warn,string &paramListDesc,vector<string> &parNames){
+
         vector<string> parToEstNames = parametersToEstimate.getParameterNames();
-        if (params.find("optimization.constrain_parameter") != params.end())
+        if (params.find("optimization.constrain_parameter") != params.end()){
             throw Exception("optimization.constrain_parameter is deprecated, use optimization.constrain_parameters instead!");
+        }
         paramListDesc = ApplicationTools::getStringParameter("optimization.constrain_parameters", params, "", suffix, suffixIsOptional, warn + 1);
 
         string constraint;
@@ -298,24 +272,14 @@ namespace bpp {
             }
         }
 
+    }
 
-        // -------------------------------------------------------------------------
-        // Options for optimization routines
-        // -------------------------------------------------------------------------
+    void Optimizators::setBackUp(bpp::AbstractHomogeneousTreeLikelihood *tl,std::map<std::string, std::string> &params,const std::string &suffix,
+                                 bool suffixIsOptional,int warn,unique_ptr<BackupListener> &backupListener,std::string &backupFile){
 
-        // Number of max likelihood evaluations
-        auto nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval", params, 1000000, suffix, suffixIsOptional,
-                                                                      warn + 1);
-        ApplicationTools::displayResult("Numerical opt. | Max # ML evaluations", TextTools::toString(nbEvalMax));
-
-        // Tolerance
-        double tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance", params, .000001, suffix, suffixIsOptional, warn + 1);
-        ApplicationTools::displayResult("Numerical opt. | Tolerance", TextTools::toString(tolerance));
-
-        // Backing up or restoring?
-        unique_ptr<BackupListener> backupListener;
-        string backupFile = ApplicationTools::getAFilePath("optimization.backup.file", params, false, false, suffix, suffixIsOptional, "none",
+        backupFile = ApplicationTools::getAFilePath("optimization.backup.file", params, false, false, suffix, suffixIsOptional, "none",
                                                            warn + 1);
+
         if (backupFile != "none") {
             ApplicationTools::displayResult("Parameter opt. | Parameters will be backup to", backupFile);
 
@@ -351,7 +315,16 @@ namespace bpp {
             }
         }
 
-        // Topology optimisation
+    }
+
+    void Optimizators::optimizeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,std::map<std::string, std::string> &params,
+                                        unique_ptr<BackupListener> &backupListener,
+                                        const std::string &suffix,bool suffixIsOptional,bool verbose,int warn,
+                                        std::map<std::string, std::string> &optArgs,std::string optName,
+                                        ParameterList parametersToEstimate,OutputStream * messageHandler,OutputStream *profiler,
+                                        unsigned int nbEvalMax,double tolerance,unsigned int optVerbose,
+                                        Optimizer *finalOptimizer,unsigned int &n){
+
         bool optimizeTopo = ApplicationTools::getBooleanParameter("optimization.topology", params, false, suffix, suffixIsOptional, warn + 1);
         ApplicationTools::displayResult("Parameter opt. | Optimize topology", optimizeTopo ? "yes" : "no");
         tshlib::TreeSearch *treesearch;
@@ -390,7 +363,7 @@ namespace bpp {
         auto nstep = ApplicationTools::getParameter<unsigned int>("nstep", optArgs, 1, "", true, warn + 1);
         if (verbose && nstep > 1) ApplicationTools::displayResult("# of precision steps", TextTools::toString(nstep));
 
-        unsigned int n = 0;
+        n = 0;
         if ((optName == "D-Brent") || (optName == "D-BFGS") || (optName == "ND-Brent") || (optName == "ND-BFGS")) {
             // Uses Newton-Brent method or Newton-BFGS method
             string optMethodModel;
@@ -424,7 +397,7 @@ namespace bpp {
                 double PAR_optim_topology_tolerance = ApplicationTools::getDoubleParameter("tolerance", optTopology_MethodDetails, 0.001, suffix,
                                                                                            suffixIsOptional, warn + 1);
                 int PAR_optim_topology_threads = ApplicationTools::getIntParameter("threads", optTopology_MethodDetails, 1, suffix,
-                                                                                     suffixIsOptional, warn + 1);
+                                                                                   suffixIsOptional, warn + 1);
                 std::string PAR_lkmove = ApplicationTools::getStringParameter("optimization.topology.likelihood", params, "bothways", "", true, true);
 
                 // Prepare settings for the tree-search object (method + coverage)
@@ -586,7 +559,6 @@ namespace bpp {
 
         if (verbose) ApplicationTools::displayResult("\nFinal optimization step", finalMethod);
 
-        Optimizer *finalOptimizer = nullptr;
         if (finalMethod == "none") {}
         else if (finalMethod == "simplex") {
             finalOptimizer = new DownhillSimplexMethod(tl);
@@ -627,27 +599,141 @@ namespace bpp {
 
             }
 
-        } else
+        } else{
             throw Exception("Unknown final optimization method: " + finalMethod);
-
-        if (finalOptimizer) {
-            parametersToEstimate.matchParametersValues(tl->getParameters());
-
-            finalOptimizer->setProfiler(profiler);
-            finalOptimizer->setMessageHandler(messageHandler);
-            finalOptimizer->setMaximumNumberOfEvaluations(nbEvalMax);
-            finalOptimizer->getStopCondition()->setTolerance(tolerance);
-            finalOptimizer->setVerbose((unsigned int) verbose);
-            finalOptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);
-            finalOptimizer->init(parametersToEstimate);
-            finalOptimizer->optimize();
-            n += finalOptimizer->getNumberOfEvaluations();
-            delete finalOptimizer;
         }
 
-        if (verbose) ApplicationTools::displayResult("\nPerformed", TextTools::toString(n) + " function evaluations.");
 
-        if (verbose) ApplicationTools::displayResult("Log likelihood after num/top optimisation", TextTools::toString(-tl->getValue(), 15));
+    }
+
+    void Optimizators::finalOptimization(bpp::AbstractHomogeneousTreeLikelihood *tl,ParameterList parametersToEstimate,
+                                         OutputStream * messageHandler,OutputStream *profiler,unsigned int nbEvalMax,
+                                         double tolerance,bool verbose,Optimizer *finalOptimizer,unsigned int &n){
+
+        parametersToEstimate.matchParametersValues(tl->getParameters());
+
+        finalOptimizer->setProfiler(profiler);
+        finalOptimizer->setMessageHandler(messageHandler);
+        finalOptimizer->setMaximumNumberOfEvaluations(nbEvalMax);
+        finalOptimizer->getStopCondition()->setTolerance(tolerance);
+        finalOptimizer->setVerbose((unsigned int) verbose);
+        finalOptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);
+        finalOptimizer->init(parametersToEstimate);
+        finalOptimizer->optimize();
+        n += finalOptimizer->getNumberOfEvaluations();
+        delete finalOptimizer;
+
+    }
+
+    TreeLikelihood *Optimizators::optimizeParameters(
+            bpp::AbstractHomogeneousTreeLikelihood *inTL,
+            const ParameterList &parameters,
+            std::map<std::string, std::string> &params,
+            const std::string &suffix,
+            bool suffixIsOptional,
+            bool verbose,
+            int warn)
+    throw(Exception) {
+
+
+        bpp::AbstractHomogeneousTreeLikelihood *tl = inTL;
+
+        ParameterList parametersToEstimate;
+        string paramListDesc;
+        vector<string> parNames;
+        unique_ptr<BackupListener> backupListener;
+        std::string backupFile;
+        OutputStream * messageHandler;
+        OutputStream *profiler;
+        unsigned int nbEvalMax;
+        double tolerance;
+        unsigned int optVerbose;
+        Optimizer *finalOptimizer = nullptr;
+        unsigned int n = 0;
+        // -------------------------------------------------------------------------
+        //  Entry point for optimization routines (both numerical and topology)
+        std::string optimization = ApplicationTools::getStringParameter("optimization", params, "FullD(derivatives=Newton)", suffix, suffixIsOptional,warn);
+
+        if (optimization == "None" || optimization == "none") {
+            ApplicationTools::displayResult("Optimisations requested:", optimization);
+            return tl;
+        }
+
+        // -------------------------------------------------------------------------
+        // Parsing arguments
+        std::string optName;
+        std::map<std::string, std::string> optArgs;
+        KeyvalTools::parseProcedure(optimization, optName, optArgs);
+
+        // -------------------------------------------------------------------------
+        // Verbosity of the optimization routines
+        optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose", params, 2, suffix, suffixIsOptional, warn + 1);
+
+        // -------------------------------------------------------------------------
+        // Message handler
+        std::string mhPath = ApplicationTools::getAFilePath("optimization.message_handler", params, false, false, suffix, suffixIsOptional, "none",warn + 1);
+
+        messageHandler = static_cast<OutputStream *>((mhPath == "none") ? 0 : (mhPath == "std") ? ApplicationTools::message.get() : new StlOutputStream(new std::ofstream(mhPath.c_str(), std::ios::out)));
+
+        if (verbose){
+            ApplicationTools::displayResult("Numerical opt. | Message handler", mhPath);
+        }
+
+        // -------------------------------------------------------------------------
+        // Profiler
+        std::string prPath = ApplicationTools::getAFilePath("optimization.profiler", params, false, false, suffix, suffixIsOptional, "none",warn + 1);
+
+        profiler = static_cast<OutputStream *>((prPath == "none") ? nullptr : (prPath == "std") ? ApplicationTools::message.get(): new StlOutputStream(new std::ofstream(prPath.c_str(), std::ios::app)));
+
+        if (profiler){
+            profiler->setPrecision(20);
+        }
+
+        if (verbose){
+            ApplicationTools::displayResult("Numerical opt. | Optimizator profiler", prPath);
+        }
+
+        // -------------------------------------------------------------------------
+        // Scaling tree topology
+        scaleTreeTopology(tl,params,suffix,suffixIsOptional,verbose,warn,messageHandler, profiler);
+
+        // -------------------------------------------------------------------------
+        // Ignoring parameters: should I ignore some parameters?
+        parametersToEstimate = getIgnorParamsList(parameters,params,tl,suffix,suffixIsOptional,verbose,warn,paramListDesc,parNames);
+
+        // -------------------------------------------------------------------------
+        // Constrains: should I constrain some parameters?
+        constrainParameters(parametersToEstimate,params,tl,suffix,suffixIsOptional,warn,paramListDesc,parNames);
+
+        // -------------------------------------------------------------------------
+        // Options for optimization routines
+        // -------------------------------------------------------------------------
+
+        // Number of max likelihood evaluations
+        nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval", params, 1000000, suffix, suffixIsOptional,
+                                                                      warn + 1);
+        ApplicationTools::displayResult("Numerical opt. | Max # ML evaluations", TextTools::toString(nbEvalMax));
+
+        // Tolerance
+        tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance", params, .000001, suffix, suffixIsOptional, warn + 1);
+        ApplicationTools::displayResult("Numerical opt. | Tolerance", TextTools::toString(tolerance));
+
+        // Backing up or restoring?
+        setBackUp(tl,params,suffix,suffixIsOptional,warn,backupListener,backupFile);
+
+        // Topology optimisation
+        optimizeTopology(tl,params,backupListener,suffix,suffixIsOptional,verbose,warn,optArgs,optName,parametersToEstimate,
+                messageHandler,profiler,nbEvalMax,tolerance,optVerbose,finalOptimizer,n);
+
+        if (finalOptimizer) {
+            finalOptimization(tl,parametersToEstimate,messageHandler,profiler,nbEvalMax,tolerance,verbose,finalOptimizer,n);
+        }
+
+        if (verbose){
+            ApplicationTools::displayResult("\nPerformed", TextTools::toString(n) + " function evaluations.");
+
+            ApplicationTools::displayResult("Log likelihood after num/top optimisation", TextTools::toString(-tl->getValue(), 15));
+        }
 
 
         if (backupFile != "none") {
