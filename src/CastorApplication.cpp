@@ -999,7 +999,15 @@ bpp::SiteContainer* CastorApplication::getMSA(bpp::SequenceContainer *sequences,
 
 void CastorApplication::getOptParams(bpp::AbstractHomogeneousTreeLikelihood *tl){
 
-    tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(tl,tl->getParameters(),this->getParams(),"",true,true,0));
+    //==================================
+    // m@x
+    //tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(tl,tl->getParameters(),this->getParams(),"",true,true,0));
+    Optimizators * opt = nullptr;
+    opt = new Optimizators();
+    opt->init(this->getParams(),"", true, true, 0);
+    tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(opt->optimizeParameters(tl,tl->getParameters()));
+    delete opt;
+    //==================================
 
     this->logL_ = tl->getLogLikelihood();
 
@@ -1331,10 +1339,20 @@ bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alpha
 
     ApplicationTools::displayResult("Initial tree optimization | Tolerance",TextTools::toString(tolerance));
 
-    tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
+    //==================================
+    // m@x
+    //tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
+    //                                              !ignoreBrLen, this->PAR_optim_distance_,
+    //                                              tolerance, nbEvalMax, profiler, messenger,
+    //                                              optVerbose);
+    Optimizators * opt = nullptr;
+    opt = new Optimizators();
+    tree = opt->buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
                                                   !ignoreBrLen, this->PAR_optim_distance_,
                                                   tolerance, nbEvalMax, profiler, messenger,
                                                   optVerbose);
+    delete opt;
+    //==================================
 
     delete messenger;
     delete profiler;
