@@ -63,6 +63,26 @@
 
 namespace bpp {
 
+    struct structParams{
+        ParameterList parametersToEstimate;
+        string paramListDesc;
+        vector<string> parNames;
+        std::map<std::string, std::string> optArgs;
+    };
+
+    struct structTreeSearchParams{
+        std::string PAR_optim_topology_coverage;
+        std::string PAR_optim_topology_branchoptim;
+        int PAR_optim_topology_maxcycles;
+        double PAR_optim_topology_tolerance;
+        int PAR_optim_topology_threads;
+        std::string PAR_lkmove;
+    };
+
+}
+
+namespace bpp {
+
     class Optimizators {
 
     private:
@@ -71,28 +91,42 @@ namespace bpp {
         double tolerance;
         unsigned int optVerbose;
         unsigned int n;
+        unsigned int nstep;
         std::string suffix;
         bool suffixIsOptional;
         bool verbose;
         bool optimizeTopo;
+        bool reparam;
+        bool useClock;
         int warn;
         std::map<std::string, std::string> params;
         OutputStream * messageHandler;
         OutputStream * profiler;
         OutputStream * finalOptimizer;
         std::string backupFile;
+        std::string optimization;
+        std::string finalMethod;
+        std::string optMethodDeriv;
         Optimizer *finOptimizer;
+        unique_ptr<BackupListener> backupListener;
+        bool optNumFirst;
+        unsigned int topoNbStep;
+        double tolBefore;
+        double tolDuring;
+        std::string clock;
+        std::string optName;
+        std::string optMethodModel;
 
     public:
 
-        static std::string OPTIMIZATION_GRADIENT;
-        static std::string OPTIMIZATION_NEWTON;
-        static std::string OPTIMIZATION_BRENT;
-        static std::string OPTIMIZATION_BFGS;
+        std::string OPTIMIZATION_GRADIENT;
+        std::string OPTIMIZATION_NEWTON;
+        std::string OPTIMIZATION_BRENT;
+        std::string OPTIMIZATION_BFGS;
 
-        static std::string DISTANCEMETHOD_INIT;
-        static std::string DISTANCEMETHOD_PAIRWISE;
-        static std::string DISTANCEMETHOD_ITERATIONS;
+        std::string DISTANCEMETHOD_INIT;
+        std::string DISTANCEMETHOD_PAIRWISE;
+        std::string DISTANCEMETHOD_ITERATIONS;
 
         Optimizators(){
 
@@ -100,6 +134,7 @@ namespace bpp {
             this->tolerance = 0.0;
             this->optVerbose = 0;
             this->n = 0;
+            this->nstep = 0;
             this->suffix = "";
             this->suffixIsOptional = true;
             this->verbose = true;
@@ -109,84 +144,79 @@ namespace bpp {
             this->profiler = nullptr;
             this->finalOptimizer = nullptr;
             this->backupFile = "";
+            this->finalMethod = "";
             this->finalOptimizer = nullptr;
+            this->reparam = false;
+            this->useClock = false;
+            this->optMethodDeriv = "";
+            this->optNumFirst = false;
+            this->topoNbStep = 0;
+            this->tolBefore = 0.0;
+            this->tolDuring = 0.0;
+            this->clock = "";
+            this->optName = "";
+            this->optimization  = "";
+            this->optMethodModel = "";
+
+            this->OPTIMIZATION_NEWTON = "newton";
+            this->OPTIMIZATION_GRADIENT = "gradient";
+            this->OPTIMIZATION_BRENT = "Brent";
+            this->OPTIMIZATION_BFGS = "BFGS";
+            this->DISTANCEMETHOD_INIT = "init";
+            this->DISTANCEMETHOD_PAIRWISE = "pairwise";
+            this->DISTANCEMETHOD_ITERATIONS = "iterations";
 
         };
 
-        void init(std::map<std::string, std::string> &params,std::string suffix,bool suffixIsOptional,bool verbose,int warn){
-
-            /////////////////////////////////////////
-            this->suffix = suffix;
-            this->suffixIsOptional = suffixIsOptional;
-            this->verbose = verbose;
-            this->warn = warn;
-            this->params = params;
-
-            /////////////////////////////////////////
-            // Verbosity of the optimization routines
-            this->optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose", this->params, 2, this->suffix, this->suffixIsOptional, this->warn + 1);
-
-            /////////////////////////////////////////
-            // Number of max likelihood evaluations
-            this->nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval", this->params, 1000000, this->suffix, this->suffixIsOptional,this->warn + 1);
-            ApplicationTools::displayResult("Numerical opt. | Max # ML evaluations", TextTools::toString(this->nbEvalMax));
-
-            /////////////////////////////////////////
-            // Tolerance
-            this->tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance", this->params, .000001, this->suffix, this->suffixIsOptional, this->warn + 1);
-            ApplicationTools::displayResult("Numerical opt. | Tolerance", TextTools::toString(this->tolerance));
-
-            /////////////////////////////////////////
-            // Message handler
-            this->messageHandler = this->getMessageHandler();
-
-            /////////////////////////////////////////
-            // Profiler
-            this->profiler = this->getProfiler();
-
-            /////////////////////////////////////////
-            // Set backup file
-            this->backupFile  = ApplicationTools::getAFilePath("optimization.backup.file", this->params, false, false, this->suffix, this->suffixIsOptional, "none",this->warn + 1);
-
-
-        }
-
         ~Optimizators(){};
 
-        OutputStream * getMessageHandler();
+        void init(std::map<std::string, std::string> &params,std::string suffix,bool suffixIsOptional,bool verbose,int warn);
 
-        OutputStream * getProfiler();
+        void setOptVerbose(bool verb){
+            this->optVerbose = verb;
+        }
 
-        void scaleTreeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,OutputStream *messageHandler,OutputStream *profiler);
+        void setTolerance(double tol){
+            this->tolerance = tol;
+        }
 
-        void getIgnorParamsList(bpp::AbstractHomogeneousTreeLikelihood *tl,const ParameterList &parameters,
-                                string &paramListDesc,vector<string> &parNames,ParameterList &parametersToEstimate);
+        double getTolerance(){
+            return this->tolerance;
+        }
 
-        void constrainParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,ParameterList &parametersToEstimate,
-                                 string &paramListDesc,vector<string> &parNames);
+        void setNumEvalMax(unsigned int nb){
+            this->nbEvalMax = nb;
+        }
 
-        void setBackUp(bpp::AbstractHomogeneousTreeLikelihood *tl,unique_ptr<BackupListener> &backupListener);
+        unsigned int getNumEvalMax(){
+            return this->nbEvalMax;
+        }
 
+        void setMessageHandler();
 
-        void optimizeTopoBrentBFGS(bpp::AbstractHomogeneousTreeLikelihood *tl,unique_ptr<BackupListener> &backupListener,
-                std::map<std::string, std::string> &optArgs,std::string optName,
-                                                 ParameterList parametersToEstimate,OutputStream * messageHandler,OutputStream *profiler,
-                                                 tshlib::TreeSearch *treesearch,std::string finalMethod,
-                                                 unsigned int nstep,bool reparam,std::string optMethodDeriv,bool useClock);
+        void setProfiler();
 
-        void optimizeTopoFullD(bpp::AbstractHomogeneousTreeLikelihood *tl,unique_ptr<BackupListener> &backupListener,
-                                             std::map<std::string, std::string> &optArgs,std::string optName,
-                                             ParameterList parametersToEstimate,OutputStream * messageHandler,OutputStream *profiler,
-                                             tshlib::TreeSearch *treesearch,std::string finalMethod,
-                                             unsigned int nstep,bool reparam,std::string optMethodDeriv,bool useClock);
+        void scaleTreeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl);
 
-        tshlib::TreeSearch* optimizeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,unique_ptr<BackupListener> &backupListener,
-                                     std::map<std::string, std::string> &optArgs,std::string optName,
-                                     ParameterList parametersToEstimate);
+        void getIgnorParamsList(bpp::AbstractHomogeneousTreeLikelihood *tl,structParams *prms);
 
-        void finalOptimization(bpp::AbstractHomogeneousTreeLikelihood *tl,ParameterList parametersToEstimate,
-                               std::string optName,unique_ptr<BackupListener> &backupListener,unsigned int nstep,
-                               bool reparam,std::string optMethodDeriv);
+        void constrainParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,structParams *prms);
+
+        void setBackUp(bpp::AbstractHomogeneousTreeLikelihood *tl);
+
+        structTreeSearchParams* getTreeSearchParameters(std::map<std::string, std::string> &optTopology_MethodDetails);
+
+        void topologyOptimizer(bpp::AbstractHomogeneousTreeLikelihood *tl,tshlib::TreeSearch *treesearch);
+
+        void optimizeTopoBrentBFGS(bpp::AbstractHomogeneousTreeLikelihood *tl,tshlib::TreeSearch *treesearch,structParams *prms);
+
+        void optimizeTopoFullD(bpp::AbstractHomogeneousTreeLikelihood *tl,structParams *prms);
+
+        void iterativeOptimizeTreeAndParams(bpp::AbstractHomogeneousTreeLikelihood *tl,tshlib::TreeSearch *treesearch,structParams *prms);
+
+        tshlib::TreeSearch* optimizeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,structParams *prms);
+
+        void finalOptimization(bpp::AbstractHomogeneousTreeLikelihood *tl,structParams *prms);
 
         /**
        * @brief Optimize parameters according to options.
@@ -250,8 +280,8 @@ namespace bpp {
                 OutputStream *profiler = 0,
                 bool reparametrization = false,
                 unsigned int verbose = 1,
-                const std::string &optMethodDeriv = OPTIMIZATION_NEWTON,
-                const std::string &optMethodModel = OPTIMIZATION_BRENT)
+                const std::string &optMethodDeriv = "newton",
+                const std::string &optMethodModel = "Brent")
         throw(Exception);
 
         /**
@@ -278,21 +308,16 @@ namespace bpp {
        * @param messenger Output stream used by optimizer. Used only with param=DISTANCEMETHOD_ITERATIONS.
        * @param verbose Verbose level.
        */
-        TreeTemplate <Node> *buildDistanceTreeGeneric(
-                UnifiedDistanceEstimation &estimationMethod,
-                AgglomerativeDistanceMethod &reconstructionMethod,
-                const ParameterList &parametersToIgnore,
-                bool optimizeBrLen = false,
-                const std::string &param = DISTANCEMETHOD_INIT,
-                double tolerance = 0.000001,
-                unsigned int tlEvalMax = 1000000,
-                OutputStream *profiler = 0,
-                OutputStream *messenger = 0,
-                unsigned int verbose = 0) throw(Exception);
+        TreeTemplate <Node> *buildDistanceTreeGeneric(UnifiedDistanceEstimation &estimationMethod,
+                                                      AgglomerativeDistanceMethod &reconstructionMethod,
+                                                      bpp::ParameterList &parametersToIgnore,
+                                                      bool optimizeBrLen,
+                                                      const std::string &param = "init") throw(Exception);
+
 
         TreeTemplate <Node> *buildDistanceTreeGenericFromDistanceMatrix(DistanceMatrix *dmatrix,
-                                                                               AgglomerativeDistanceMethod &reconstructionMethod,
-                                                                               unsigned int verbose);
+                                                                        AgglomerativeDistanceMethod &reconstructionMethod,
+                                                                        unsigned int verbose);
 
     };
 } // end of namespace bpp.

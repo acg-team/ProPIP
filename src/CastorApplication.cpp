@@ -181,19 +181,9 @@ std::map<std::string, std::string> CastorApplication::getCLIarguments(){
 
     ApplicationTools::displayResult("Initial tree model parameters estimation method",this->PAR_optim_distance_);
 
-    if (this->PAR_optim_distance_ == "init"){
-
-        this->PAR_optim_distance_ = Optimizators::DISTANCEMETHOD_INIT;
-
-    }else if (this->PAR_optim_distance_ == "pairwise"){
-
-        this->PAR_optim_distance_ = Optimizators::DISTANCEMETHOD_PAIRWISE;
-
-    }else if (this->PAR_optim_distance_ == "iterations"){
-
-        this->PAR_optim_distance_ = Optimizators::DISTANCEMETHOD_ITERATIONS;
-
-    }else{
+    if (this->PAR_optim_distance_ != "init" ||
+        this->PAR_optim_distance_ != "pairwise" ||
+        this->PAR_optim_distance_ != "iterations"){
 
         throw Exception("Unknown parameter estimation procedure '" + this->PAR_optim_distance_ + "'.");
     }
@@ -1270,17 +1260,20 @@ bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alpha
     bpp::Alphabet *alphabetDistMethod = nullptr;
     bpp::SubstitutionModel *smodel = nullptr;
     bpp::TransitionModel *dmodel = nullptr;
-    OutputStream *messenger = nullptr;
-    OutputStream *profiler = nullptr;
+    //OutputStream *messenger = nullptr;
+    //OutputStream *profiler = nullptr;
     bpp::ParameterList parametersToIgnore;
-    unsigned int nbEvalMax = 1000000;
-    double tolerance = 0.000001;
-    unsigned int optVerbose;
-    string mhPath = "";
-    string prPath = "";
+    //unsigned int nbEvalMax = 1000000;
+    //double tolerance = 0.000001;
+    //unsigned int optVerbose;
+    //string mhPath = "";
+    //string prPath = "";
     bool ignoreBrLen = false;
 
     map<std::string, std::string> parmap;
+
+    Optimizators * opt = nullptr;
+    opt = new Optimizators();
 
     if (this->PAR_model_indels_) {
         alphabetDistMethod = alphabet;
@@ -1308,14 +1301,20 @@ bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alpha
 
     UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
 
+
     // Optimisation method verbosity
-    optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose",this->getParams(), 2);
+    opt->setOptVerbose(ApplicationTools::getParameter<unsigned int>("optimization.verbose",this->getParams(), 2));
+
+    //==================================
+    // m@x
+    /*
 
     mhPath = ApplicationTools::getAFilePath("optimization.message_handler", this->getParams(),false, false);
 
     messenger = (mhPath == "none") ? nullptr : (mhPath == "std") ? ApplicationTools::message.get(): new StlOutputStream(new ofstream(mhPath.c_str(), ios::out));
 
     ApplicationTools::displayResult("Initial tree optimization handler", mhPath);
+
 
     // Optimisation method profiler
     prPath = ApplicationTools::getAFilePath("optimization.profiler", this->getParams(), false,false);
@@ -1327,17 +1326,22 @@ bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alpha
     }
 
     ApplicationTools::displayResult("Initial tree optimization profiler", prPath);
+    */
+    opt->setMessageHandler();
+
+    opt->setProfiler();
+    //==================================
 
     // Should I ignore some parameters?
     this->getIgnoreParams(parametersToIgnore,ignoreBrLen,dmodel,rDist);
 
-    nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval",this->getParams(), 1000000);
+    opt->setNumEvalMax(ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval",this->getParams(), 1000000));
 
-    ApplicationTools::displayResult("Initial tree optimization | max # ML evaluations",TextTools::toString(nbEvalMax));
+    ApplicationTools::displayResult("Initial tree optimization | max # ML evaluations",TextTools::toString(opt->getNumEvalMax()));
 
-    tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance",this->getParams(), .000001);
+    opt->setTolerance(ApplicationTools::getDoubleParameter("optimization.tolerance",this->getParams(), .000001));
 
-    ApplicationTools::displayResult("Initial tree optimization | Tolerance",TextTools::toString(tolerance));
+    ApplicationTools::displayResult("Initial tree optimization | Tolerance",TextTools::toString(opt->getTolerance()));
 
     //==================================
     // m@x
@@ -1345,17 +1349,14 @@ bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alpha
     //                                              !ignoreBrLen, this->PAR_optim_distance_,
     //                                              tolerance, nbEvalMax, profiler, messenger,
     //                                              optVerbose);
-    Optimizators * opt = nullptr;
-    opt = new Optimizators();
-    tree = opt->buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-                                                  !ignoreBrLen, this->PAR_optim_distance_,
-                                                  tolerance, nbEvalMax, profiler, messenger,
-                                                  optVerbose);
+
+    tree = opt->buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,!ignoreBrLen,this->PAR_optim_distance_);
+
     delete opt;
     //==================================
 
-    delete messenger;
-    delete profiler;
+    //delete messenger;
+    //delete profiler;
     delete rDist;
     delete allSites;
     delete sitesDistMethod;
