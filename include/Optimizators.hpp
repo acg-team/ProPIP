@@ -108,7 +108,6 @@ namespace bpp {
         std::string finalMethod;
         std::string optMethodDeriv;
         Optimizer *finOptimizer;
-        //unique_ptr<BackupListener> backupListener;
         bpp::OptimizationListener *backupListener;
         bool optNumFirst;
         unsigned int topoNbStep;

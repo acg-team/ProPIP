@@ -938,7 +938,16 @@ namespace bpp {
 
         if (isPIP) {
 
+            /////////////////////////////////////////
+            // backup
+            bpp::OptimizationListener *bck_backupListener = this->backupListener;
+            unsigned int bck_nstep = this->nstep;
+            bool bck_reparam = this->reparam;
+            bool bck_optVerbose = this->optVerbose;
+            std::string bck_optMethodDeriv = this->optMethodDeriv;
+            std::string bck_optMethodModel = this->optMethodModel;
 
+            /////////////////////////////////////////
             this->backupListener = NULL;
             this->nstep = 0;
             this->reparam = false;
@@ -949,6 +958,16 @@ namespace bpp {
             Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
                     dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
                     parameters);
+
+            /////////////////////////////////////////
+            // restore
+            this->backupListener = bck_backupListener;
+            this->nstep = bck_nstep;
+            this->reparam = reparam;
+            this->optVerbose = bck_optVerbose;
+            this->optMethodDeriv = bck_optMethodDeriv;
+            this->optMethodModel = bck_optMethodModel;
+
 
         } else {
 
@@ -1260,6 +1279,9 @@ namespace bpp {
         delete poptimizer;
         delete desc;
         delete nanListener;
+        delete f;
+        delete fnum;
+        delete fnum5;
 
         return nb;
     }
