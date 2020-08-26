@@ -336,7 +336,12 @@ namespace bpp {
 
         ApplicationTools::displayResult("Parameter opt. | Parameters will be backup to", this->backupFile);
 
-        backupListener.reset(new BackupListener(this->backupFile));
+        if(this->backupListener){
+            delete this->backupListener;
+            this->backupListener = nullptr;
+        }
+
+        this->backupListener = new BackupListener(this->backupFile);
 
         if (FileTools::fileExists(this->backupFile)) {
 
@@ -553,16 +558,26 @@ namespace bpp {
 
                 this->n = OptimizationTools::optimizeNumericalParameters(
                         dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), prms->parametersToEstimate,
-                        this->backupListener.get(), this->nstep, this->tolerance, this->nbEvalMax, this->messageHandler,
+                        this->backupListener, this->nstep, this->tolerance, this->nbEvalMax, this->messageHandler,
                         this->profiler, this->reparam, this->optVerbose, this->optMethodDeriv,this->optMethodModel);
 
             } else {
 
+//                this->n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
+//                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+//                        prms->parametersToEstimate,
+//                        this->backupListener.get(),
+//                        this->nstep,
+//                        this->tolerance,
+//                        this->nbEvalMax,
+//                        this->messageHandler,
+//                        this->profiler,
+//                        this->reparam,
+//                        this->optVerbose,
+//                        this->optMethodDeriv,
+//                        this->optMethodModel);
                 this->n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
-                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), prms->parametersToEstimate,
-                        this->backupListener.get(), this->nstep, this->tolerance, this->nbEvalMax,
-                        this->messageHandler, this->profiler, this->reparam, this->optVerbose, this->optMethodDeriv,
-                        this->optMethodModel);
+                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),prms->parametersToEstimate);
             }
 
             if (this->optimizeTopo) {
@@ -604,7 +619,7 @@ namespace bpp {
         prms->parametersToEstimate.matchParametersValues(tl->getParameters());
 
         this->n = OptimizationTools::optimizeNumericalParameters2(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                prms->parametersToEstimate,this->backupListener.get(), this->tolerance, this->nbEvalMax, this->messageHandler,
+                prms->parametersToEstimate,this->backupListener, this->tolerance, this->nbEvalMax, this->messageHandler,
                 this->profiler, this->reparam, this->useClock, this->optVerbose, this->optMethodDeriv);
 
     }
@@ -698,37 +713,41 @@ namespace bpp {
 
             prms->parametersToEstimate.matchParametersValues(tl->getParameters());
 
+            this->optMethodModel = OptimizationTools::OPTIMIZATION_BFGS;
+
             if ((this->optName == "D-Brent") || (this->optName == "D-BFGS")) {
 
-                this->n = OptimizationTools::optimizeNumericalParameters(
-                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                        prms->parametersToEstimate,
-                        this->backupListener.get(),
-                        this->nstep,
-                        this->tolerance,
-                        this->nbEvalMax,
-                        this->messageHandler,
-                        this->profiler,
-                        this->reparam,
-                        this->optVerbose,
-                        this->optMethodDeriv,
-                        OptimizationTools::OPTIMIZATION_BFGS);
+//                this->n = OptimizationTools::optimizeNumericalParameters(
+//                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+//                        prms->parametersToEstimate,
+//                        this->backupListener.get(),
+//                        this->nstep,
+//                        this->tolerance,
+//                        this->nbEvalMax,
+//                        this->messageHandler,
+//                        this->profiler,
+//                        this->reparam,
+//                        this->optVerbose,
+//                        this->optMethodDeriv,
+//                        OptimizationTools::OPTIMIZATION_BFGS);
+                this->n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),prms->parametersToEstimate);
 
             } else {
 
-                this->n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
-                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                        prms->parametersToEstimate,
-                        this->backupListener.get(),
-                        this->nstep,
-                        this->tolerance,
-                        this->nbEvalMax,
-                        this->messageHandler,
-                        this->profiler,
-                        this->reparam,
-                        this->optVerbose,
-                        this->optMethodDeriv,
-                        OptimizationTools::OPTIMIZATION_BFGS);
+//                this->n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
+//                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+//                        prms->parametersToEstimate,
+//                        this->backupListener.get(),
+//                        this->nstep,
+//                        this->tolerance,
+//                        this->nbEvalMax,
+//                        this->messageHandler,
+//                        this->profiler,
+//                        this->reparam,
+//                        this->optVerbose,
+//                        this->optMethodDeriv,
+//                        OptimizationTools::OPTIMIZATION_BFGS);
+                this->n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),prms->parametersToEstimate);
 
             }
 
@@ -858,10 +877,87 @@ namespace bpp {
             rename(this->backupFile.c_str(), bf.c_str());
         }
 
+        /////////////////////////////////////////////////
         delete finalOptimizer;
         delete prms;
 
+
         return tl;
+    }
+
+    void Optimizators::reEstimateParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,UnifiedDistanceEstimation &estimationMethod,
+                                            TreeTemplate<Node> *tree,UtreeBppUtils::treemap &tm,
+                                            bool optimizeBrLen,bpp::ParameterList &parametersToIgnore){
+
+        ParameterList parameters;
+        bool isPIP = false;
+
+        unique_ptr<TransitionModel> model(estimationMethod.getModel().clone());
+        unique_ptr<DiscreteDistribution> rdist(estimationMethod.getRateDistribution().clone());
+
+        isPIP = (estimationMethod.getModel().getName().find("PIP") != string::npos);
+
+        if (isPIP) {
+
+            tshlib::Utree *utree = nullptr;
+            std::map<std::string, std::string> default_map;
+
+            tree->setNodeName(tree->getRootId(), "root");
+
+            UtreeBppUtils::renameInternalNodes(tree);
+
+            utree = new tshlib::Utree();
+
+            UtreeBppUtils::convertTree_b2u(tree, utree, tm);
+
+            utree->addVirtualRootNode();
+
+            // Once the tree has the root, then map it as well
+            tm.insert(UtreeBppUtils::nodeassoc(tree->getRootId(), utree->rootnode->getVnode_id()));
+
+            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *estimationMethod.getData(), model.get(), rdist.get(), utree, &tm, true,default_map, "", false, false, false);
+
+            delete utree;
+
+        } else {
+
+            tl = new RHomogeneousTreeLikelihood_Generic(*tree, *estimationMethod.getData(), model.get(), rdist.get(), true, verbose > 1);
+
+        }
+
+        tl->initialize();
+
+        parameters = tl->getParameters();
+
+        if (!optimizeBrLen) {
+            parameters.deleteParameters(tl->getBranchLengthsParameters().getParameterNames());
+        }
+
+        parameters.deleteParameters(parametersToIgnore.getParameterNames());
+
+
+        if (isPIP) {
+
+
+            this->backupListener = NULL;
+            this->nstep = 0;
+            this->reparam = false;
+            this->optVerbose = false;
+            this->optMethodDeriv = OptimizationTools::OPTIMIZATION_BFGS;
+            this->optMethodModel = OptimizationTools::OPTIMIZATION_BFGS;
+
+            Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
+                    dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                    parameters);
+
+        } else {
+
+            OptimizationTools::optimizeNumericalParameters(tl,
+                    parameters, NULL, 0, this->tolerance, this->nbEvalMax,
+                                                           this->messageHandler, this->profiler,this->verbose > 0 ? this->verbose - 1 : 0);
+
+        }
+
     }
 
     TreeTemplate<Node> *Optimizators::buildDistanceTreeGeneric(UnifiedDistanceEstimation &estimationMethod,
@@ -872,41 +968,43 @@ namespace bpp {
 
         TreeTemplate<Node> *tree = nullptr;
         TreeTemplate<Node> *previousTree = nullptr;
+        DistanceMatrix *matrix = nullptr;
+        bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
+        UtreeBppUtils::treemap tm;
+        bool test = true;
 
         estimationMethod.resetAdditionalParameters();
         estimationMethod.setVerbose(verbose);
 
         if (param == DISTANCEMETHOD_PAIRWISE) {
+
             ParameterList tmp = estimationMethod.getModel().getIndependentParameters();
+
             tmp.addParameters(estimationMethod.getRateDistribution().getIndependentParameters());
+
             tmp.deleteParameters(parametersToIgnore.getParameterNames());
+
             estimationMethod.setAdditionalParameters(tmp);
         }
 
-        bool test = true;
-
         while (test) {
+
             // Compute matrice:
+
             if (this->verbose > 0){
                 ApplicationTools::displayTask("Estimating distance matrix", true);
             }
+
             estimationMethod.computeMatrix();
-            DistanceMatrix *matrix = estimationMethod.getMatrix();
+
+            matrix = estimationMethod.getMatrix();
+
             if (this->verbose > 0){
                 ApplicationTools::displayTaskDone();
             }
 
-            // Compute tree:
             if (matrix->size() == 2) {
-                //Special case, there is only one possible tree:
-                auto *n1 = new Node(0);
-                auto *n2 = new Node(1, matrix->getName(0));
-                n2->setDistanceToFather((*matrix)(0, 0) / 2.);
-                auto *n3 = new Node(2, matrix->getName(1));
-                n3->setDistanceToFather((*matrix)(0, 0) / 2.);
-                n1->addSon(n2);
-                n1->addSon(n3);
-                tree = new TreeTemplate<Node>(n1);
+                tree = this->computeTree2leaves(matrix);
                 break;
             }
 
@@ -915,10 +1013,10 @@ namespace bpp {
             }
 
             reconstructionMethod.setDistanceMatrix(*matrix);
-            reconstructionMethod.computeTree();
-            previousTree = tree;
 
-            delete matrix;
+            reconstructionMethod.computeTree();
+
+            previousTree = tree;
 
             tree = dynamic_cast<TreeTemplate<Node> *>(reconstructionMethod.getTree());
 
@@ -926,10 +1024,16 @@ namespace bpp {
                 ApplicationTools::displayTaskDone();
             }
 
-            if (previousTree && verbose > 0) {
+            if (previousTree) {
+
                 int rf = TreeTools::robinsonFouldsDistance(*previousTree, *tree, false);
-                ApplicationTools::displayResult("Topo. distance with previous iteration", TextTools::toString(rf));
-                test = (rf == 0);
+
+                if(verbose > 0){
+                    ApplicationTools::displayResult("Topo. distance with previous iteration", TextTools::toString(rf));
+                }
+
+                test = ( rf == 0);
+
                 delete previousTree;
             }
 
@@ -938,127 +1042,127 @@ namespace bpp {
             }
 
             // Now, re-estimate parameters:
-            unique_ptr<TransitionModel> model(estimationMethod.getModel().clone());
-            unique_ptr<DiscreteDistribution> rdist(estimationMethod.getRateDistribution().clone());
+            this->reEstimateParameters(tl,estimationMethod,tree,tm,optimizeBrLen,parametersToIgnore);
 
-            bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
-            tshlib::Utree *utree;
-            UtreeBppUtils::treemap tm;
-
-            if (estimationMethod.getModel().getName().find("PIP") == string::npos) {
-                tl = new RHomogeneousTreeLikelihood_Generic(*tree, *estimationMethod.getData(), model.get(), rdist.get(), true, verbose > 1);
-            } else {
-                std::map<std::string, std::string> default_map;
-                tree->setNodeName(tree->getRootId(), "root");
-                UtreeBppUtils::renameInternalNodes(tree);
-                utree = new tshlib::Utree();
-                UtreeBppUtils::convertTree_b2u(tree, utree, tm);
-                utree->addVirtualRootNode();
-                // Once the tree has the root, then map it as well
-                tm.insert(UtreeBppUtils::nodeassoc(tree->getRootId(), utree->rootnode->getVnode_id()));
-
-                tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *estimationMethod.getData(), model.get(), rdist.get(), utree, &tm, true,
-                                                                     default_map, "", false, false, false);
-            }
-
-            tl->initialize();
-            ParameterList parameters = tl->getParameters();
-            if (!optimizeBrLen) {
-                vector<string> vs = tl->getBranchLengthsParameters().getParameterNames();
-                parameters.deleteParameters(vs);
-            }
-            parameters.deleteParameters(parametersToIgnore.getParameterNames());
-            if (estimationMethod.getModel().getName().find("PIP") == string::npos) {
-
-                OptimizationTools::optimizeNumericalParameters(tl, parameters, NULL, 0, this->tolerance, this->nbEvalMax, this->messageHandler, this->profiler,this->verbose > 0 ? this->verbose - 1 : 0);
-            } else {
-
-                Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
-                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parameters, NULL, 0, this->tolerance, this->nbEvalMax, this->messageHandler, this->profiler,
-                        false, verbose > 0 ? verbose - 1 : 0, OptimizationTools::OPTIMIZATION_BFGS, OptimizationTools::OPTIMIZATION_BFGS);
-
-                //OptimizationTools::optimizeNumericalParameters(tl, parameters, NULL, 0, tolerance, tlEvalMax, messenger, profiler,
-                //                                               verbose > 0 ? verbose - 1 : 0);
-            }
             if (verbose > 0) {
+
                 ParameterList tmp = tl->getSubstitutionModelParameters();
+
                 for (unsigned int i = 0; i < tmp.size(); i++) {
                     ApplicationTools::displayResult(tmp[i].getName(), TextTools::toString(tmp[i].getValue()));
                 }
+
                 tmp = tl->getRateDistribution()->getParameters();
+
                 for (unsigned int i = 0; i < tmp.size(); i++) {
                     ApplicationTools::displayResult(tmp[i].getName(), TextTools::toString(tmp[i].getValue()));
                 }
+
             }
 
-            delete utree;
+            delete tl;
+            delete matrix;
         }
+
+        return tree;
+    }
+
+    TreeTemplate<Node>* Optimizators::computeTree2leaves(DistanceMatrix *dmatrix){
+
+        TreeTemplate<Node> *tree = nullptr;
+
+        Node *n1 = nullptr;
+        Node *n2 = nullptr;
+        Node *n3 = nullptr;
+
+        //Special case, there is only one possible tree:
+        n1 = new Node(0);
+        n2 = new Node(1, dmatrix->getName(0));
+
+        n2->setDistanceToFather((*dmatrix)(0, 0) / 2.);
+
+        n3 = new Node(2, dmatrix->getName(1));
+
+        n3->setDistanceToFather((*dmatrix)(0, 0) / 2.);
+        n1->addSon(n2);
+        n1->addSon(n3);
+
+        tree = new TreeTemplate<Node>(n1);
+
+        delete n1;
+        delete n2;
+        delete n3;
+
         return tree;
     }
 
     TreeTemplate<Node> *Optimizators::buildDistanceTreeGenericFromDistanceMatrix(DistanceMatrix *dmatrix,
-                                                                                 AgglomerativeDistanceMethod &reconstructionMethod,
-                                                                                 unsigned int verbose) {
+                                                                                 AgglomerativeDistanceMethod &reconstructionMethod) {
 
         TreeTemplate<Node> *tree = nullptr;
+        DistanceMatrix *matrix = nullptr;
 
         // Compute matrice:
-        if (verbose > 0){
+        if (this->verbose > 0){
             ApplicationTools::displayTask("Importing distance matrix", true);
         }
-        DistanceMatrix *matrix = dmatrix;
-        if (verbose > 0){
+
+        matrix = dmatrix;
+
+        if (this->verbose > 0){
             ApplicationTools::displayTaskDone();
+        }
+
+        if (this->verbose > 0){
+            ApplicationTools::displayTask("Building tree");
         }
 
         // Compute tree:
         if (matrix->size() == 2) {
-            //Special case, there is only one possible tree:
-            Node *n1 = new Node(0);
-            Node *n2 = new Node(1, matrix->getName(0));
-            n2->setDistanceToFather((*matrix)(0, 0) / 2.);
-            Node *n3 = new Node(2, matrix->getName(1));
-            n3->setDistanceToFather((*matrix)(0, 0) / 2.);
-            n1->addSon(n2);
-            n1->addSon(n3);
-            tree = new TreeTemplate<Node>(n1);
+
+            tree =  this->computeTree2leaves(dmatrix);
+
+        }else{
+
+            reconstructionMethod.setDistanceMatrix(*matrix);
+
+            reconstructionMethod.computeTree();
+
+            tree = dynamic_cast<TreeTemplate<Node> *>(reconstructionMethod.getTree());
         }
-        if (verbose > 0){
-            ApplicationTools::displayTask("Building tree");
-        }
-        reconstructionMethod.setDistanceMatrix(*matrix);
-        reconstructionMethod.computeTree();
-        delete matrix;
-        tree = dynamic_cast<TreeTemplate<Node> *>(reconstructionMethod.getTree());
-        if (verbose > 0){
+
+        if (this->verbose > 0){
             ApplicationTools::displayTaskDone();
         }
 
+        delete matrix;
 
         return tree;
     }
 
 
-    unsigned int Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
-            DiscreteRatesAcrossSitesTreeLikelihood *tl,
-            const ParameterList &parameters,
-            OptimizationListener *listener,
-            unsigned int nstep,
-            double tolerance,
-            unsigned int tlEvalMax,
-            OutputStream *messageHandler,
-            OutputStream *profiler,
-            bool reparametrization,
-            unsigned int verbose,
-            const std::string &optMethodDeriv,
-            const std::string &optMethodModel)
-    throw(Exception) {
-        DerivableSecondOrder *f = tl;
-        ParameterList pl = parameters;
+    unsigned int Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(DiscreteRatesAcrossSitesTreeLikelihood *tl,
+            const ParameterList &parameters)throw(Exception) {
 
-        // Shall we reparametrize the function to remove constraints?
-        unique_ptr<DerivableSecondOrder> frep;
-        if (reparametrization) {
+        MetaOptimizerInfos *desc = nullptr;
+        DerivableSecondOrder *f = nullptr;
+        MetaOptimizer *poptimizer = nullptr;
+        NaNListener *nanListener = nullptr;
+        AbstractNumericalDerivative *fnum  = nullptr;
+        AbstractNumericalDerivative *fnum5 = nullptr;
+
+        ParameterList plsm;
+        ParameterList plrd;
+
+        unsigned int nb = 0;
+
+        unique_ptr<DerivableSecondOrder> frep; // Shall we reparametrize the function to remove constraints?
+        ParameterList pl;
+
+        f = tl;
+        pl = parameters;
+
+        if (this->reparam) {
             frep.reset(new ReparametrizationDerivableSecondOrderWrapper(f, parameters));
             f = frep.get();
 
@@ -1071,79 +1175,92 @@ namespace bpp {
 
         // Branch lengths (via numerical derivatives)
 
-        MetaOptimizerInfos *desc = new MetaOptimizerInfos();
-        MetaOptimizer *poptimizer = 0;
-        AbstractNumericalDerivative *fnum = new ThreePointsNumericalDerivative(f);
-        AbstractNumericalDerivative *fnum5 = new FivePointsNumericalDerivative(f);
+        desc = new MetaOptimizerInfos();
+        fnum = new ThreePointsNumericalDerivative(f);
+        fnum5 = new FivePointsNumericalDerivative(f);
 
-        if (optMethodDeriv == OPTIMIZATION_GRADIENT)
-            desc->addOptimizer("Branch length parameters", new ConjugateGradientMultiDimensions(fnum5),
-                               tl->getBranchLengthsParameters().getParameterNames(), 2, MetaOptimizerInfos::IT_TYPE_FULL);
-        else if (optMethodDeriv == OPTIMIZATION_NEWTON)
-            desc->addOptimizer("Branch length parameters", new PseudoNewtonOptimizer(fnum), tl->getBranchLengthsParameters().getParameterNames(), 2,
-                               MetaOptimizerInfos::IT_TYPE_FULL);
-        else if (optMethodDeriv == OPTIMIZATION_BFGS)
-            desc->addOptimizer("Branch length parameters", new BfgsMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,
-                               MetaOptimizerInfos::IT_TYPE_FULL);
-        else if (optMethodDeriv == OPTIMIZATION_BRENT)
-            desc->addOptimizer("Branch length parameters", new SimpleMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,
-                               MetaOptimizerInfos::IT_TYPE_FULL);
-        else
+        if (optMethodDeriv == OPTIMIZATION_GRADIENT) {
+            desc->addOptimizer("Branch length parameters", new ConjugateGradientMultiDimensions(fnum5),tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+        }else if (optMethodDeriv == OPTIMIZATION_NEWTON){
+            desc->addOptimizer("Branch length parameters", new PseudoNewtonOptimizer(fnum), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+        }else if (optMethodDeriv == OPTIMIZATION_BFGS){
+            desc->addOptimizer("Branch length parameters", new BfgsMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+        }else if (optMethodDeriv == OPTIMIZATION_BRENT){
+            desc->addOptimizer("Branch length parameters", new SimpleMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+        }else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodDeriv);
+        }
 
         // Other parameters
-
         if (optMethodModel == OPTIMIZATION_BRENT) {
-            ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
-            desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,
-                               MetaOptimizerInfos::IT_TYPE_STEP);
 
+            plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
 
-            ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
-            desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,
-                               MetaOptimizerInfos::IT_TYPE_STEP);
+            desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
+
+            plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+
+            desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
+
             poptimizer = new MetaOptimizer(fnum5, desc, nstep);
 
         } else if (optMethodModel == OPTIMIZATION_BFGS) {
-            vector<string> vNameDer;
 
-            ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+            vector<std::string> vNameDer;
+            vector<std::string> vNameDer2;
+
+            plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+
             vNameDer = plsm.getParameterNames();
 
-            ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+            plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
 
-            vector<string> vNameDer2 = plrd.getParameterNames();
+            vNameDer2 = plrd.getParameterNames();
 
             vNameDer.insert(vNameDer.begin(), vNameDer2.begin(), vNameDer2.end());
+
             fnum->setParametersToDerivate(vNameDer);
 
             desc->addOptimizer("Rate & model distribution parameters", new BfgsMultiDimensions(fnum), vNameDer, 1, MetaOptimizerInfos::IT_TYPE_FULL);
+
             poptimizer = new MetaOptimizer(fnum, desc, nstep);
-        } else
+
+        } else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodModel);
+        }
 
         poptimizer->setVerbose(verbose);
         poptimizer->setProfiler(profiler);
         poptimizer->setMessageHandler(messageHandler);
-        poptimizer->setMaximumNumberOfEvaluations(tlEvalMax);
+        poptimizer->setMaximumNumberOfEvaluations(this->nbEvalMax);
         poptimizer->getStopCondition()->setTolerance(tolerance);
         poptimizer->getDefaultStopCondition()->setTolerance(tolerance);
 
         // Optimize TreeLikelihood function:
         poptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);
-        NaNListener *nanListener = new NaNListener(poptimizer, tl);
+
+        nanListener = new NaNListener(poptimizer, tl);
+
         poptimizer->addOptimizationListener(nanListener);
-        if (listener)
-            poptimizer->addOptimizationListener(listener);
+
+        if (this->backupListener){
+            poptimizer->addOptimizationListener(this->backupListener);
+        }
+
         poptimizer->init(pl);
+
         poptimizer->optimize();
 
-        if (verbose > 0)
+        if (this->verbose > 0){
             ApplicationTools::displayMessage("\n");
+        }
 
-        // We're done.
-        unsigned int nb = poptimizer->getNumberOfEvaluations();
+        nb = poptimizer->getNumberOfEvaluations();
+
         delete poptimizer;
+        delete desc;
+        delete nanListener;
+
         return nb;
     }
 

@@ -108,7 +108,8 @@ namespace bpp {
         std::string finalMethod;
         std::string optMethodDeriv;
         Optimizer *finOptimizer;
-        unique_ptr<BackupListener> backupListener;
+        //unique_ptr<BackupListener> backupListener;
+        bpp::OptimizationListener *backupListener;
         bool optNumFirst;
         unsigned int topoNbStep;
         double tolBefore;
@@ -218,6 +219,12 @@ namespace bpp {
 
         void finalOptimization(bpp::AbstractHomogeneousTreeLikelihood *tl,structParams *prms);
 
+        void reEstimateParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,UnifiedDistanceEstimation &estimationMethod,
+                                                TreeTemplate<Node> *tree,UtreeBppUtils::treemap &tm,bool optimizeBrLen,
+                                                bpp::ParameterList &parametersToIgnore);
+
+        TreeTemplate<Node>* computeTree2leaves(DistanceMatrix *dmatrix);
+
         /**
        * @brief Optimize parameters according to options.
        *
@@ -269,19 +276,24 @@ namespace bpp {
        * @see OPTIMIZATION_BRENT, OPTIMIZATION_BFGS
        * @throw Exception any exception thrown by the Optimizer.
        */
+//        unsigned int optimizeNumericalParametersUsingNumericalDerivatives(
+//                DiscreteRatesAcrossSitesTreeLikelihood *tl,
+//                const ParameterList &parameters,
+//                OptimizationListener *listener = 0,
+//                unsigned int nstep = 1,
+//                double tolerance = 0.000001,
+//                unsigned int tlEvalMax = 1000000,
+//                OutputStream *messageHandler = 0,
+//                OutputStream *profiler = 0,
+//                bool reparametrization = false,
+//                unsigned int verbose = 1,
+//                const std::string &optMethodDeriv = "newton",
+//                const std::string &optMethodModel = "Brent")
+//        throw(Exception);
+
         unsigned int optimizeNumericalParametersUsingNumericalDerivatives(
                 DiscreteRatesAcrossSitesTreeLikelihood *tl,
-                const ParameterList &parameters,
-                OptimizationListener *listener = 0,
-                unsigned int nstep = 1,
-                double tolerance = 0.000001,
-                unsigned int tlEvalMax = 1000000,
-                OutputStream *messageHandler = 0,
-                OutputStream *profiler = 0,
-                bool reparametrization = false,
-                unsigned int verbose = 1,
-                const std::string &optMethodDeriv = "newton",
-                const std::string &optMethodModel = "Brent")
+                const ParameterList &parameters)
         throw(Exception);
 
         /**
@@ -316,8 +328,7 @@ namespace bpp {
 
 
         TreeTemplate <Node> *buildDistanceTreeGenericFromDistanceMatrix(DistanceMatrix *dmatrix,
-                                                                        AgglomerativeDistanceMethod &reconstructionMethod,
-                                                                        unsigned int verbose);
+                                                                        AgglomerativeDistanceMethod &reconstructionMethod);
 
     };
 } // end of namespace bpp.
