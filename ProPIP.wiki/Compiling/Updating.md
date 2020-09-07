@@ -1,4 +1,4 @@
-[Back](./Index.md) | [Home](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
+[Back](./Index.md) | [Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
 
 ---
 # Updating ProPIP executable
@@ -23,7 +23,7 @@ cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; sudo make install;
 ```
 #!bash
 
-cd /source/folder/ProPIP
+cd /source/folder/castor
 git checkout <branch>
 git pull
 cmake -- -DCMAKE_BUILD_TYPE=Release CMakeLists.txt; make;

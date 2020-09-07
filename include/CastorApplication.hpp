@@ -133,8 +133,9 @@ namespace bpp {
 
     public:
 
-        std::string PAR_model_substitution_;
+        bpp::SubstitutionModel *smodel;
 
+        std::string PAR_model_substitution_;
         std::string PAR_alphabet_;
         std::string PAR_input_sequences_;
         std::string PAR_distance_method_;
@@ -231,21 +232,28 @@ namespace bpp {
 
         bpp::SiteContainer* getSites(bpp::Alphabet *alphabet);
 
-        bpp::Tree* getInitTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+        bpp::Tree* getInitTree(bpp::SubstitutionModel *smodel,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
                                bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
-                               std::unique_ptr<GeneticCode> &gCode);
+                               std::unique_ptr<GeneticCode> &gCode,bpp::DiscreteDistribution *rDist);
 
         void initBranchLength(bpp::Tree *tree);
 
-        void resolveMultifurcation(bpp::Tree *tree);
+        bpp::Tree* resolveMultifurcation(bpp::Tree *tree);
 
-        bpp::Tree * getUserTree();
+        bpp::Tree* getUserTree();
 
-        bpp::Tree * getRandomTree(bpp::SiteContainer *sites);
+        bpp::Tree* getRandomTree(bpp::SiteContainer *sites);
 
-        bpp::Tree* getDistanceTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+        //=======================================//
+        // overlapping functions
+        bpp::Tree* getDistanceTree(bpp::TransitionModel *dmodel,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
                                    bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
-                                   std::unique_ptr<GeneticCode> &gCode);
+                                   std::unique_ptr<GeneticCode> &gCode,bpp::DiscreteDistribution *rDist);
+
+        //bpp::Tree* getDistanceTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+        //                                              bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
+        //                                              std::unique_ptr<GeneticCode> &gCode);
+        //=======================================//
 
         bpp::Tree* getUserDistmatrixTree();
 
@@ -253,18 +261,26 @@ namespace bpp {
 
         void renameInternalNodes(bpp::Tree *tree);
 
-        bpp::Tree * infereInitTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
+        //=======================================//
+        // overlapping functions
+        bpp::Tree * infereInitTree(bpp::TransitionModel *dmodel,bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
                                    bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
-                                   std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod);
+                                   std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod,
+                                   bpp::DiscreteDistribution *rDist);
 
-        bpp::Tree* getTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+        //bpp::Tree* infereInitTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
+        //                                             bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
+        //                                             std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod);
+        //=======================================//
+
+        bpp::Tree* getTree(bpp::SubstitutionModel *smodel,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
                            bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
-                           std::unique_ptr<GeneticCode> &gCode);
+                           std::unique_ptr<GeneticCode> &gCode,bpp::DiscreteDistribution *rDist);
 
         tshlib::Utree* getUtree(bpp::Tree *tree,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
                                 UtreeBppUtils::treemap &tm);
 
-        std::map<std::string, std::string> getModelMap();
+        void updateModelMap(std::map<std::string, std::string> &modelMap);
 
         void getIndelRates(std::map<std::string, std::string> &modelMap,bpp::Tree *tree,std::unique_ptr<GeneticCode> &gCode);
 
@@ -280,10 +296,17 @@ namespace bpp {
         bpp::SubstitutionModel* initPIPsubstitutionModel(bpp::Alphabet *alphabet,bpp::SubstitutionModel *smodel_init,
                                                                             const bpp::SequenceContainer *data,std::unique_ptr<GeneticCode> &gCode);
 
+        //=======================================//
+        // overlapping functions
         bpp::SubstitutionModel* getSubstitutionModelIndel(std::map<std::string, std::string> &modelMap,
                                                                              std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
                                                                              bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
                                                                              bpp::Tree *tree);
+
+        bpp::SubstitutionModel* getSubstitutionModelIndel(std::map<std::string, std::string> &modelMap,
+                                                                             std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
+                                                                             bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences);
+        //=======================================//
 
         bpp::SubstitutionModel* getSubstitutionModelNoIndel(std::unique_ptr<GeneticCode> &gCode,bpp::SiteContainer *sites,bpp::Alphabet *alphabet);
 
@@ -314,6 +337,13 @@ namespace bpp {
                                                                map<std::string, std::string> &parmap);
 
         void getIgnoreParams(ParameterList &parametersToIgnore,bool &ignoreBrLen,bpp::TransitionModel *dmodel,bpp::DiscreteDistribution *rDist);
+
+        bpp::Tree* initTreeDistanceOptML(bpp::AgglomerativeDistanceMethod *distMethod,bool ignoreBrLen,
+                                                             bpp::TransitionModel *dmodel,bpp::ParameterList &parametersToIgnore,
+                                                             bpp::DiscreteDistribution *rDist,VectorSiteContainer *sitesDistMethod);
+
+        bpp::Tree* initTreeDistanceNoOpt(bpp::AgglomerativeDistanceMethod *distMethod,bpp::TransitionModel *dmodel,
+                                                            bpp::DiscreteDistribution *rDist,VectorSiteContainer *sitesDistMethod);
 
     };
 

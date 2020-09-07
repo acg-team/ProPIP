@@ -90,10 +90,13 @@ int main(int argc, char *argv[]) {
     bpp::SiteContainer *sites = nullptr;
     bpp::Tree *tree = nullptr;
     UtreeBppUtils::Utree *utree = nullptr;
-    bpp::SubstitutionModel *smodel = nullptr;
+    //bpp::SubstitutionModel *smodel = nullptr;
+    bpp::TransitionModel *dmodel = nullptr;
     bpp::TransitionModel *model = nullptr;
     bpp::DiscreteDistribution *rDist = nullptr;
     bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
+
+    unique_ptr<TransitionModel> test;
 
     try {
 
@@ -149,11 +152,317 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayResult("Number of sequences",TextTools::toString(sites->getNumberOfSequences()));
 
+
+
+
+
+
+
+
+
+
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+
+
+        bool flag_infere_tree = false;
+        bool flag_infere_indel_rates = false;
+
+        if (castorapp.PAR_init_tree_opt_ == "user") {
+            flag_infere_tree = false;
+        } else if (castorapp.PAR_init_tree_opt_ == "random") {
+            flag_infere_tree = false;
+        } else if (castorapp.PAR_init_tree_opt_ == "distance") {
+            flag_infere_tree = true;
+        } else{
+            throw Exception("Unknown init tree method.");
+        }
+
+        if (castorapp.PAR_model_indels_) {
+            if ((modelMap.find("lambda") != modelMap.end()) && (modelMap.find("mu") != modelMap.end())) {
+                flag_infere_indel_rates = false;
+            } else {
+                flag_infere_indel_rates = true;
+            }
+        }else{
+
+            flag_infere_indel_rates = false;
+
+        }
+
+        if (castorapp.PAR_model_indels_) {
+
+            //********************************************************//
+            // indel model
+            //********************************************************//
+
+            if (!flag_infere_indel_rates && !flag_infere_tree) {
+                //========================================================//
+                // inde rates : given | tree : given
+                //========================================================//
+
+                // Get Indel Rates
+                castorapp.lambda_ = (modelMap.find("lambda") == modelMap.end()) ? 1.0 : std::stod(modelMap["lambda"]);
+                castorapp.mu_ = (modelMap.find("mu") == modelMap.end()) ? 0.1 : std::stod(modelMap["mu"]);
+
+                // Get Model
+                // Instantiate a substitution model and extend it with PIP
+                castorapp.smodel = castorapp.getSubstitutionModelIndel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences);
+                DLOG(INFO) << "[Substitution model] Number of states: " << (int) castorapp.smodel->getNumberOfStates();
+                ApplicationTools::displayResult("Substitution model", castorapp.smodel->getName());
+
+
+                //dmodel = castorapp.getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+                test.reset(castorapp.smodel);
+                dmodel = test.release();
+
+                // AMONG-SITE-RATE-VARIATION
+                rDist = castorapp.getASVR(castorapp.smodel);
+
+                // Get Tree
+                ApplicationTools::displayMessage("\n[Preparing initial tree]");
+                castorapp.PAR_init_tree_opt_ = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,1);
+                ApplicationTools::displayResult("Initial tree", castorapp.PAR_init_tree_opt_);
+                if (castorapp.PAR_init_tree_opt_ == "user") {
+                    tree = castorapp.getUserTree();
+                } else if (castorapp.PAR_init_tree_opt_ == "random") {
+                    tree = castorapp.getRandomTree(sites);
+                } else{
+                    throw Exception("Unknown init tree method.");
+                }
+                // If the tree has multifurcation, then resolve it with midpoint rooting
+                tree = castorapp.resolveMultifurcation(tree);
+                // Rename internal nodes with standard Vxx * where xx is a progressive number
+                castorapp.renameInternalNodes(tree);
+                // Try to write the current tree to file. This will be overwritten by the optimized tree,
+                // but allow to check file existence before running optimization!
+                PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
+                // Setting branch lengths?
+                castorapp.initBranchLength(tree);
+                utree = castorapp.getUtree(tree,sites,sequences,tm);
+                DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
+
+
+            } else if (!flag_infere_indel_rates && flag_infere_tree) {
+                //========================================================//
+                // inde rates : given | tree : infere
+                //========================================================//
+
+                // Get Indel Rates
+                castorapp.lambda_ = (modelMap.find("lambda") == modelMap.end()) ? 1.0 : std::stod(modelMap["lambda"]);
+                castorapp.mu_ = (modelMap.find("mu") == modelMap.end()) ? 0.1 : std::stod(modelMap["mu"]);
+
+
+                // Get Model
+                // Instantiate a substitution model and extend it with PIP
+                castorapp.smodel = castorapp.getSubstitutionModelIndel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences);
+                DLOG(INFO) << "[Substitution model] Number of states: " << (int) castorapp.smodel->getNumberOfStates();
+                ApplicationTools::displayResult("Substitution model", castorapp.smodel->getName());
+
+                //dmodel = castorapp.getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+                test.reset(castorapp.smodel);
+                dmodel = test.release();
+
+                // AMONG-SITE-RATE-VARIATION
+                rDist = castorapp.getASVR(castorapp.smodel);
+
+                // Get Tree
+                ApplicationTools::displayMessage("\n[Preparing initial tree]");
+                castorapp.PAR_init_tree_opt_ = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,1);
+                ApplicationTools::displayResult("Initial tree", castorapp.PAR_init_tree_opt_);
+                if (castorapp.PAR_init_tree_opt_ == "distance") {
+
+                    bpp::TransitionModel *dmodel_copy = dmodel->clone(); /// ??? why ????
+                    bpp::DiscreteDistribution *rDist_copy  = rDist->clone(); /// ??? why ????
+
+                    tree = castorapp.getDistanceTree(dmodel_copy,sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode,rDist_copy);
+
+                    //delete dmodel_copy;
+                    //delete rDist_copy;
+
+                } else{
+                    throw Exception("Unknown init tree method.");
+                }
+                // If the tree has multifurcation, then resolve it with midpoint rooting
+                tree = castorapp.resolveMultifurcation(tree);
+                // Rename internal nodes with standard Vxx * where xx is a progressive number
+                castorapp.renameInternalNodes(tree);
+                // Try to write the current tree to file. This will be overwritten by the optimized tree,
+                // but allow to check file existence before running optimization!
+                PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
+                // Setting branch lengths?
+                castorapp.initBranchLength(tree);
+                utree = castorapp.getUtree(tree,sites,sequences,tm);
+                DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
+
+
+
+            } else if (flag_infere_indel_rates && !flag_infere_tree) {
+                //========================================================//
+                // inde rates : infere | tree : given
+                //========================================================//
+
+                // Get Tree
+                ApplicationTools::displayMessage("\n[Preparing initial tree]");
+                castorapp.PAR_init_tree_opt_ = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,1);
+                ApplicationTools::displayResult("Initial tree", castorapp.PAR_init_tree_opt_);
+                if (castorapp.PAR_init_tree_opt_ == "user") {
+                    tree = castorapp.getUserTree();
+                } else if (castorapp.PAR_init_tree_opt_ == "random") {
+                    tree = castorapp.getRandomTree(sites);
+                } else{
+                    throw Exception("Unknown init tree method.");
+                }
+                // If the tree has multifurcation, then resolve it with midpoint rooting
+                tree = castorapp.resolveMultifurcation(tree);
+                // Rename internal nodes with standard Vxx * where xx is a progressive number
+                castorapp.renameInternalNodes(tree);
+                // Try to write the current tree to file. This will be overwritten by the optimized tree,
+                // but allow to check file existence before running optimization!
+                PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
+                // Setting branch lengths?
+                castorapp.initBranchLength(tree);
+                utree = castorapp.getUtree(tree,sites,sequences,tm);
+                DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
+
+
+                // Get Indel Rates
+                inference_indel_rates::infere_indel_rates_from_sequences(castorapp.PAR_input_sequences_,castorapp.PAR_alphabet_,tree,castorapp.lambda_,castorapp.mu_,gCode.get(),modelMap);
+                DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<castorapp.lambda_ << ",mu=" << castorapp.mu_ << "," "I=" << castorapp.lambda_ * castorapp.mu_ << ")";
+
+
+                // Get Model
+                castorapp.smodel = castorapp.getSubstitutionModelIndel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences);
+
+                //dmodel = castorapp.getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+                test.reset(castorapp.smodel);
+                dmodel = test.release();
+
+                // AMONG-SITE-RATE-VARIATION
+                rDist = castorapp.getASVR(castorapp.smodel);
+
+            } else if (flag_infere_indel_rates && flag_infere_tree) {
+                //========================================================//
+                // inde rates : infere | tree : infere
+                //========================================================//
+
+                // Get Tree
+                ApplicationTools::displayMessage("\n[Preparing initial tree]");
+                castorapp.PAR_init_tree_opt_ = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,1);
+                ApplicationTools::displayResult("Initial tree", castorapp.PAR_init_tree_opt_);
+                if (castorapp.PAR_init_tree_opt_ == "distance") {
+
+
+                    //????
+                    //tree = castorapp.getDistanceTree(sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode);
+
+
+
+
+                } else{
+                    throw Exception("Unknown init tree method.");
+                }
+                // If the tree has multifurcation, then resolve it with midpoint rooting
+                tree = castorapp.resolveMultifurcation(tree);
+                // Rename internal nodes with standard Vxx * where xx is a progressive number
+                castorapp.renameInternalNodes(tree);
+                // Try to write the current tree to file. This will be overwritten by the optimized tree,
+                // but allow to check file existence before running optimization!
+                PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
+                // Setting branch lengths?
+                castorapp.initBranchLength(tree);
+                utree = castorapp.getUtree(tree,sites,sequences,tm);
+                DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
+
+                // Get Model
+                // Instantiate a substitution model and extend it with PIP
+                castorapp.smodel = castorapp.getSubstitutionModelIndel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences);
+                DLOG(INFO) << "[Substitution model] Number of states: " << (int) castorapp.smodel->getNumberOfStates();
+                ApplicationTools::displayResult("Substitution model", castorapp.smodel->getName());
+
+                //dmodel = castorapp.getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+                test.reset(castorapp.smodel);
+                dmodel = test.release();
+
+                // AMONG-SITE-RATE-VARIATION
+                rDist = castorapp.getASVR(castorapp.smodel);
+
+            } else {
+                DLOG(WARNING) << "Problem encountered, exit!";
+            }
+
+
+        }else{
+
+            //********************************************************//
+            // no indel model
+            //********************************************************//
+
+            // Get Model
+            castorapp.smodel = castorapp.getSubstitutionModelNoIndel(gCode,sites,alphabet);
+
+
+
+            //????????
+            //dmodel = castorapp.getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+
+
+
+
+
+            // AMONG-SITE-RATE-VARIATION
+            rDist = castorapp.getASVR(castorapp.smodel);
+
+            // Get Tree
+            ApplicationTools::displayMessage("\n[Preparing initial tree]");
+            castorapp.PAR_init_tree_opt_ = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,1);
+            ApplicationTools::displayResult("Initial tree", castorapp.PAR_init_tree_opt_);
+            if (castorapp.PAR_init_tree_opt_ == "user") {
+                tree = castorapp.getUserTree();
+            } else if (castorapp.PAR_init_tree_opt_ == "random") {
+                tree = castorapp.getRandomTree(sites);
+            } else if (castorapp.PAR_init_tree_opt_ == "distance") {
+                tree = castorapp.getDistanceTree(dmodel,sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode,rDist);
+            } else{
+                throw Exception("Unknown init tree method.");
+            }
+            // If the tree has multifurcation, then resolve it with midpoint rooting
+            tree = castorapp.resolveMultifurcation(tree);
+            // Rename internal nodes with standard Vxx * where xx is a progressive number
+            castorapp.renameInternalNodes(tree);
+            // Try to write the current tree to file. This will be overwritten by the optimized tree,
+            // but allow to check file existence before running optimization!
+            PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
+            // Setting branch lengths?
+            castorapp.initBranchLength(tree);
+            utree = castorapp.getUtree(tree,sites,sequences,tm);
+            DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
+
+        }
+
+
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+        /////////////////////////////////////////
+
+
+
+
+
+
+        /*
         /////////////////////////////////////////
         // INITIAL TREE
         ApplicationTools::displayMessage("\n[Preparing initial tree]");
 
-        tree = castorapp.getTree(sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode);
+        tree = castorapp.getTree(smodel,sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode);
 
         utree = castorapp.getUtree(tree,sites,sequences,tm);
 
@@ -166,26 +475,37 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Setting up substitution model]");
 
+
         smodel = castorapp.getSubstitutionModel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
+        */
+
+
+
+
+
+
+
 
         /////////////////////////////////////////
         // GET PARAMETERS
 
-        parameters = castorapp.getParameters(smodel);
+        parameters = castorapp.getParameters(castorapp.smodel);
 
-        CastorApplicationUtils::printParameters(parameters,smodel);
+        CastorApplicationUtils::printParameters(parameters,castorapp.smodel);
 
+        /*
         /////////////////////////////////////////
         // AMONG-SITE-RATE-VARIATION
 
         rDist = castorapp.getASVR(smodel);
+        */
 
         /////////////////////////////////////////
         // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
 
         if (castorapp.PAR_alignment_) {
 
-            sites = castorapp.getMSA(sequences,rDist,smodel,tm,tree,utree);
+            sites = castorapp.getMSA(sequences,rDist,castorapp.smodel,tm,tree,utree);
 
         }
 
@@ -194,7 +514,7 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Setting up likelihood functions]");
 
-        tl = castorapp.initLK(model,smodel,tm,rDist,gCode,alphabet,sites,tree,utree);
+        tl = castorapp.initLK(model,castorapp.smodel,tm,rDist,gCode,alphabet,sites,tree,utree);
 
         /////////////////////////////////////////
         // PARAMETER SANITY CHECK
@@ -224,6 +544,8 @@ int main(int argc, char *argv[]) {
         /////////////////////////////////////////
         // DELETE OBJECTS AND FREE MEMORY
 
+        delete castorapp.smodel;
+
         delete sequences;
         delete alphabet;
         delete alphabetNoGaps;
@@ -232,7 +554,6 @@ int main(int argc, char *argv[]) {
         delete tl;
         delete tree;
         delete utree;
-        delete smodel;
         delete model;
 
         /////////////////////////////////////////

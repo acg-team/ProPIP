@@ -187,6 +187,11 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
                                                               const bpp::GeneticCode*  gCode,
                                                               std::map<std::string, std::string> modelMap){
 
+    if(!tree){
+        DLOG(WARNING) << "Tree is empty!";
+        exit(EXIT_FAILURE);
+    }
+
     lambda_from_pairs=0.0;
     mu_from_pairs=0.0;
 

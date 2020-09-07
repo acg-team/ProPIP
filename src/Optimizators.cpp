@@ -540,8 +540,8 @@ namespace bpp {
     void Optimizators::iterativeOptimizeTreeAndParams(bpp::AbstractHomogeneousTreeLikelihood *tl,tshlib::TreeSearch *treesearch,structParams *prms){
 
         // Execute numopt + treesearch iteratively until convergence is reached.
-        double initScore;
-        double cycleScore;
+        double initScore = 0.0;
+        double cycleScore = 0.0;
         double diffScore = std::abs(tl->getLogLikelihood());
         bool interrupt = false;
 
@@ -812,7 +812,7 @@ namespace bpp {
     throw(Exception) {
 
         bpp::AbstractHomogeneousTreeLikelihood *tl = inTL;
-        tshlib::TreeSearch *treesearch;
+        tshlib::TreeSearch *treesearch = nullptr;
         structParams *prms = nullptr;
 
         /////////////////////////////////////////////////
@@ -895,7 +895,7 @@ namespace bpp {
         unique_ptr<TransitionModel> model(estimationMethod.getModel().clone());
         unique_ptr<DiscreteDistribution> rdist(estimationMethod.getRateDistribution().clone());
 
-        isPIP = (estimationMethod.getModel().getName().find("PIP") != string::npos);
+        isPIP = (estimationMethod.getModel().getName().find("PIP") == string::npos);
 
         if (isPIP) {
 
@@ -993,7 +993,7 @@ namespace bpp {
         bool test = true;
 
         estimationMethod.resetAdditionalParameters();
-        estimationMethod.setVerbose(verbose);
+        estimationMethod.setVerbose(this->verbose);
 
         if (param == DISTANCEMETHOD_PAIRWISE) {
 
@@ -1057,7 +1057,8 @@ namespace bpp {
             }
 
             if (param != DISTANCEMETHOD_ITERATIONS){
-                break;  // Ends here.
+                //break;  // Ends here.
+                test = false;
             }
 
             // Now, re-estimate parameters:
@@ -1248,12 +1249,12 @@ namespace bpp {
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodModel);
         }
 
-        poptimizer->setVerbose(verbose);
-        poptimizer->setProfiler(profiler);
-        poptimizer->setMessageHandler(messageHandler);
+        poptimizer->setVerbose(this->verbose);
+        poptimizer->setProfiler(this->profiler);
+        poptimizer->setMessageHandler(this->messageHandler);
         poptimizer->setMaximumNumberOfEvaluations(this->nbEvalMax);
-        poptimizer->getStopCondition()->setTolerance(tolerance);
-        poptimizer->getDefaultStopCondition()->setTolerance(tolerance);
+        poptimizer->getStopCondition()->setTolerance(this->tolerance);
+        poptimizer->getDefaultStopCondition()->setTolerance(this->tolerance);
 
         // Optimize TreeLikelihood function:
         poptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);

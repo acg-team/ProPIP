@@ -120,6 +120,8 @@ CastorApplication::CastorApplication(int argc, char *argv[], const std::string &
     mu_ = 0.1;
     logL_ = 0.0;
 
+    smodel = nullptr;
+
 }
 
 void CastorApplication::startTimer() {
@@ -163,11 +165,15 @@ std::map<std::string, std::string> CastorApplication::getCLIarguments(){
 
     std::string modelStringName;
 
+    this->PAR_model_substitution_ = ApplicationTools::getStringParameter("model", this->getParams(), "JC69","", true, true);
+
     this->getParseProcedure(modelMap,modelStringName);
 
-    this->PAR_model_indels_ = isPIP(modelStringName);
+    this->PAR_init_tree_opt_ = ApplicationTools::getStringParameter("init.tree", this->getParams(), "user", "", false,1);
 
-    this->PAR_model_substitution_ = ApplicationTools::getStringParameter("model", this->getParams(), "JC69","", true, true);
+    this->PAR_distance_method_ = ApplicationTools::getStringParameter("init.distance.method",this->getParams(), "nj");
+
+    this->PAR_model_indels_ = isPIP(modelStringName);
 
     this->PAR_alignment_ = ApplicationTools::getBooleanParameter("alignment", this->getParams(), false);
 
@@ -181,8 +187,8 @@ std::map<std::string, std::string> CastorApplication::getCLIarguments(){
 
     ApplicationTools::displayResult("Initial tree model parameters estimation method",this->PAR_optim_distance_);
 
-    if (this->PAR_optim_distance_ != "init" ||
-        this->PAR_optim_distance_ != "pairwise" ||
+    if (this->PAR_optim_distance_ != "init" &&
+        this->PAR_optim_distance_ != "pairwise" &&
         this->PAR_optim_distance_ != "iterations"){
 
         throw Exception("Unknown parameter estimation procedure '" + this->PAR_optim_distance_ + "'.");
@@ -205,7 +211,7 @@ std::map<std::string, std::string> CastorApplication::getCLIarguments(){
 
 bpp::Alphabet* CastorApplication::getAlphabetIndel(){
 
-    bpp::Alphabet *alphabet;
+    bpp::Alphabet *alphabet = nullptr;
 
     if (this->PAR_alphabet_.find("DNA") != std::string::npos) {
         alphabet = new bpp::DNA_EXTENDED();
@@ -223,7 +229,7 @@ bpp::Alphabet* CastorApplication::getAlphabetIndel(){
 
 bpp::Alphabet* CastorApplication::getAlphabetNoIndel(){
 
-    bpp::Alphabet *alphabet;
+    bpp::Alphabet *alphabet = nullptr;
 
     if (this->PAR_alphabet_.find("DNA") != std::string::npos ) {
         alphabet = new bpp::DNA();
@@ -360,9 +366,9 @@ void CastorApplication::renameInternalNodes(bpp::Tree *tree){
 
 }
 
-bpp::Tree* CastorApplication::getTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+bpp::Tree* CastorApplication::getTree(bpp::SubstitutionModel *smodel,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
                                       bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
-                                      std::unique_ptr<GeneticCode> &gCode){
+                                      std::unique_ptr<GeneticCode> &gCode,bpp::DiscreteDistribution *rDist){
 
     bpp::Tree *tree = nullptr;
 
@@ -370,7 +376,7 @@ bpp::Tree* CastorApplication::getTree(bpp::SiteContainer *sites,bpp::SequenceCon
 
     ApplicationTools::displayResult("Initial tree", this->PAR_init_tree_opt_);
 
-    tree = this->getInitTree(sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode);
+    tree = this->getInitTree(smodel,sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode,rDist);
 
     // If the tree has multifurcation, then resolve it with midpoint rooting
     this->resolveMultifurcation(tree);
@@ -414,9 +420,9 @@ tshlib::Utree * CastorApplication::getUtree(bpp::Tree *tree,bpp::SiteContainer *
     return utree;
 }
 
-bpp::Tree* CastorApplication::getInitTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
+bpp::Tree* CastorApplication::getInitTree(bpp::SubstitutionModel *smodel,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
                                           bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
-                                          std::unique_ptr<GeneticCode> &gCode){
+                                          std::unique_ptr<GeneticCode> &gCode,bpp::DiscreteDistribution *rDist){
 
     bpp::Tree *tree = nullptr;
 
@@ -430,7 +436,7 @@ bpp::Tree* CastorApplication::getInitTree(bpp::SiteContainer *sites,bpp::Sequenc
 
     } else if (this->PAR_init_tree_opt_ == "distance") {
 
-        tree = this->getDistanceTree(sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode);
+        tree = this->getDistanceTree(smodel,sites,sequences,alphabet,alphabetNoGaps,modelMap,gCode,rDist);
 
     } else{
 
@@ -465,6 +471,52 @@ bpp::Tree * CastorApplication::getRandomTree(bpp::SiteContainer *sites){
     return tree;
 }
 
+bpp::Tree* CastorApplication::getDistanceTree(bpp::TransitionModel *dmodel,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,
+                                              bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
+                                              std::unique_ptr<GeneticCode> &gCode,bpp::DiscreteDistribution *rDist){
+
+    bpp::Tree *tree = nullptr;
+
+    ApplicationTools::displayResult("Initial tree reconstruction method", this->PAR_distance_method_);
+
+    AgglomerativeDistanceMethod *distMethod = nullptr;
+
+    std::string token = PAR_distance_method_.substr(0, this->PAR_distance_method_.find("-"));
+
+    if(token == "wpgma") {
+        auto *wpgma = new PGMA(true);
+        distMethod = wpgma;
+        tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
+        delete wpgma;
+    }else if(token == "upgma"){
+        auto *upgma = new PGMA(false);
+        distMethod = upgma;
+        tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
+        delete upgma;
+    }else if(token == "nj"){
+        auto *nj = new NeighborJoining();
+        nj->outputPositiveLengths(true);
+        distMethod = nj;
+        tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
+        delete nj;
+    }else if(token == "bionj"){
+        auto *bionj = new BioNJ();
+        bionj->outputPositiveLengths(true);
+        distMethod = bionj;
+        tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
+        delete bionj;
+    }else if(token == "distmatrix"){
+        tree = this->getUserDistmatrixTree();
+    }else if(token == "infere_distance_matrix") {
+        tree = this->infereDistanceMatrixTree(sequences, alphabet);
+    }else{
+        throw Exception("Unknown tree reconstruction method.");
+    }
+
+    return tree;
+}
+
+/*
 bpp::Tree* CastorApplication::getDistanceTree(bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,bpp::Alphabet *alphabet,
                                               bpp::Alphabet *alphabetNoGaps,std::map<std::string, std::string> &modelMap,
                                               std::unique_ptr<GeneticCode> &gCode){
@@ -511,7 +563,7 @@ bpp::Tree* CastorApplication::getDistanceTree(bpp::SiteContainer *sites,bpp::Seq
 
     return tree;
 }
-
+*/
 bpp::Tree* CastorApplication::getUserDistmatrixTree(){
 
     bpp::Tree* tree;
@@ -546,8 +598,8 @@ bpp::Tree* CastorApplication::infereDistanceMatrixTree(bpp::SequenceContainer *s
     bpp::DistanceMatrix *dist_ = nullptr;
     AgglomerativeDistanceMethod *distMethod = nullptr;
 
-    int ALPHABET_DIM;
-    int K;
+    int ALPHABET_DIM = 0;
+    int K = 0;
     bool mldist_flag = true;
     bool mldist_gap_flag = false;
     double cutoff_dist = 1.0;
@@ -571,9 +623,7 @@ bpp::Tree* CastorApplication::infereDistanceMatrixTree(bpp::SequenceContainer *s
 
     DistanceFactoryPrographMSA::DistanceFactory *dist_factory_angle = new DistanceFactoryPrographMSA::DistanceFactoryAngle(ALPHABET_DIM, K);
 
-    DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(sequences,ALPHABET_DIM,
-                                                                                                K,mldist_flag,mldist_gap_flag,
-                                                                                                cutoff_dist,indel_rate);
+    DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(sequences,ALPHABET_DIM,K,mldist_flag,mldist_gap_flag,cutoff_dist,indel_rate);
 
     dist_ = new DistanceMatrix(sequences->getSequencesNames());
 
@@ -602,7 +652,7 @@ bpp::Tree* CastorApplication::infereDistanceMatrixTree(bpp::SequenceContainer *s
     return tree;
 }
 
-void CastorApplication::resolveMultifurcation(bpp::Tree *tree){
+bpp::Tree * CastorApplication::resolveMultifurcation(bpp::Tree *tree){
 
     auto ttree_ = new TreeTemplate<Node>(*tree);
 
@@ -611,6 +661,7 @@ void CastorApplication::resolveMultifurcation(bpp::Tree *tree){
         tree = ttree_;
     }
 
+    return tree;
 }
 
 void CastorApplication::initBranchLength(bpp::Tree *tree){
@@ -716,9 +767,7 @@ bpp::SubstitutionModel* CastorApplication::getSubstitutionModel(std::map<std::st
     return smodel;
 }
 
-std::map<std::string, std::string> CastorApplication::getModelMap(){
-
-    std::map<std::string, std::string> modelMap;
+void CastorApplication::updateModelMap(std::map<std::string, std::string> &modelMap){
 
     this->PAR_compute_frequencies_from_data_ = false;
 
@@ -748,7 +797,6 @@ std::map<std::string, std::string> CastorApplication::getModelMap(){
         modelMap["model"] = baseModel;
     }
 
-    return modelMap;
 }
 
 void CastorApplication::getIndelRates(std::map<std::string, std::string> &modelMap,bpp::Tree *tree,std::unique_ptr<GeneticCode> &gCode){
@@ -774,11 +822,9 @@ void CastorApplication::getIndelRates(std::map<std::string, std::string> &modelM
 
     if (this->PAR_estimate_pip_parameters_) {
 
-        inference_indel_rates::infere_indel_rates_from_sequences(this->PAR_input_sequences_,this->PAR_alphabet_,tree,
-                                                                 this->lambda_,this->mu_,gCode.get(),modelMap);
+        inference_indel_rates::infere_indel_rates_from_sequences(this->PAR_input_sequences_,this->PAR_alphabet_,tree,this->lambda_,this->mu_,gCode.get(),modelMap);
 
-        DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<
-                   this->lambda_ << ",mu=" << this->mu_ << "," "I=" << this->lambda_ * this->mu_ << ")";
+        DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<this->lambda_ << ",mu=" << this->mu_ << "," "I=" << this->lambda_ * this->mu_ << ")";
 
     } else {
         this->lambda_ = (modelMap.find("lambda") == modelMap.end()) ? 1.0 : std::stod(modelMap["lambda"]);
@@ -832,18 +878,15 @@ bpp::SubstitutionModel* CastorApplication::initPIPsubstitutionModel(bpp::Alphabe
 
     if (this->PAR_alphabet_.find("DNA") != std::string::npos && this->PAR_alphabet_.find("Codon") == std::string::npos) {
 
-        smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabet), smodel_init, *data, this->lambda_, this->mu_,
-                             this->PAR_compute_frequencies_from_data_);
+        smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabet), smodel_init, *data, this->lambda_, this->mu_,this->PAR_compute_frequencies_from_data_);
 
     } else if (this->PAR_alphabet_.find("Protein") != std::string::npos) {
 
-        smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabet), smodel_init, *data, this->lambda_, this->mu_,
-                            this->PAR_compute_frequencies_from_data_);
+        smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabet), smodel_init, *data, this->lambda_, this->mu_,this->PAR_compute_frequencies_from_data_);
 
     } else if (this->PAR_alphabet_.find("Codon") != std::string::npos) {
 
-        smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabet), gCode.get(), smodel_init,*data,
-                               this->lambda_, this->mu_,this->PAR_compute_frequencies_from_data_);
+        smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabet), gCode.get(), smodel_init,*data,this->lambda_, this->mu_,this->PAR_compute_frequencies_from_data_);
 
         ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
 
@@ -862,13 +905,40 @@ bpp::SubstitutionModel* CastorApplication::getSubstitutionModelIndel(std::map<st
     bpp::SubstitutionModel *smodel_pip = nullptr;
     bpp::SubstitutionModel *smodel_canonical = nullptr;
 
-    modelMap = this->getModelMap();
+    this->updateModelMap(modelMap);
 
     // Instantiation of the canonical substitution model
     smodel_canonical = this->initCanonicalSubstitutionModel(alphabetNoGaps,gCode,sites,modelMap,alphabet);
 
     // get insertion rate and deletion rate
     this->getIndelRates(modelMap,tree,gCode);
+
+    const SequenceContainer *data;
+    if (this->PAR_alignment_) {
+        data = sequences;
+    }else{
+        data = sites;
+    }
+
+    // Instantiate the corrisponding PIP model given the alphabet
+    smodel_pip = this->initPIPsubstitutionModel(alphabet,smodel_canonical,data,gCode);
+
+    delete smodel_canonical;
+
+    return smodel_pip;
+}
+
+bpp::SubstitutionModel* CastorApplication::getSubstitutionModelIndel(std::map<std::string, std::string> &modelMap,
+                                                                     std::unique_ptr<GeneticCode> &gCode,bpp::Alphabet *alphabet,
+                                                                     bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,bpp::SequenceContainer *sequences) {
+
+    bpp::SubstitutionModel *smodel_pip = nullptr;
+    bpp::SubstitutionModel *smodel_canonical = nullptr;
+
+    this->updateModelMap(modelMap);
+
+    // Instantiation of the canonical substitution model
+    smodel_canonical = this->initCanonicalSubstitutionModel(alphabetNoGaps,gCode,sites,modelMap,alphabet);
 
     const SequenceContainer *data;
     if (this->PAR_alignment_) {
@@ -938,7 +1008,7 @@ bpp::SiteContainer* CastorApplication::getMSA(bpp::SequenceContainer *sequences,
     // Execute alignment on post-order node list
     std::vector<tshlib::VirtualNode *> ftn = utree->getPostOrderNodeList();
 
-    enumDP3Dversion DPversion;
+    enumDP3Dversion DPversion = RAM;
 
     if (PAR_alignment_version_.find("cpu") != std::string::npos) {
         DPversion = CPU; // slower but uses less memory
@@ -1007,7 +1077,7 @@ bpp::AbstractHomogeneousTreeLikelihood * CastorApplication::initLK(bpp::Transiti
             UtreeBppUtils::treemap &tm,bpp::DiscreteDistribution *rDist,std::unique_ptr<GeneticCode> &gCode,
             bpp::Alphabet *alphabet,bpp::SiteContainer *sites,bpp::Tree *tree,UtreeBppUtils::Utree *utree){
 
-    bpp::AbstractHomogeneousTreeLikelihood *tl;
+    bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
 
     if (!this->PAR_model_indels_) {
 
@@ -1023,6 +1093,8 @@ bpp::AbstractHomogeneousTreeLikelihood * CastorApplication::initLK(bpp::Transiti
         unique_ptr<TransitionModel> test;
         test.reset(smodel);
         model = test.release();
+
+        std::map <std::string, std::string> params = this->getParams();
 
         // Initialise likelihood functions
         tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *sites, model, rDist, utree, &tm, true,this->getParams(), "", false,false, false);
@@ -1248,89 +1320,24 @@ TransitionModel* CastorApplication::getTransitionModel(bpp::SubstitutionModel *s
     return dmodel;
 }
 
-bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
-                                              bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
-                                              std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod){
+
+bpp::Tree * CastorApplication::initTreeDistanceOptML(bpp::AgglomerativeDistanceMethod *distMethod,bool ignoreBrLen,
+                                                     bpp::TransitionModel *dmodel,bpp::ParameterList &parametersToIgnore,
+                                                     bpp::DiscreteDistribution *rDist,VectorSiteContainer *sitesDistMethod){
 
     bpp::Tree *tree = nullptr;
-
-    bpp::DiscreteDistribution *rDist = nullptr;
-    VectorSiteContainer *allSites = nullptr;
-    VectorSiteContainer *sitesDistMethod = nullptr;
-    bpp::Alphabet *alphabetDistMethod = nullptr;
-    bpp::SubstitutionModel *smodel = nullptr;
-    bpp::TransitionModel *dmodel = nullptr;
-    //OutputStream *messenger = nullptr;
-    //OutputStream *profiler = nullptr;
-    bpp::ParameterList parametersToIgnore;
-    //unsigned int nbEvalMax = 1000000;
-    //double tolerance = 0.000001;
-    //unsigned int optVerbose;
-    //string mhPath = "";
-    //string prPath = "";
-    bool ignoreBrLen = false;
-
-    map<std::string, std::string> parmap;
-
     Optimizators * opt = nullptr;
-    opt = new Optimizators();
-
-    if (this->PAR_model_indels_) {
-        alphabetDistMethod = alphabet;
-        parmap["model"] = modelMap["model"];
-    } else {
-        alphabetDistMethod = alphabetNoGaps;
-        parmap["model"] = this->getParams()["model"];
-    }
-
-    allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, this->getParams());
-    sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, this->getParams());
-
-    smodel = this->getSubstitutionModel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
-
-    //Initialize model to compute the distance tree
-    dmodel = this->getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
-
-    // Add a ASRV distribution
-    rDist = this->getASVR(smodel);
-
-    // Remove gap characters since we are roughly estimating the initial topology
-    if (!this->PAR_model_indels_) {
-        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
-    }
 
     UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
 
+    opt = new Optimizators();
 
     // Optimisation method verbosity
     opt->setOptVerbose(ApplicationTools::getParameter<unsigned int>("optimization.verbose",this->getParams(), 2));
 
-    //==================================
-    // m@x
-    /*
-
-    mhPath = ApplicationTools::getAFilePath("optimization.message_handler", this->getParams(),false, false);
-
-    messenger = (mhPath == "none") ? nullptr : (mhPath == "std") ? ApplicationTools::message.get(): new StlOutputStream(new ofstream(mhPath.c_str(), ios::out));
-
-    ApplicationTools::displayResult("Initial tree optimization handler", mhPath);
-
-
-    // Optimisation method profiler
-    prPath = ApplicationTools::getAFilePath("optimization.profiler", this->getParams(), false,false);
-
-    profiler = (prPath == "none") ? nullptr : (prPath == "std") ? ApplicationTools::message.get(): new StlOutputStream(new ofstream(prPath.c_str(), ios::out));
-
-    if(profiler){
-        profiler->setPrecision(20);
-    }
-
-    ApplicationTools::displayResult("Initial tree optimization profiler", prPath);
-    */
     opt->setMessageHandler();
 
     opt->setProfiler();
-    //==================================
 
     // Should I ignore some parameters?
     this->getIgnoreParams(parametersToIgnore,ignoreBrLen,dmodel,rDist);
@@ -1343,227 +1350,151 @@ bpp::Tree * CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alpha
 
     ApplicationTools::displayResult("Initial tree optimization | Tolerance",TextTools::toString(opt->getTolerance()));
 
-    //==================================
-    // m@x
-    //tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-    //                                              !ignoreBrLen, this->PAR_optim_distance_,
-    //                                              tolerance, nbEvalMax, profiler, messenger,
-    //                                              optVerbose);
-
     tree = opt->buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,!ignoreBrLen,this->PAR_optim_distance_);
 
     delete opt;
-    //==================================
-
-    //delete messenger;
-    //delete profiler;
-    delete rDist;
-    delete allSites;
-    delete sitesDistMethod;
-    delete alphabetDistMethod;
-    delete smodel;
-    delete dmodel;
 
     return tree;
 }
 
-//void CastorApplication::check_this_code(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::Tree *tree,
-//                                        bpp::SiteContainer *sites,bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
-//                                        std::unique_ptr<GeneticCode> &gCode,UtreeBppUtils::treemap &tm,tshlib::Utree *utree,
-//                                        bpp::AgglomerativeDistanceMethod *distMethod){
-//
-//    bpp::DiscreteDistribution *rDist = nullptr;
-//    VectorSiteContainer *allSites = nullptr;
-//    VectorSiteContainer *sitesDistMethod = nullptr;
-//    bpp::Alphabet *alphabetDistMethod = nullptr;
-//    bpp::SubstitutionModel *smodel = nullptr;
-//    bpp::TransitionModel *dmodel = nullptr;
-//    OutputStream *messenger = nullptr;
-//    OutputStream *profiler = nullptr;
-//    bpp::ParameterList parametersToIgnore;
-//    unsigned int nbEvalMax = 1000000;
-//    double tolerance = 0.000001;
-//    unsigned int optVerbose;
-//    string mhPath = "";
-//    string prPath = "";
-//    bool ignoreBrLen = false;
-//
-//    map<std::string, std::string> parmap;
-//
-//    if (this->PAR_model_indels_) {
-//        alphabetDistMethod = alphabet;
-//        parmap["model"] = modelMap["model"];
-//    } else {
-//        alphabetDistMethod = alphabetNoGaps;
-//        parmap["model"] = this->getParams()["model"];
-//    }
-//
-//    allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, this->getParams());
-//    sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, this->getParams());
-//
-//    /*
-//    if (this->PAR_model_indels_) {
-//
-//        // Instantiation of the canonical substitution model
-//        if (this->PAR_alphabet_.find("Codon") != std::string::npos) {
-//            smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetNoGaps, gCode.get(),
-//                                                                              sitesDistMethod, modelMap, "",
-//                                                                              true,
-//                                                                              false, 0);
-//        }else if (this->PAR_alphabet_.find("Protein") != std::string::npos) {
-//
-//            smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetNoGaps, gCode.get(),
-//                                                                              sitesDistMethod, modelMap, "",
-//                                                                              true,
-//                                                                              false, 0);
-//        } else {
-//            smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetDistMethod,
-//                                                                              gCode.get(), sitesDistMethod,
-//                                                                              modelMap,
-//                                                                              "", true,
-//                                                                              false, 0);
-//        }
-//
-//        if(modelMap.find("lambda") == modelMap.end() || modelMap.find("mu") == modelMap.end()){
-//            DLOG(WARNING) << "Either a tree or the indel rates are required with this option";
-//            exit(EXIT_FAILURE);
-//        }else{
-//            this->lambda_ = std::stod(modelMap["lambda"]);
-//            this->mu_ = std::stod(modelMap["mu"]);
-//        }
-//
-//        // Instatiate the corrisponding PIP model given the alphabet
-//        if (this->PAR_alphabet_.find("DNA") != std::string::npos &&
-//            this->PAR_alphabet_.find("Codon") == std::string::npos) {
-//            smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod), smodel,
-//                                 *sitesDistMethod, this->lambda_, this->mu_, false);
-//        } else if (this->PAR_alphabet_.find("Protein") != std::string::npos) {
-//            smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod), smodel,
-//                                *sitesDistMethod, this->lambda_, this->mu_, false);
-//        } else if (this->PAR_alphabet_.find("Codon") != std::string::npos) {
-//            smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod), gCode.get(),
-//                                   smodel, *sitesDistMethod,
-//                                   this->lambda_,
-//                                   this->mu_, false);
-//            ApplicationTools::displayWarning(
-//                    "Codon models are experimental in the current version... use with caution!");
-//            DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-//        }
-//
-//    }
-//    */
-//
-//    smodel = this->getSubstitutionModel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
-//
-//    //Initialize model to compute the distance tree
-//    /*
-//    // Get transition model from substitution model
-//    if (this->PAR_model_indels_) {
-//        unique_ptr<TransitionModel> test;
-//        test.reset(smodel);
-//        dmodel = test.release();
-//    } else {
-//        dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, gCode.get(),sitesDistMethod, parmap);
-//    }
-//    */
-//    dmodel = this->getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
-//
-//    // Add a ASRV distribution
-//    /*
-//    if (dmodel->getNumberOfStates() > dmodel->getAlphabet()->getSize()) {
-//        //Markov-modulated Markov model!
-//        rDist = new ConstantRateDistribution();
-//    } else {
-//        rDist = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
-//    }
-//    */
-//    rDist = this->getASVR(smodel);
-//
-//    // Remove gap characters since we are roughly estimating the initial topology
-//    if (!this->PAR_model_indels_) {
-//        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
-//    }
-//
-//    UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
-//
-//    //if (this->PAR_distance_method_.find("-ml") != std::string::npos) {
-//
-//    // Optimisation method verbosity
-//    optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose",this->getParams(), 2);
-//
-//    mhPath = ApplicationTools::getAFilePath("optimization.message_handler", this->getParams(),false, false);
-//
-//    messenger = (mhPath == "none") ? nullptr : (mhPath == "std") ? ApplicationTools::message.get(): new StlOutputStream(new ofstream(mhPath.c_str(), ios::out));
-//
-//    ApplicationTools::displayResult("Initial tree optimization handler", mhPath);
-//
-//    // Optimisation method profiler
-//    prPath = ApplicationTools::getAFilePath("optimization.profiler", this->getParams(), false,false);
-//
-//    profiler = (prPath == "none") ? nullptr : (prPath == "std") ? ApplicationTools::message.get(): new StlOutputStream(new ofstream(prPath.c_str(), ios::out));
-//
-//    if(profiler){
-//        profiler->setPrecision(20);
-//    }
-//
-//    ApplicationTools::displayResult("Initial tree optimization profiler", prPath);
-//
-//    // Should I ignore some parameters?
-//    /*
-//    allParameters = dmodel->getParameters();
-//
-//    allParameters.addParameters(rDist->getParameters());
-//
-//    string paramListDesc = ApplicationTools::getStringParameter("init.distance.optimization.ignore_parameter", this->getParams(),"", "", true, false);
-//
-//    bool ignoreBrLen = false;
-//
-//    StringTokenizer st(paramListDesc, ",");
-//
-//    while (st.hasMoreToken()) {
-//        try {
-//            string param = st.nextToken();
-//            if (param == "BrLen")
-//                ignoreBrLen = true;
-//            else {
-//                if (allParameters.hasParameter(param)) {
-//                    Parameter *p = &allParameters.getParameter(param);
-//                    parametersToIgnore.addParameter(*p);
-//                } else ApplicationTools::displayWarning("Parameter '" + param + "' not found.");
-//            }
-//        } catch (ParameterNotFoundException &pnfe) {
-//            ApplicationTools::displayError("Parameter '" + pnfe.getParameter() + "' not found, and so can't be ignored!");
-//        }
-//    }
-//    */
-//    this->getIgnoreParams(parametersToIgnore,ignoreBrLen,dmodel,rDist);
-//
-//    nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval",this->getParams(), 1000000);
-//
-//    ApplicationTools::displayResult("Initial tree optimization | max # ML evaluations",TextTools::toString(nbEvalMax));
-//
-//    tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance",this->getParams(), .000001);
-//
-//    ApplicationTools::displayResult("Initial tree optimization | Tolerance",TextTools::toString(tolerance));
-//
-//    //Here it is:
-//    tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-//                                                  !ignoreBrLen, this->PAR_optim_distance_,
-//                                                  tolerance, nbEvalMax, profiler, messenger,
-//                                                  optVerbose);
-//
-//    delete messenger;
-//    delete profiler;
-//
-//    //}
-//
-//    delete rDist;
-//    delete allSites;
-//    delete sitesDistMethod;
-//    delete alphabetDistMethod;
-//    delete smodel;
-//    delete dmodel;
-//}
+bpp::Tree* CastorApplication::initTreeDistanceNoOpt(bpp::AgglomerativeDistanceMethod *distMethod,bpp::TransitionModel *dmodel,
+                                                    bpp::DiscreteDistribution *rDist,VectorSiteContainer *sitesDistMethod){
+
+    bpp::Tree *tree = nullptr;
+    DistanceMatrix *dm = nullptr;
+
+    UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
+
+    distEstimation.computeMatrix();
+
+    dm = distEstimation.getMatrix();
+
+    distMethod->setDistanceMatrix((*dm));
+
+    distMethod->computeTree();
+
+    tree = distMethod->getTree();
+
+    //delete dm;
+
+    return tree;
+}
+/*
+bpp::Tree* CastorApplication::infereInitTree(bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
+                                              bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
+                                              std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod){
+    bpp::Tree *tree = nullptr;
+
+    //bpp::DiscreteDistribution *rDist = nullptr;
+    VectorSiteContainer *allSites = nullptr;
+    VectorSiteContainer *sitesDistMethod = nullptr;
+    bpp::Alphabet *alphabetDistMethod = nullptr;
+    //bpp::SubstitutionModel *smodel;
+    //bpp::TransitionModel *dmodel = nullptr;
+    bpp::ParameterList parametersToIgnore;
+    bool ignoreBrLen = false;
+    map<std::string, std::string> parmap;
+
+    if (this->PAR_model_indels_) {
+        alphabetDistMethod = alphabet;
+        parmap["model"] = modelMap["model"];
+    } else {
+        alphabetDistMethod = alphabetNoGaps;
+        parmap["model"] = this->getParams()["model"];
+    }
+
+    allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, this->getParams());
+    sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, this->getParams());
+
+    //smodel = this->getSubstitutionModel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
+
+    //Initialize model to compute the distance tree
+    //dmodel = this->getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+
+    // Add a ASRV distribution
+    //rDist = this->getASVR(smodel);
+
+    // Remove gap characters since we are roughly estimating the initial topology
+    if (!this->PAR_model_indels_) {
+        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
+    }
+
+    if (this->PAR_distance_method_.find("-ml") != std::string::npos) {
+        // Distance based initial tree topology inference  with optimisation
+        tree = initTreeDistanceOptML(distMethod,ignoreBrLen,dmodel,parametersToIgnore,rDist,sitesDistMethod);
+    }else{
+        // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
+        tree = initTreeDistanceNoOpt(distMethod,dmodel,rDist,sitesDistMethod);
+    }
+
+    delete allSites;
+    delete sitesDistMethod;
+    delete alphabetDistMethod;
+    //delete smodel;
+    //delete dmodel;
+    //delete rDist;
+
+    return tree;
+}
+*/
+bpp::Tree* CastorApplication::infereInitTree(bpp::TransitionModel *dmodel,bpp::Alphabet *alphabet,bpp::Alphabet *alphabetNoGaps,bpp::SiteContainer *sites,
+                                             bpp::SequenceContainer *sequences,std::map<std::string, std::string> &modelMap,
+                                             std::unique_ptr<GeneticCode> &gCode,bpp::AgglomerativeDistanceMethod *distMethod,
+                                             bpp::DiscreteDistribution *rDist){
+
+    bpp::Tree *tree = nullptr;
+
+    //bpp::DiscreteDistribution *rDist = nullptr;
+    VectorSiteContainer *allSites = nullptr;
+    VectorSiteContainer *sitesDistMethod = nullptr;
+    bpp::Alphabet *alphabetDistMethod = nullptr;
+    //bpp::TransitionModel *dmodel = nullptr;
+    bpp::ParameterList parametersToIgnore;
+    bool ignoreBrLen = false;
+    map<std::string, std::string> parmap;
+
+    if (this->PAR_model_indels_) {
+        alphabetDistMethod = alphabet;
+        parmap["model"] = modelMap["model"];
+    } else {
+        alphabetDistMethod = alphabetNoGaps;
+        parmap["model"] = this->getParams()["model"];
+    }
+
+    allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, this->getParams());
+    sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, this->getParams());
+
+    //smodel = this->getSubstitutionModel(modelMap,gCode,alphabet,alphabetNoGaps,sites,sequences,tree);
+
+    //Initialize model to compute the distance tree
+    //dmodel = this->getTransitionModel(smodel,alphabetDistMethod,gCode,sitesDistMethod,parmap);
+
+    // Add a ASRV distribution
+    //rDist = this->getASVR(smodel);
+
+    // Remove gap characters since we are roughly estimating the initial topology
+    if (!this->PAR_model_indels_) {
+        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
+    }
+
+    if (this->PAR_distance_method_.find("-ml") != std::string::npos) {
+        // Distance based initial tree topology inference  with optimisation
+        tree = initTreeDistanceOptML(distMethod,ignoreBrLen,dmodel,parametersToIgnore,rDist,sitesDistMethod);
+    }else{
+        // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
+        tree = initTreeDistanceNoOpt(distMethod,dmodel,rDist,sitesDistMethod);
+    }
+
+    //delete allSites;
+    //delete sitesDistMethod;
+    //delete alphabetDistMethod;
+
+    //delete smodel;
+    //delete dmodel;
+    //delete rDist;
+
+    return tree;
+}
 
 void CastorApplicationUtils::printParameters(ParameterList &parameters,bpp::SubstitutionModel *smodel){
 

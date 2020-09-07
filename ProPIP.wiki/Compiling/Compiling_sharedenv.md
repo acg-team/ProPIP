@@ -1,4 +1,4 @@
-[Back](./Index.md) | [Home](https://github.com/acg-team/ProPIP/blob/master/ProPIP.wiki/ProPIP-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process.md)
+[Back](./Index.md) | [Home](https://github.com/acg-team/ProPIP/wiki/ProPIP:-Progressive-Multiple-Sequence-Alignment-with-Poisson-Indel-Process)
 
 ---
 # Compilation on a shared environment
@@ -118,7 +118,7 @@ conda install -c etetoolkit ete3 ete_toolchain
 xvfb-run ete3 build check
 ```
 
-### Compiling ProPIP
+### Compiling Castor
 
 
 *Dynamic linking*

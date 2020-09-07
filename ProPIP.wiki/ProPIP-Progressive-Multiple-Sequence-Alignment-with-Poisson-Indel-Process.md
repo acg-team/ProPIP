@@ -1,6 +1,5 @@
-# ProPIP: Progressive Multiple Sequence Alignment with Poisson Indel Process
-
 ProPIP is a Multiple Sequence Alignment inference software that implements the Poisson Indel Process (Bouchard-Côté & Jordan, PNAS, 2013) in the Maximum Likelihood framework.
+
 
 ---
 
