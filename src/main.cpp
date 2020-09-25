@@ -5,7 +5,7 @@
  * Copyright (C) 2015-2019 by Lorenzo Gatti & Massimo Maiolo
  *******************************************************************************
  *
- * This file is part of Castor
+ * This file is part of ProPIP
  *
  * Castor is a computer program whose purpose is to infer phylogentic trees
  * under indel-aware and indel-non-aware substitution models for nucleotide,
