@@ -487,24 +487,24 @@ bpp::Tree* CastorApplication::getDistanceTree(bpp::TransitionModel *dmodel,bpp::
         auto *wpgma = new PGMA(true);
         distMethod = wpgma;
         tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
-        delete wpgma;
+        //delete wpgma;
     }else if(token == "upgma"){
         auto *upgma = new PGMA(false);
         distMethod = upgma;
         tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
-        delete upgma;
+        //delete upgma;
     }else if(token == "nj"){
         auto *nj = new NeighborJoining();
         nj->outputPositiveLengths(true);
         distMethod = nj;
         tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
-        delete nj;
+        //delete nj;
     }else if(token == "bionj"){
         auto *bionj = new BioNJ();
         bionj->outputPositiveLengths(true);
         distMethod = bionj;
         tree = this->infereInitTree(dmodel,alphabet,alphabetNoGaps,sites,sequences,modelMap,gCode,distMethod,rDist);
-        delete bionj;
+        //delete bionj;
     }else if(token == "distmatrix"){
         tree = this->getUserDistmatrixTree();
     }else if(token == "infere_distance_matrix") {
@@ -1692,21 +1692,22 @@ bpp::Tree* CastorApplication::infereInitTree(bpp::TransitionModel *dmodel,bpp::A
 
             //Here it is:
             // m@x
-            //Optimizators * opt = nullptr;
-            //opt = new Optimizators();
-            //opt->init(this->getParams(),"", true, true, 0);
-            //delete opt;
-            tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-                                                          !ignoreBrLen, this->PAR_optim_distance_,
-                                                          tolerance, nbEvalMax, profiler, messenger,
-                                                          optVerbose);
+            Optimizators * opt = nullptr;
+            opt = new Optimizators();
+            opt->init(this->getParams(),"", true, true, 0);
+
+            tree = opt->buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,!ignoreBrLen);
+
+            //Optimizators::
+
+            delete opt;
 
 
         } else {
             // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
 
             if(!tree) {
-                // LORENZO version
+                // LORENZO's version
                 distEstimation.computeMatrix();
                 DistanceMatrix *dm = distEstimation.getMatrix();
                 distMethod->setDistanceMatrix((*dm));
