@@ -94,6 +94,8 @@
 
 #include <Bpp/Phyl/Distance/BioNJ.h>
 
+#include <Bpp/Seq/App/SequenceApplicationTools.h>
+
 #include <glog/logging.h>
 
 #include "inference_indel_rates.hpp"
@@ -181,6 +183,9 @@ void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fd
 
 void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_input_sequences,
                                                               std::string PAR_Alphabet,
+                                                              bool PAR_alignment,
+                                                              bool PAR_model_indels,
+                                                              std::map<std::string, std::string> &params,
                                                               bpp::Tree *tree,
                                                               double *lambda_from_pairs,
                                                               double *mu_from_pairs,
@@ -190,10 +195,34 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
     *lambda_from_pairs=0.0;
     *mu_from_pairs=0.0;
 
+    int id = 0;
+    int Id1 = 0;
+    int Id2 = 0;
+    int nseq = 0;
+    int gapIndex = 0;
+    int localRootId = 0;
+    int s1 = 0;
+    int s2 = 0;
+    double countGapCol_1=0.0;
+    double countGapCol_2=0.0;
+    double countNoGapCol=0.0;
+    double tot_num_col = 0.0;
+    double count_pairs=0.0;
+    double bl1 = 0.0;
+    double bl2 = 0.0;
+    double lambda_0 = 0.0;
+    double mu_0 = 0.0;
     bpp::Fasta seqReader;
     bpp::SequenceContainer *sequencesCanonical = nullptr;
+    std::vector<std::string> seqnames;
+    bpp::VectorSiteContainer *allSites = nullptr;
+    bpp::SiteContainer *sites = nullptr;
 
     const bpp::Alphabet* alpha;
+
+    double gap_penalty = -10.0;
+    const size_t n = 3; // num. of equations
+    const size_t p = 2; // num. of unknown
 
     if (PAR_Alphabet.find("DNA") != std::string::npos ) {
         alpha = &bpp::AlphabetTools::DNA_ALPHABET;
@@ -203,44 +232,63 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
 
     }
 
-    sequencesCanonical = seqReader.readSequences(PAR_input_sequences,alpha);
+    if(PAR_alignment){
+        sequencesCanonical = seqReader.readSequences(PAR_input_sequences, alpha);
+        seqnames = sequencesCanonical->getSequencesNames();
+        nseq=seqnames.size();
+    }else {
+        allSites = bpp::SequenceApplicationTools::getSiteContainer(alpha, params);
+        sites = bpp::SequenceApplicationTools::getSitesToAnalyse(*allSites, params, "", true, !PAR_model_indels,true, 1);
+        seqnames = sites->getSequencesNames();
+        nseq=sites->getNumberOfSequences();
+    }
 
-    std::vector<std::string> seqnames = sequencesCanonical->getSequencesNames();
-
-    double gap_penalty = -10.0;
-
-    double count_pairs=0.0;
-    for(int i=0;i<seqnames.size()-1;i++){
-        for(int j=i+1;j<seqnames.size();j++){
+    count_pairs=0.0;
+    for(int i=0;i<nseq-1;i++){
+        for(int j=i+1;j<nseq;j++){
 
             bpp::SiteContainer* alignedSeq;
 
-            if (PAR_Alphabet.find("DNA") != std::string::npos ){
-                alignedSeq = bpp::SiteContainerTools::alignNW(sequencesCanonical->getSequence(seqnames.at(i)),
-                                                              sequencesCanonical->getSequence(seqnames.at(j)),
-                                                              bpp::DefaultNucleotideScore(&bpp::AlphabetTools::DNA_ALPHABET),
-                                                              gap_penalty);
-            } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
-                alignedSeq = bpp::SiteContainerTools::alignNW(sequencesCanonical->getSequence(seqnames.at(i)),
-                                                              sequencesCanonical->getSequence(seqnames.at(j)),
-                                                              bpp::GranthamAAChemicalDistance(),
-                                                              gap_penalty);
-            } else{
+            if(PAR_alignment){
+
+                if (PAR_Alphabet.find("DNA") != std::string::npos) {
+                    alignedSeq = bpp::SiteContainerTools::alignNW(sequencesCanonical->getSequence(seqnames.at(i)),
+                                                                  sequencesCanonical->getSequence(seqnames.at(j)),
+                                                                  bpp::DefaultNucleotideScore(
+                                                                          &bpp::AlphabetTools::DNA_ALPHABET),
+                                                                  gap_penalty);
+                } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
+                    alignedSeq = bpp::SiteContainerTools::alignNW(sequencesCanonical->getSequence(seqnames.at(i)),
+                                                                  sequencesCanonical->getSequence(seqnames.at(j)),
+                                                                  bpp::GranthamAAChemicalDistance(),
+                                                                  gap_penalty);
+                } else {
+
+                }
+
+            }else {
+
+                bpp::VectorSequenceContainer *msa = new bpp::VectorSequenceContainer(alpha);
+
+                msa->addSequence(*(new bpp::BasicSequence(sites->getName(i), sites->getSequence(i).toString(), alpha)), true);
+                msa->addSequence(*(new bpp::BasicSequence(sites->getName(j), sites->getSequence(j).toString(), alpha)), true);
+
+                alignedSeq = new bpp::VectorSiteContainer(*msa);
 
             }
 
-            int gapIndex = alignedSeq->getAlphabet()->getGapCharacterCode();
+            gapIndex = alignedSeq->getAlphabet()->getGapCharacterCode();
 
-            double countGapCol_1=0.0;
-            double countGapCol_2=0.0;
-            double countNoGapCol=0.0;
+            countGapCol_1=0.0;
+            countGapCol_2=0.0;
+            countNoGapCol=0.0;
             for(int k=0;k<alignedSeq->getNumberOfSites();k++){
                 bpp::Site s = alignedSeq->getSite(k);
 
-                int s1 = s.getValue(0);
-                int s2 = s.getValue(1);
+                s1 = s.getValue(0);
+                s2 = s.getValue(1);
                 if(s1==gapIndex & s1==s2){
-                    DLOG(WARNING) << "full gap column!";
+                    //DLOG(WARNING) << "full gap column!";
                 }else if(s1==gapIndex){
                     countGapCol_1+=1.0;
                 }else if(s2==gapIndex){
@@ -250,35 +298,31 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
                 }
             }
 
-            double tot_num_col=(countNoGapCol+countGapCol_1+countGapCol_2);
+            tot_num_col=(countNoGapCol+countGapCol_1+countGapCol_2);
 
-            int Id1 = tree->getLeafId(seqnames.at(i));
-            int Id2 = tree->getLeafId(seqnames.at(j));
+            Id1 = tree->getLeafId(seqnames.at(i));
+            Id2 = tree->getLeafId(seqnames.at(j));
 
             std::vector< int > nodeIds;
             nodeIds.push_back(Id1);
             nodeIds.push_back(Id2);
 
-            int localRootId = bpp::TreeTools::getLastCommonAncestor(*tree,nodeIds);
-
-            int id;
+            localRootId = bpp::TreeTools::getLastCommonAncestor(*tree,nodeIds);
 
             id=Id1;
-            double bl1=0;
+            bl1=0;
             while(id!=localRootId){
                 bl1+=tree->getDistanceToFather(id);
                 id=tree->getFatherId(id);
             }
 
             id=Id2;
-            double bl2=0;
+            bl2=0;
             while(id!=localRootId){
                 bl2+=tree->getDistanceToFather(id);
                 id=tree->getFatherId(id);
             }
 
-            const size_t n = 3; // num. of equations
-            const size_t p = 2; // num. of unknown
             gsl_vector *f = gsl_vector_alloc(n);
             gsl_vector *x = gsl_vector_alloc(p);
             gsl_multifit_nlinear_fdf fdf;
@@ -302,8 +346,8 @@ void inference_indel_rates::infere_indel_rates_from_sequences(std::string PAR_in
             gsl_vector_set(x, 0, tot_num_col/10.0); //lambda
             gsl_vector_set(x, 1, 1.0/10.0); //mu
 
-            double lambda_0;
-            double mu_0;
+            lambda_0 = 0.0;
+            mu_0 = 0.0;
 
             // This selects the Levenberg-Marquardt algorithm.
             fdf_params.trs = gsl_multifit_nlinear_trs_lm;

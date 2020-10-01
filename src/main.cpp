@@ -5,7 +5,7 @@
  * Copyright (C) 2015-2019 by Lorenzo Gatti & Massimo Maiolo
  *******************************************************************************
  *
- * This file is part of ProPIP
+ * This file is part of Castor
  *
  * Castor is a computer program whose purpose is to infer phylogentic trees
  * under indel-aware and indel-non-aware substitution models for nucleotide,
@@ -436,7 +436,7 @@ int main(int argc, char *argv[]) {
 
             //----------------------------------------------------------------
             //m@x
-            if (false) {
+            if (true) {
 
                 // Compute bioNJ tree using the GTR model
                 map<std::string, std::string> parmap;
@@ -481,13 +481,105 @@ int main(int argc, char *argv[]) {
 
                     if(modelMap.find("lambda") == modelMap.end() || modelMap.find("mu") == modelMap.end()){
 
+
+                        //==================================================================================
+                        //==================================================================================
+                        //==================================================================================
+                        //==================================================================================
+                        //==================================================================================
+                        // m@x:: new code
+                        if(!tree){
+
+                            double lambda_tmp = 10.0;
+                            double mu_tmp = 0.1;
+
+                            bpp::SubstitutionModel *smodel_tmp;
+                            bpp::SubstitutionModel *smodel_copy = smodel->clone();
+
+                            VectorSiteContainer *sitesDistMethod_tmp = sitesDistMethod->clone();
+                            bpp::Alphabet *alphabetDistMethod_tmp = alphabetDistMethod->clone();
+
+                            // Instatiate the corrisponding PIP model given the alphabet
+                            if (PAR_Alphabet.find("DNA") != std::string::npos &&
+                                PAR_Alphabet.find("Codon") == std::string::npos) {
+                                smodel_tmp = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
+                                                     *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
+                            } else if (PAR_Alphabet.find("Protein") != std::string::npos) {
+                                smodel_tmp = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
+                                                    *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
+                            } else if (PAR_Alphabet.find("Codon") != std::string::npos) {
+                                smodel_tmp = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod_tmp), gCode.get(),
+                                                           smodel_copy, *sitesDistMethod_tmp,lambda_tmp,mu_tmp, false);
+                                ApplicationTools::displayWarning(
+                                        "Codon models are experimental in the current version... use with caution!");
+                                DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
+                            }
+
+                            //Initialize model to compute the distance tree
+                            //TransitionModel *dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, gCode.get(), sitesDistMethod, parmap);
+                            TransitionModel *dmodel_tmp;
+                            // Get transition model from substitution model
+                            if (!PAR_model_indels) {
+                                dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp, gCode.get(),
+                                                                                               sitesDistMethod_tmp, parmap);
+                            } else {
+                                unique_ptr<TransitionModel> test;
+                                test.reset(smodel_tmp);
+                                dmodel_tmp = test.release();
+                            }
+
+                            // Add a ASRV distribution
+                            DiscreteDistribution *rDist_tmp = nullptr;
+                            if (dmodel_tmp->getNumberOfStates() > dmodel_tmp->getAlphabet()->getSize()) {
+                                //Markov-modulated Markov model!
+                                rDist_tmp = new ConstantRateDistribution();
+                            } else {
+                                rDist_tmp = PhylogeneticsApplicationTools::getRateDistribution(castorapp.getParams());
+                            }
+
+                            // Remove gap characters since we are roughly estimating the initial topology
+                            if (!PAR_model_indels) {
+                                bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod_tmp);
+                            }
+
+                            UnifiedDistanceEstimation distEstimation_tmp(dmodel_tmp, rDist_tmp, sitesDistMethod_tmp, 1, false);
+
+                            // old LORENZO version
+
+
+
+                            bpp::DistanceMatrix * dm_tmp = bpp::SiteContainerTools::computeSimilarityMatrix(*sitesDistMethod_tmp,true,"no full gap",true);
+
+
+
+                            bpp::DistanceMethod *distMethod_tmp = nullptr;
+                            auto *bionj_tmp = new BioNJ(true, true, false);
+                            bionj_tmp->outputPositiveLengths(true);
+                            distMethod_tmp = bionj_tmp;
+                            distMethod_tmp->setDistanceMatrix((*dm_tmp));
+                            distMethod_tmp->computeTree();
+                            tree = distMethod_tmp->getTree();
+
+
+
+                        }
+                        //==================================================================================
+                        //==================================================================================
+                        //==================================================================================
+                        //==================================================================================
+                        //==================================================================================
+
                         inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
                                                                                  PAR_Alphabet,
+                                                                                 PAR_alignment,
+                                                                                 PAR_model_indels,
+                                                                                 castorapp.getParams(),
                                                                                  tree,
                                                                                  &lambda,
                                                                                  &mu,
                                                                                  gCode.get(),
                                                                                  modelMap);
+
 
                     }else{
                         lambda = std::stod(modelMap["lambda"]);
@@ -638,29 +730,29 @@ int main(int argc, char *argv[]) {
                 delete sitesDistMethod;
                 delete distMethod;
 
-    //            } else {
-    //
-    //                // Use a distance matrix provided by the user
-    //
-    //                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
-    //                std::string PAR_distance_matrix;
-    //                try {
-    //                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
-    //                                                                         castorapp.getParams(), true, true, "", false, "",
-    //                                                                         0);
-    //                } catch (bpp::Exception &e) {
-    //                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
-    //                }
-    //
-    //                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
-    //                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
-    //                bpp::BioNJ bionj(*distances, true, true, false);
-    //                tree = bionj.getTree();
-    //            }
+                //            } else {
+                //
+                //                // Use a distance matrix provided by the user
+                //
+                //                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
+                //                std::string PAR_distance_matrix;
+                //                try {
+                //                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
+                //                                                                         castorapp.getParams(), true, true, "", false, "",
+                //                                                                         0);
+                //                } catch (bpp::Exception &e) {
+                //                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
+                //                }
+                //
+                //                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
+                //                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
+                //                bpp::BioNJ bionj(*distances, true, true, false);
+                //                tree = bionj.getTree();
+                //            }
 
 
             } //m@x
-        //----------------------------------------------------------------
+            //----------------------------------------------------------------
 
         } else throw Exception("Unknown init tree method.");
 
@@ -813,6 +905,9 @@ int main(int argc, char *argv[]) {
 
                 inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
                                                                          PAR_Alphabet,
+                                                                         PAR_alignment,
+                                                                         PAR_model_indels,
+                                                                         castorapp.getParams(),
                                                                          tree,
                                                                          &lambda,
                                                                          &mu,
@@ -953,7 +1048,7 @@ int main(int argc, char *argv[]) {
                                                                               castorapp.getParams(), 1, "", true, 0);
 
             double PAR_alignment_sbtemperature = ApplicationTools::getDoubleParameter("alignment.sb_temperature",
-                                                                              castorapp.getParams(), 1.0, "", true, 0);
+                                                                                      castorapp.getParams(), 1.0, "", true, 0);
 
 
             ApplicationTools::displayMessage("\n[Computing the multi-sequence alignment]");

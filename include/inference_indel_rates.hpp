@@ -80,6 +80,9 @@ namespace inference_indel_rates{
 
     void infere_indel_rates_from_sequences(std::string PAR_input_sequences,
                                            std::string PAR_Alphabet,
+                                           bool PAR_alignment,
+                                           bool PAR_model_indels,
+                                           std::map<std::string, std::string> &params,
                                            bpp::Tree *tree,
                                            double *lambda_from_pairs,
                                            double *mu_from_pairs,
