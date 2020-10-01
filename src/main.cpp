@@ -186,17 +186,7 @@ int main(int argc, char *argv[]) {
 
         double lambda = 0;
         double mu = 0;
-
-        /* ***************************************************
-         * Standard workflow
-         * [INPUT]
-         * 1. tree + alignment => (1.1) just parse everything
-         * 2. alignment  => (2.1) parse alignment => (2.2) generate tree using bioNJ
-         * 3. sequences  => (3.1) parse sequences => (3.2) generate tree using bioNJ => (3.3) perform alignment
-         * (it should not be supported in production)
-         * 4. sequences + tree => (4.1) parse sequence => (4.2) parse tree => (4.3) perform alignment
-         */
-
+        
         //////////////////////////////////////////////
         // ALPHABET
         // The alphabet object contains the not-extended alphabet as requested by the user,
