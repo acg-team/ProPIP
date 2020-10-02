@@ -112,3 +112,15 @@ void CastorApplication::getCLIarguments(){
     this->PAR_model_indels = (modelStringName == "PIP");
 
 }
+
+void CastorApplication::start(int argc){
+
+    if (argc < 2) {
+        this->help();
+        exit(EXIT_SUCCESS);
+    } else {
+        this->banner();
+        this->startTimer();
+    }
+
+}

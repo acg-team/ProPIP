@@ -160,32 +160,19 @@ int main(int argc, char *argv[]) {
                                          std::string(software::releasegitbranch + " " + software::releasegitref),
                                          std::string(software::releasedate + ", " + software::releasetime));
 
-        if (argc < 2) {
-            castorapp.help();
-            exit(0);
-        } else {
-            castorapp.banner();
-            castorapp.startTimer();
-        };
+
+        //////////////////////////////////////////////
+        // START
+
+        castorapp.start(argc);
 
         bpp::ApplicationTools::displayResult("Random seed set to", castorapp.getSeed());
-        ApplicationTools::displayResult("Log files location", std::string("current execution path"));
+        bpp::ApplicationTools::displayResult("Log files location", std::string("current execution path"));
 
         //////////////////////////////////////////////
         // CLI ARGUMENTS
-        /*
-        std::string PAR_model_substitution = ApplicationTools::getStringParameter("model", castorapp.getParams(), "JC69","", true, true);
 
-        bool PAR_alignment = ApplicationTools::getBooleanParameter("alignment", castorapp.getParams(), false);
-
-        // Split model string description and test if PIP is required
-        std::string modelStringName;
-        std::map<std::string, std::string> modelMap;
-        KeyvalTools::parseProcedure(PAR_model_substitution, modelStringName, modelMap);
-        bool PAR_model_indels = modelStringName == "PIP";
-        */
         castorapp.getCLIarguments();
-
 
 
         //////////////////////////////////////////////

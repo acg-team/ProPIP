@@ -135,6 +135,8 @@ namespace bpp {
 
         void getCLIarguments();
 
+        void start(int argc);
+
     };
 
 
