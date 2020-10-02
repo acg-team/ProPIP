@@ -126,6 +126,12 @@ namespace bpp {
         std::string PAR_support;
         std::string PAR_output_tree_format;
         std::string PAR_output_annotation_file;
+        bool estimatePIPparameters;
+        bool computeFrequenciesFromData;
+        std::string baseModel;
+        std::map<std::string, std::string> basemodelMap;
+        double lambda;
+        double mu;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -192,6 +198,8 @@ namespace bpp {
         void getUnalignedSequences();
 
         void getAlignedSequences();
+
+        void getSubstitutionModel(bpp::Tree *tree);
 
         void getASRV();
 

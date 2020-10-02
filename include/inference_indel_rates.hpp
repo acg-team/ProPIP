@@ -84,8 +84,8 @@ namespace inference_indel_rates{
                                            bool PAR_model_indels,
                                            std::map<std::string, std::string> &params,
                                            bpp::Tree *tree,
-                                           double *lambda_from_pairs,
-                                           double *mu_from_pairs,
+                                           double &lambda,
+                                           double &mu,
                                            const bpp::GeneticCode*  gCode,
                                            std::map<std::string, std::string> modelMap);
 

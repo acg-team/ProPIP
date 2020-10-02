@@ -149,8 +149,6 @@ int main(int argc, char *argv[]) {
     FLAGS_log_dir = ".";
     google::InitGoogleLogging(software::name.c_str());
     google::InstallFailureSignalHandler();
-    double lambda = 0;
-    double mu = 0;
 
     try {
 
@@ -471,30 +469,30 @@ int main(int argc, char *argv[]) {
                                                                                  castorapp.PAR_model_indels,
                                                                                  castorapp.getParams(),
                                                                                  tree,
-                                                                                 &lambda,
-                                                                                 &mu,
+                                                                                 castorapp.lambda,
+                                                                                 castorapp.mu,
                                                                                  castorapp.gCode.get(),
                                                                                  castorapp.modelMap);
 
 
                     }else{
-                        lambda = std::stod(castorapp.modelMap["lambda"]);
-                        mu = std::stod(castorapp.modelMap["mu"]);
+                        castorapp.lambda = std::stod(castorapp.modelMap["lambda"]);
+                        castorapp.mu = std::stod(castorapp.modelMap["mu"]);
                     }
 
                     // Instatiate the corrisponding PIP model given the alphabet
                     if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos &&
                             castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
                         smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod), smodel,
-                                             *sitesDistMethod, lambda, mu, false);
+                                             *sitesDistMethod, castorapp.lambda, castorapp.mu, false);
                     } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
                         smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod), smodel,
-                                            *sitesDistMethod, lambda, mu, false);
+                                            *sitesDistMethod, castorapp.lambda, castorapp.mu, false);
                     } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
                         smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod), castorapp.gCode.get(),
                                                smodel, *sitesDistMethod,
-                                               lambda,
-                                               mu, false);
+                                               castorapp.lambda,
+                                               castorapp.mu, false);
                         ApplicationTools::displayWarning(
                                 "Codon models are experimental in the current version... use with caution!");
                         DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
@@ -732,11 +730,9 @@ int main(int argc, char *argv[]) {
         /////////////////////////
         // SUBSTITUTION MODEL
 
-        ApplicationTools::displayMessage("\n[Setting up substitution model]");
+        bpp::ApplicationTools::displayMessage("\n[Setting up substitution model]");
 
-        //bpp::SubstitutionModel *smodel = nullptr;
-        //bpp::TransitionModel *model = nullptr;
-
+        /*
         bool estimatePIPparameters = false;
 
         // Instantiate a substitution model and extend it with PIP
@@ -909,6 +905,9 @@ int main(int argc, char *argv[]) {
         bpp::StdStr s1;
         bpp::PhylogeneticsApplicationTools::printParameters(castorapp.smodel, s1, 1, true);
         DLOG(INFO) << s1.str();
+        */
+
+        castorapp.getSubstitutionModel(tree);
 
         /////////////////////////
         // AMONG-SITE-RATE-VARIATION
