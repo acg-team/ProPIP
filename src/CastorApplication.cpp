@@ -59,6 +59,7 @@
 #include <glog/logging.h>
 #include <Bpp/App/ApplicationTools.h>
 #include <Bpp/Numeric/Random/RandomTools.h>
+#include <Bpp/Text/KeyvalTools.h>
 
 using namespace bpp;
 
@@ -98,4 +99,16 @@ void CastorApplication::done() {
    DLOG(INFO) << appName_ << "'s done. Bye.";
     if (timerStarted_)
         bpp::ApplicationTools::displayTime("Total execution time:");
+}
+
+void CastorApplication::getCLIarguments(){
+
+    this->PAR_model_substitution = ApplicationTools::getStringParameter("model", this->getParams(), "JC69","", true, true);
+
+    this->PAR_alignment = ApplicationTools::getBooleanParameter("alignment", this->getParams(), false);
+
+    // Split model string description and test if PIP is required
+    KeyvalTools::parseProcedure(this->PAR_model_substitution, this->modelStringName, this->modelMap);
+    this->PAR_model_indels = (modelStringName == "PIP");
+
 }

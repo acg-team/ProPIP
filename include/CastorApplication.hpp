@@ -76,6 +76,13 @@ namespace bpp {
         long seed_;
 
     public:
+
+        std::string PAR_model_substitution;
+        std::string modelStringName;
+        std::map<std::string, std::string> modelMap;
+        bool PAR_model_indels;
+        bool PAR_alignment;
+
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
     public:
@@ -124,6 +131,9 @@ namespace bpp {
             std::cout << appVersion_ << std::endl;
             std::cout << appBuild_ << std::endl;
         }
+
+
+        void getCLIarguments();
 
     };
 
