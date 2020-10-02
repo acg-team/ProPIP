@@ -90,7 +90,9 @@ namespace bpp {
         bool codonAlphabet;
         bpp::Alphabet *alphabet;
         std::string codeDesc;
-
+        std::string PAR_input_sequences;
+        bpp::SequenceContainer *sequences;
+        bpp::SiteContainer *sites;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -147,6 +149,16 @@ namespace bpp {
         void start(int argc);
 
         void getAlphabet();
+
+        void getAlphabetIndel();
+
+        void getAlphabetNoIndel();
+
+        void getData();
+
+        void getUnalignedSequences();
+
+        void getAlignedSequences();
 
     };
 

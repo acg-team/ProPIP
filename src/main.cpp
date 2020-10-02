@@ -174,11 +174,8 @@ int main(int argc, char *argv[]) {
 
         castorapp.getCLIarguments();
 
-
         //////////////////////////////////////////////
         // ALPHABET
-        // The alphabet object contains the not-extended alphabet as requested by the user,
-        // while alpha contains the extended version of the same alphabet.
 
         castorapp.getAlphabet();
 
@@ -188,43 +185,19 @@ int main(int argc, char *argv[]) {
 
         DLOG(INFO) << "alphabet:  " << castorapp.PAR_Alphabet << " | gap-extention " << (int) castorapp.PAR_model_indels;
 
-
         //////////////////////////////////////////////
         // DATA
         ApplicationTools::displayMessage("\n[Preparing input data]");
-        std::string PAR_input_sequences = ApplicationTools::getAFilePath("input.sequence.file", castorapp.getParams(),true, true, "", false, "", 1);
 
-        bpp::SequenceContainer *sequences = nullptr;
-        bpp::SiteContainer *sites = nullptr;
+        castorapp.getData();
 
-        try {
-            ApplicationTools::displayBooleanResult("Aligned sequences", !castorapp.PAR_alignment);
-
-            if (castorapp.PAR_alignment) {
-
-                // If the user requires the computation of an alignment, then the input file is made of unaligned sequences
-                bpp::Fasta seqReader;
-                sequences = seqReader.readSequences(PAR_input_sequences, castorapp.alphabet);
-                ApplicationTools::displayResult("Number of sequences",TextTools::toString(sequences->getNumberOfSequences()));
-
-            } else {
-
-                VectorSiteContainer *allSites = SequenceApplicationTools::getSiteContainer(castorapp.alphabet,castorapp.getParams());
-
-                sites = SequenceApplicationTools::getSitesToAnalyse(*allSites, castorapp.getParams(), "", true,!castorapp.PAR_model_indels, true, 1);
-                delete allSites;
-
-                AlignmentUtils::checkAlignmentConsistency(*sites);
-                ApplicationTools::displayResult("Number of sequences",TextTools::toString(sites->getNumberOfSequences()));
-                ApplicationTools::displayResult("Number of sites", TextTools::toString(sites->getNumberOfSites()));
-
-            }
-
-
-        } catch (bpp::Exception &e) {
-            LOG(FATAL) << "Error when reading sequence file due to: " << e.message();
+        bpp::ApplicationTools::displayBooleanResult("Aligned sequences", !castorapp.PAR_alignment);
+        if (castorapp.PAR_alignment) {
+            bpp::ApplicationTools::displayResult("Number of sequences",TextTools::toString(castorapp.sequences->getNumberOfSequences()));
+        } else {
+            bpp::ApplicationTools::displayResult("Number of sequences",TextTools::toString(castorapp.sites->getNumberOfSequences()));
+            bpp::ApplicationTools::displayResult("Number of sites", TextTools::toString(castorapp.sites->getNumberOfSites()));
         }
-
 
         /////////////////////////////////////////
         // INITIAL TREE
@@ -242,7 +215,7 @@ int main(int argc, char *argv[]) {
 
         } else if (initTreeOpt == "random") {
 
-            vector<string> names = sites->getSequencesNames();
+            vector<std::string> names = castorapp.sites->getSequencesNames();
             tree = TreeTemplateTools::getRandomTree(names);
             tree->setBranchLengths(1.);
 
@@ -306,14 +279,14 @@ int main(int argc, char *argv[]) {
                     K = 2;
                 }
 
-                if (!sequences) {
+                if (!castorapp.sequences) {
                     bpp::Fasta seqReader;
-                    sequences = seqReader.readSequences(PAR_input_sequences, castorapp.alphabet);
+                    castorapp.sequences = seqReader.readSequences(castorapp.PAR_input_sequences, castorapp.alphabet);
                 }
                 DistanceFactoryPrographMSA::DistanceFactory *dist_factory_angle = new DistanceFactoryPrographMSA::DistanceFactoryAngle(
                         ALPHABET_DIM, K);
 
-                DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(sequences,
+                DistanceFactoryPrographMSA::DistanceMatrix dist_ml = dist_factory_angle->computePwDistances(castorapp.sequences,
                                                                                                             ALPHABET_DIM,
                                                                                                             K,
                                                                                                             mldist_flag,
@@ -321,10 +294,10 @@ int main(int argc, char *argv[]) {
                                                                                                             cutoff_dist,
                                                                                                             indel_rate);
 
-                bpp::DistanceMatrix *dist_ = new DistanceMatrix(sequences->getSequencesNames());
+                bpp::DistanceMatrix *dist_ = new DistanceMatrix(castorapp.sequences->getSequencesNames());
 
-                for (int iii = 0; iii < sequences->getNumberOfSequences(); iii++) {
-                    for (int jjj = 0; jjj < sequences->getNumberOfSequences(); jjj++) {
+                for (int iii = 0; iii < castorapp.sequences->getNumberOfSequences(); iii++) {
+                    for (int jjj = 0; jjj < castorapp.sequences->getNumberOfSequences(); jjj++) {
                         (*dist_)(iii, jjj) = (abs(dist_ml.distances(iii, jjj)) < DISTCUTOFF ? 0.0 : abs(
                                 dist_ml.distances(iii, jjj)));
                     }
@@ -486,7 +459,7 @@ int main(int argc, char *argv[]) {
                         //==================================================================================
                         //==================================================================================
 
-                        inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
+                        inference_indel_rates::infere_indel_rates_from_sequences(castorapp.PAR_input_sequences,
                                                                                  castorapp.PAR_Alphabet,
                                                                                  castorapp.PAR_alignment,
                                                                                  castorapp.PAR_model_indels,
@@ -735,9 +708,9 @@ int main(int argc, char *argv[]) {
         UtreeBppUtils::treemap tm;
         UtreeBppUtils::convertTree_b2u(tree, utree, tm);
         if (castorapp.PAR_alignment) {
-            UtreeBppUtils::associateNode2Alignment(sequences, utree);
+            UtreeBppUtils::associateNode2Alignment(castorapp.sequences, utree);
         } else {
-            UtreeBppUtils::associateNode2Alignment(sites, utree);
+            UtreeBppUtils::associateNode2Alignment(castorapp.sites, utree);
         }
 
         DLOG(INFO) << "Bidirectional map size: " << tm.size();
@@ -794,10 +767,10 @@ int main(int argc, char *argv[]) {
 
             // Instantiation of the canonical substitution model
             if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos || castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
-                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabetNoGaps, castorapp.gCode.get(), sites,
+                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabetNoGaps, castorapp.gCode.get(), castorapp.sites,
                                                                                   castorapp.modelMap, "", true, false, 0);
             } else {
-                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), sites,
+                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
                                                                                   castorapp.modelMap, "", true, false, 0);
             }
 
@@ -820,7 +793,7 @@ int main(int argc, char *argv[]) {
                 //mu = bpp::estimateMuFromData(tree, sites);
 
 
-                inference_indel_rates::infere_indel_rates_from_sequences(PAR_input_sequences,
+                inference_indel_rates::infere_indel_rates_from_sequences(castorapp.PAR_input_sequences,
                                                                          castorapp.PAR_Alphabet,
                                                                          castorapp.PAR_alignment,
                                                                          castorapp.PAR_model_indels,
@@ -853,18 +826,18 @@ int main(int argc, char *argv[]) {
             if (castorapp.PAR_alignment) {
                 if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos && castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
 
-                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), smodel, *sequences, lambda, mu,
+                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sequences, lambda, mu,
                                          computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
 
-                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), smodel, *sequences, lambda, mu,
+                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sequences, lambda, mu,
                                         computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
 
                     smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), smodel,
-                                           *sequences, lambda, mu,
+                                           *castorapp.sequences, lambda, mu,
                                            computeFrequenciesFromData);
 
                     ApplicationTools::displayWarning(
@@ -874,18 +847,18 @@ int main(int argc, char *argv[]) {
             } else {
                 if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos && castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
 
-                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), smodel, *sites, lambda, mu,
+                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sites, lambda, mu,
                                          computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
 
-                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), smodel, *sites, lambda, mu,
+                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sites, lambda, mu,
                                         computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
 
                     smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), smodel,
-                                           *sites, lambda, mu,
+                                           *castorapp.sites, lambda, mu,
                                            computeFrequenciesFromData);
 
                     ApplicationTools::displayWarning(
@@ -897,8 +870,8 @@ int main(int argc, char *argv[]) {
         } else {
             // if the alphabet is not extended, then the gap character is not supported
             //if (!PAR_alignment) bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sites);
-            bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sites);
-            smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), sites,
+            bpp::SiteContainerTools::changeGapsToUnknownCharacters(*castorapp.sites);
+            smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
                                                                               castorapp.getParams(), "", true, false, 0);
         }
 
@@ -1009,7 +982,7 @@ int main(int argc, char *argv[]) {
                                              tree,                // bpp tree
                                              smodel,              // substitution model
                                              tm,                  // tree-map
-                                             sequences,           // un-aligned input sequences
+                                             castorapp.sequences,           // un-aligned input sequences
                                              rDist,               // rate-variation among site distribution
                                              castorapp.getSeed());  // seed for random number generation
 
@@ -1029,7 +1002,7 @@ int main(int argc, char *argv[]) {
 
 
             // convert PIPmsa into a sites objects
-            sites = PIPmsaUtils::PIPmsa2Sites(proPIP->alphabet_,
+            castorapp.sites = PIPmsaUtils::PIPmsa2Sites(proPIP->alphabet_,
                                               *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getseqNames()),
                                               *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getMSA()));
 
@@ -1038,7 +1011,7 @@ int main(int argc, char *argv[]) {
             if (PAR_output_file_msa.find("none") == std::string::npos) {
                 DLOG(INFO) << "[Alignment sequences]\t The final alignment can be found in " << PAR_output_file_msa;
                 bpp::Fasta seqWriter;
-                seqWriter.writeAlignment(TextUtils::appendToFilePath(PAR_output_file_msa, "initial"), *sites, true);
+                seqWriter.writeAlignment(TextUtils::appendToFilePath(PAR_output_file_msa, "initial"), *castorapp.sites, true);
             }
 
             double MSAscore = proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore();
@@ -1060,7 +1033,7 @@ int main(int argc, char *argv[]) {
 
         // Get transition model from substitution model
         if (!castorapp.PAR_model_indels) {
-            model = bpp::PhylogeneticsApplicationTools::getTransitionModel(castorapp.alphabet, castorapp.gCode.get(), sites,
+            model = bpp::PhylogeneticsApplicationTools::getTransitionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
                                                                            castorapp.getParams(), "", true, false, 0);
         } else {
             unique_ptr<TransitionModel> test;
@@ -1071,13 +1044,13 @@ int main(int argc, char *argv[]) {
         // Initialise likelihood functions
         if (!castorapp.PAR_model_indels) {
             //tl = new bpp::RHomogeneousTreeLikelihood_Generic(*tree, *sites, model, rDist, false, false, false);
-            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *sites, model, rDist, utree, &tm, true,
+            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *castorapp.sites, model, rDist, utree, &tm, true,
                                                              castorapp.getParams(), "", false, false,
                                                              false);
 
         } else {
             //tl = new bpp::RHomogeneousTreeLikelihood_PIP(*tree, *sites, model, rDist, &tm, false, false, false);
-            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *sites, model, rDist, utree, &tm, true,
+            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *castorapp.sites, model, rDist, utree, &tm, true,
                                                                  castorapp.getParams(), "", false,
                                                                  false, false);
         }
@@ -1124,15 +1097,15 @@ int main(int argc, char *argv[]) {
             if (castorapp.codonAlphabet) {
                 bool f = false;
                 size_t s;
-                for (size_t i = 0; i < sites->getNumberOfSites(); i++) {
+                for (size_t i = 0; i < castorapp.sites->getNumberOfSites(); i++) {
                     if (std::isinf(tl->getLogLikelihoodForASite(i))) {
-                        const Site &site = sites->getSite(i);
+                        const Site &site = castorapp.sites->getSite(i);
                         s = site.size();
                         for (size_t j = 0; j < s; j++) {
                             if (castorapp.gCode->isStop(site.getValue(j))) {
                                 (*ApplicationTools::error << "Stop Codon at site " << site.getPosition()
                                                           << " in sequence "
-                                                          << sites->getSequence(j).getName()).endLine();
+                                                          << castorapp.sites->getSequence(j).getName()).endLine();
                                 f = true;
                             }
                         }
@@ -1146,8 +1119,8 @@ int main(int argc, char *argv[]) {
                                                                          true, 1);
             if (!removeSaturated) {
                 ofstream debug("DEBUG_likelihoods.txt", ios::out);
-                for (size_t i = 0; i < sites->getNumberOfSites(); i++) {
-                    debug << "Position " << sites->getSite(i).getPosition() << " = " << tl->getLogLikelihoodForASite(i)
+                for (size_t i = 0; i < castorapp.sites->getNumberOfSites(); i++) {
+                    debug << "Position " << castorapp.sites->getSite(i).getPosition() << " = " << tl->getLogLikelihoodForASite(i)
                           << endl;
                 }
                 debug.close();
@@ -1160,14 +1133,14 @@ int main(int argc, char *argv[]) {
                 exit(1);
             } else {
                 ApplicationTools::displayBooleanResult("Saturated site removal enabled", true);
-                for (size_t i = sites->getNumberOfSites(); i > 0; --i) {
+                for (size_t i = castorapp.sites->getNumberOfSites(); i > 0; --i) {
                     if (std::isinf(tl->getLogLikelihoodForASite(i - 1))) {
-                        ApplicationTools::displayResult("Ignore saturated site", sites->getSite(i - 1).getPosition());
-                        sites->deleteSite(i - 1);
+                        ApplicationTools::displayResult("Ignore saturated site", castorapp.sites->getSite(i - 1).getPosition());
+                        castorapp.sites->deleteSite(i - 1);
                     }
                 }
-                ApplicationTools::displayResult("Number of sites retained", sites->getNumberOfSites());
-                tl->setData(*sites);
+                ApplicationTools::displayResult("Number of sites retained", castorapp.sites->getNumberOfSites());
+                tl->setData(*castorapp.sites);
                 tl->initialize();
                 logL = tl->getValue();
                 if (std::isinf(logL)) {
@@ -1198,7 +1171,7 @@ int main(int argc, char *argv[]) {
         /////////////////////////
         // OUTPUT
 
-        delete sequences;
+        delete castorapp.sequences;
 
         // Export final tree (if nexus is required, then our re-implementation of the the nexus writer is called)
         tree = new TreeTemplate<Node>(tl->getTree());
@@ -1254,7 +1227,7 @@ int main(int argc, char *argv[]) {
         PhylogeneticsApplicationTools::checkEstimatedParameters(tl->getParameters());
 
         // Write parameters to file (according to arguments)
-        OutputUtils::exportOutput(tl, sites, castorapp.getParams());
+        OutputUtils::exportOutput(tl, castorapp.sites, castorapp.getParams());
 
 
         // Compute support measures
@@ -1263,13 +1236,13 @@ int main(int argc, char *argv[]) {
         if (PAR_support == "bootstrap") {
             ApplicationTools::displayMessage("\n[Tree support measures]");
 
-            bpp::Bootstrap(tl, *sites, rDist, utree, &tm, castorapp.getParams(), "support.");
+            bpp::Bootstrap(tl, *castorapp.sites, rDist, utree, &tm, castorapp.getParams(), "support.");
         }
 
         // Delete objects and free memory
         delete castorapp.alphabet;
         delete castorapp.alphabetNoGaps;
-        delete sites;
+        delete castorapp.sites;
         delete rDist;
         delete tl;
         delete tree;
