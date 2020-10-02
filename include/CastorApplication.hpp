@@ -116,7 +116,16 @@ namespace bpp {
         std::string PAR_alignment_version;
         int PAR_alignment_sbsolutions;
         double PAR_alignment_sbtemperature;
-
+        int num_sb;
+        double temperature;
+        bpp::AbstractHomogeneousTreeLikelihood *tl;
+        bpp::SubstitutionModel *smodel;
+        bpp::TransitionModel *model;
+        double logL;
+        std::string paramNameFile;
+        std::string PAR_support;
+        std::string PAR_output_tree_format;
+        std::string PAR_output_annotation_file;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -184,9 +193,19 @@ namespace bpp {
 
         void getAlignedSequences();
 
-        void getASRV(bpp::SubstitutionModel *smodel);
+        void getASRV();
 
-        void computeMSA(bpp::SubstitutionModel *smodel,bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+        void computeMSA(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+
+        void initLkFun(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+
+        void optimizeParameters();
+
+        void parameterSanityCheck();
+
+        void bootstrapping(tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+
+        void output();
 
     };
 

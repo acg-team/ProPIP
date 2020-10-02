@@ -263,12 +263,12 @@ void CastorApplication::getData(){
 
 }
 
-void CastorApplication::getASRV(bpp::SubstitutionModel *smodel){
+void CastorApplication::getASRV(){
     // Among site rate variation (ASVR)
 
     this->rDist = nullptr;
 
-    if (smodel->getNumberOfStates() >= 2 * smodel->getAlphabet()->getSize()) {
+    if (this->smodel->getNumberOfStates() >= 2 * smodel->getAlphabet()->getSize()) {
         // Markov-modulated Markov model!
         this->rDist = new ConstantRateDistribution();
     } else {
@@ -277,7 +277,13 @@ void CastorApplication::getASRV(bpp::SubstitutionModel *smodel){
 
 }
 
-void CastorApplication::computeMSA(bpp::SubstitutionModel *smodel,bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+void CastorApplication::computeMSA(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+
+    std::chrono::high_resolution_clock::time_point t1;
+    std::chrono::high_resolution_clock::time_point t2;
+    std::vector<tshlib::VirtualNode *> ftn;
+    enumDP3Dversion DPversion = CPU;
+    double duration = 0.0;
 
     this->alignment = nullptr;
     this->proPIP = nullptr;
@@ -290,77 +296,301 @@ void CastorApplication::computeMSA(bpp::SubstitutionModel *smodel,bpp::Tree *tre
 
     this->PAR_alignment_sbtemperature = ApplicationTools::getDoubleParameter("alignment.sb_temperature",this->getParams(), 1.0, "", true, 0);
 
-
-    bpp::ApplicationTools::displayResult("Aligner optimised for:", this->PAR_alignment_version);
-
-    bpp::ApplicationTools::displayBooleanResult("Stochastic backtracking active", this->PAR_alignment_sbsolutions > 1);
-    if (PAR_alignment_sbsolutions > 1) {
-        ApplicationTools::displayResult("Number of stochastic solutions:",TextTools::toString(this->PAR_alignment_sbsolutions));
-    }
-
-    DLOG(INFO) << "[Alignment sequences] Starting MSA_t inference using Pro-PIP...";
-
     // Execute alignment on post-order node list
-    std::vector<tshlib::VirtualNode *> ftn = utree->getPostOrderNodeList();
+    ftn = utree->getPostOrderNodeList();
 
-
-    int num_sb = 1;         // number of sub-optimal MSAs
-    double temperature = 0; // temperature for SB version
-
-    enumDP3Dversion DPversion = CPU; // DP3D version
-
-    if (PAR_alignment_version.find("cpu") != std::string::npos) {
+    // DP3D version
+    if (this->PAR_alignment_version.find("cpu") != std::string::npos) {
         DPversion = CPU; // slower but uses less memory
-        num_sb = 1;
-    } else if (PAR_alignment_version.find("ram") != std::string::npos) {
+        this->num_sb = 1;
+        this->temperature = 0;
+    } else if (this->PAR_alignment_version.find("ram") != std::string::npos) {
         DPversion = RAM; // faster but uses more memory
-        num_sb = 1;
-    } else if (PAR_alignment_version.find("sb") != std::string::npos) {
+        this->num_sb = 1;
+        this->temperature = 0;
+    } else if (this->PAR_alignment_version.find("sb") != std::string::npos) {
         DPversion = SB;  // stochastic backtracking version
-        num_sb = PAR_alignment_sbsolutions;
-        temperature = PAR_alignment_sbtemperature;
+        this->num_sb = PAR_alignment_sbsolutions;
+        this->temperature = PAR_alignment_sbtemperature;
     } else {
         ApplicationTools::displayError("The user specified an unknown alignment.version. The execution will not continue.");
     }
 
-    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+    t1 = std::chrono::high_resolution_clock::now();
 
-    proPIP = new bpp::progressivePIP(utree,               // tshlib tree
+    this->proPIP = new bpp::progressivePIP(utree,               // tshlib tree
                                      tree,                // bpp tree
-                                     smodel,              // substitution model
+                                     this->smodel,              // substitution model
                                      tm,                  // tree-map
                                      this->sequences,           // un-aligned input sequences
                                      this->rDist,               // rate-variation among site distribution
                                      this->getSeed());  // seed for random number generation
 
-    proPIP->_initializePIP(ftn,          // list of tshlib nodes in on post-order (correct order of execution)
+    this->proPIP->_initializePIP(ftn,          // list of tshlib nodes in on post-order (correct order of execution)
                            DPversion,    // version of the alignment algorithm
                            num_sb,       // number of suboptimal MSAs
                            temperature); // to tune the greedyness of the sub-optimal solution
 
-    proPIP->PIPnodeAlign(); // align input sequences with a DP algorithm under PIP
+    this->proPIP->PIPnodeAlign(); // align input sequences with a DP algorithm under PIP
 
-    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+    t2 = std::chrono::high_resolution_clock::now();
 
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-    std::cout << "\nAlignment elapsed time (msec): " << duration << std::endl;
-    ApplicationTools::displayResult("\nAlignment elapsed time (msec):",TextTools::toString((double) duration, 4));
+    //auto
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+
+    bpp::ApplicationTools::displayResult("\nAlignment elapsed time (msec): ",duration);
+    bpp::ApplicationTools::displayResult("\nAlignment elapsed time (msec):",TextTools::toString((double) duration, 4));
 
     // convert PIPmsa into a sites objects
     this->sites = PIPmsaUtils::PIPmsa2Sites(proPIP->alphabet_,
                                                 *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getseqNames()),
                                                 *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getMSA()));
 
-
     // Export alignment to file
-    if (PAR_output_file_msa.find("none") == std::string::npos) {
-        DLOG(INFO) << "[Alignment sequences]\t The final alignment can be found in " << PAR_output_file_msa;
+    if (this->PAR_output_file_msa.find("none") == std::string::npos) {
+
         bpp::Fasta seqWriter;
-        seqWriter.writeAlignment(TextUtils::appendToFilePath(PAR_output_file_msa, "initial"), *this->sites, true);
+        seqWriter.writeAlignment(TextUtils::appendToFilePath(this->PAR_output_file_msa, "initial"), *this->sites, true);
+
+        DLOG(INFO) << "[Alignment sequences]\t The final alignment can be found in " << this->PAR_output_file_msa;
+
     }
 
-    double MSAscore = proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore();
+}
 
-    ApplicationTools::displayResult("Alignment log likelihood", TextTools::toString(MSAscore, 15));
+void CastorApplication::initLkFun(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+
+    // Initialization likelihood functions
+    this->tl = nullptr;
+
+    // Get transition model from substitution model
+    if (!this->PAR_model_indels) {
+        this->model = bpp::PhylogeneticsApplicationTools::getTransitionModel(this->alphabet, this->gCode.get(), this->sites,this->getParams(), "", true, false, 0);
+    } else {
+        std::unique_ptr<bpp::TransitionModel> test;
+        test.reset(this->smodel);
+        this->model = test.release();
+    }
+
+    // Initialise likelihood functions
+    if (!this->PAR_model_indels) {
+
+        tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *this->sites, this->model, this->rDist, utree, &tm, true,this->getParams(), "", false, false,false);
+
+    } else {
+
+        tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *this->sites, this->model, this->rDist, utree, &tm, true,this->getParams(), "", false,false, false);
+
+    }
+
+    tl->initialize();
+
+}
+
+void CastorApplication::optimizeParameters(){
+
+    this->tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(this->tl,this->tl->getParameters(),this->getParams(),"",true,true,0));
+
+    this->logL = this->tl->getLogLikelihood();
+
+}
+
+void CastorApplication::parameterSanityCheck(){
+
+    bpp::ParameterList pl;
+    bool f = false;
+    bool removeSaturated = false;
+    size_t s = 0;
+
+    //Listing parameters
+    this->paramNameFile = ApplicationTools::getAFilePath("output.parameter_names.file", this->getParams(), false,false, "", true, "none", 1);
+
+    if (this->paramNameFile != "none") {
+
+        bpp::ApplicationTools::displayResult("List parameters to", this->paramNameFile);
+
+        std::ofstream pnfile(this->paramNameFile.c_str(), ios::out);
+
+        pl = this->tl->getParameters();
+
+        for (size_t i = 0; i < pl.size(); ++i) {
+            pnfile << pl[i].getName() << endl;
+        }
+
+        pnfile.close();
+    }
+
+    //Check initial likelihood:
+    this->logL = this->tl->getValue();
+
+    if (std::isinf(this->logL)) {
+
+        // This may be due to null branch lengths, leading to null likelihood!
+        bpp::ApplicationTools::displayWarning("!!! Warning!!! Initial likelihood is zero.");
+        bpp::ApplicationTools::displayWarning("!!! This may be due to branch length == 0.");
+        bpp::ApplicationTools::displayWarning("!!! All null branch lengths will be set to 0.000001.");
+
+        pl = this->tl->getBranchLengthsParameters();
+
+        for (unsigned int i = 0; i < pl.size(); i++) {
+            if (pl[i].getValue() < 0.000001){
+                pl[i].setValue(0.000001);
+            }
+        }
+
+        this->tl->matchParametersValues(pl);
+
+        this->logL = this->tl->getLogLikelihood();
+
+    }
+
+    bpp::ApplicationTools::displayResult("Initial log likelihood", TextTools::toString(-this->logL, 15));
+
+    if (std::isinf(this->logL)) {
+
+        bpp::ApplicationTools::displayError("!!! Unexpected initial likelihood == 0.");
+
+        if (this->codonAlphabet) {
+
+            f = false;
+
+            for (size_t i = 0; i < this->sites->getNumberOfSites(); i++) {
+
+                if (std::isinf(this->tl->getLogLikelihoodForASite(i))) {
+
+                    const Site &site = this->sites->getSite(i);
+
+                    s = site.size();
+
+                    for (size_t j = 0; j < s; j++) {
+
+                        if (this->gCode->isStop(site.getValue(j))) {
+
+                            (*bpp::ApplicationTools::error << "Stop Codon at site " << site.getPosition()<< " in sequence "<< this->sites->getSequence(j).getName()).endLine();
+
+                            f = true;
+                        }
+
+                    }
+
+                }
+
+            }
+
+            if (f){
+                exit(EXIT_FAILURE);
+            }
+
+        }
+
+        removeSaturated = bpp::ApplicationTools::getBooleanParameter("input.sequence.remove_saturated_sites",this->getParams(), false, "",true, 1);
+
+        if (!removeSaturated) {
+
+            std::ofstream debug("DEBUG_likelihoods.txt", ios::out);
+
+            for (size_t i = 0; i < this->sites->getNumberOfSites(); i++) {
+                debug << "Position " << this->sites->getSite(i).getPosition() << " = " << this->tl->getLogLikelihoodForASite(i)<< endl;
+            }
+
+            debug.close();
+
+            bpp::ApplicationTools::displayError("!!! Site-specific likelihood have been written in file DEBUG_likelihoods.txt .");
+            bpp::ApplicationTools::displayError("!!! 0 values (inf in log) may be due to computer overflow, particularily if datasets are big (>~500 sequences).");
+            bpp::ApplicationTools::displayError("!!! You may want to try input.sequence.remove_saturated_sites = yes to ignore positions with likelihood 0.");
+
+            exit(EXIT_FAILURE);
+
+        } else {
+
+            bpp::ApplicationTools::displayBooleanResult("Saturated site removal enabled", true);
+
+            for (size_t i = this->sites->getNumberOfSites(); i > 0; --i) {
+
+                if (std::isinf(this->tl->getLogLikelihoodForASite(i - 1))) {
+
+                    bpp::ApplicationTools::displayResult("Ignore saturated site", this->sites->getSite(i - 1).getPosition());
+
+                    this->sites->deleteSite(i - 1);
+                }
+            }
+
+            bpp::ApplicationTools::displayResult("Number of sites retained", this->sites->getNumberOfSites());
+
+            this->tl->setData(*this->sites);
+
+            this->tl->initialize();
+
+            this->logL = this->tl->getValue();
+
+            if (std::isinf(this->logL)) {
+                throw Exception("Likelihood is still 0 after saturated sites are removed! Looks like a bug...");
+            }
+
+            bpp::ApplicationTools::displayResult("Initial log likelihood", TextTools::toString(-this->logL, 15));
+
+        }
+    }
+
+}
+
+void CastorApplication::output(){
+
+    // Export final tree (if nexus is required, then our re-implementation of the the nexus writer is called)
+    bpp::Tree *tree = nullptr;
+    bpp::ParameterList parameters;
+
+    tree = new TreeTemplate<Node>(this->tl->getTree());
+
+    this->PAR_output_tree_format = bpp::ApplicationTools::getStringParameter("output.tree.format",this->getParams(),"Newick","",true,true);
+
+    if (this->PAR_output_tree_format.find("Nexus") != std::string::npos) {
+        std::vector<Tree *> tmp;
+        tmp.push_back(tree);
+        OutputUtils::writeNexusMetaTree(tmp, this->getParams());
+    } else {
+        PhylogeneticsApplicationTools::writeTree(*tree, this->getParams());
+    }
+
+    // Export annotation file (tab separated values)
+    this->PAR_output_annotation_file = ApplicationTools::getAFilePath("output.annotation.file",this->getParams(),false,false,"",true,"",1);
+
+    if (this->PAR_output_annotation_file.find("none") == std::string::npos) {
+        bpp::ApplicationTools::displayResult("Output annotation to file", this->PAR_output_annotation_file);
+        OutputUtils::writeTreeAnnotations2TSV(tree, this->PAR_output_annotation_file);
+    }
+
+    // Write parameters to screen:
+    bpp::ApplicationTools::displayResult("Final Log likelihood", TextTools::toString(this->logL, 15));
+
+    parameters = this->tl->getSubstitutionModelParameters();
+    for (size_t i = 0; i < parameters.size(); i++) {
+        bpp::ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
+    }
+
+    parameters = this->tl->getRateDistributionParameters();
+    for (size_t i = 0; i < parameters.size(); i++) {
+        bpp::ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
+    }
+
+    // Checking convergence:
+    PhylogeneticsApplicationTools::checkEstimatedParameters(this->tl->getParameters());
+
+    // Write parameters to file (according to arguments)
+    OutputUtils::exportOutput(this->tl, this->sites, this->getParams());
+
+}
+
+void CastorApplication::bootstrapping(tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+
+    // Compute support measures
+    this->PAR_support = bpp::ApplicationTools::getStringParameter("support", this->getParams(), "", "", true,true);
+
+    if (this->PAR_support == "bootstrap") {
+
+        bpp::ApplicationTools::displayMessage("\n[Tree support measures]");
+
+        bpp::Bootstrap(this->tl, *this->sites, this->rDist, utree, &tm, this->getParams(), "support.");
+    }
 
 }

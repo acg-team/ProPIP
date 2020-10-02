@@ -734,8 +734,8 @@ int main(int argc, char *argv[]) {
 
         ApplicationTools::displayMessage("\n[Setting up substitution model]");
 
-        bpp::SubstitutionModel *smodel = nullptr;
-        bpp::TransitionModel *model = nullptr;
+        //bpp::SubstitutionModel *smodel = nullptr;
+        //bpp::TransitionModel *model = nullptr;
 
         bool estimatePIPparameters = false;
 
@@ -773,10 +773,10 @@ int main(int argc, char *argv[]) {
 
             // Instantiation of the canonical substitution model
             if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos || castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
-                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabetNoGaps, castorapp.gCode.get(), castorapp.sites,
+                castorapp.smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabetNoGaps, castorapp.gCode.get(), castorapp.sites,
                                                                                   castorapp.modelMap, "", true, false, 0);
             } else {
-                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
+                castorapp.smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
                                                                                   castorapp.modelMap, "", true, false, 0);
             }
 
@@ -832,17 +832,17 @@ int main(int argc, char *argv[]) {
             if (castorapp.PAR_alignment) {
                 if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos && castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
 
-                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sequences, lambda, mu,
+                    castorapp.smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sequences, lambda, mu,
                                          computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
 
-                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sequences, lambda, mu,
+                    castorapp.smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sequences, lambda, mu,
                                         computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
 
-                    smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), smodel,
+                    castorapp.smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), castorapp.smodel,
                                            *castorapp.sequences, lambda, mu,
                                            computeFrequenciesFromData);
 
@@ -853,17 +853,17 @@ int main(int argc, char *argv[]) {
             } else {
                 if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos && castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
 
-                    smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sites, lambda, mu,
+                    castorapp.smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sites, lambda, mu,
                                          computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
 
-                    smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), smodel, *castorapp.sites, lambda, mu,
+                    castorapp.smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sites, lambda, mu,
                                         computeFrequenciesFromData);
 
                 } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
 
-                    smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), smodel,
+                    castorapp.smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), castorapp.smodel,
                                            *castorapp.sites, lambda, mu,
                                            computeFrequenciesFromData);
 
@@ -877,26 +877,26 @@ int main(int argc, char *argv[]) {
             // if the alphabet is not extended, then the gap character is not supported
             //if (!PAR_alignment) bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sites);
             bpp::SiteContainerTools::changeGapsToUnknownCharacters(*castorapp.sites);
-            smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
+            castorapp.smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
                                                                               castorapp.getParams(), "", true, false, 0);
         }
 
-        DLOG(INFO) << "[Substitution model] Number of states: " << (int) smodel->getNumberOfStates();
+        DLOG(INFO) << "[Substitution model] Number of states: " << (int) castorapp.smodel->getNumberOfStates();
 
-        ApplicationTools::displayResult("Substitution model", smodel->getName());
+        ApplicationTools::displayResult("Substitution model", castorapp.smodel->getName());
         if (castorapp.PAR_model_indels)
             ApplicationTools::displayResult("Indel parameter initial value",
                                             (estimatePIPparameters) ? "estimated" : "fixed");
 
-        ParameterList parameters = smodel->getParameters();
+        ParameterList parameters = castorapp.smodel->getParameters();
         for (size_t i = 0; i < parameters.size(); i++) {
             ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
         }
 
-        for (size_t i = 0; i < smodel->getFrequencies().size(); i++) {
+        for (size_t i = 0; i < castorapp.smodel->getFrequencies().size(); i++) {
 
-            ApplicationTools::displayResult("eq.freq(" + smodel->getAlphabet()->getName(i) + ")",
-                                            TextTools::toString(smodel->getFrequencies()[i], 4));
+            ApplicationTools::displayResult("eq.freq(" + castorapp.smodel->getAlphabet()->getName(i) + ")",
+                                            TextTools::toString(castorapp.smodel->getFrequencies()[i], 4));
         }
 
 
@@ -907,7 +907,7 @@ int main(int argc, char *argv[]) {
         }
 
         bpp::StdStr s1;
-        bpp::PhylogeneticsApplicationTools::printParameters(smodel, s1, 1, true);
+        bpp::PhylogeneticsApplicationTools::printParameters(castorapp.smodel, s1, 1, true);
         DLOG(INFO) << s1.str();
 
         /////////////////////////
@@ -915,7 +915,7 @@ int main(int argc, char *argv[]) {
 
         bpp::ApplicationTools::displayMessage("\n[Getting ASRV distribution]");
 
-        castorapp.getASRV(smodel);
+        castorapp.getASRV();
 
         /////////////////////////
         // ALIGN SEQUENCES
@@ -924,243 +924,70 @@ int main(int argc, char *argv[]) {
 
             bpp::ApplicationTools::displayMessage("\n[Computing the alignment]");
 
-            castorapp.computeMSA(smodel,tree,utree,tm);
+            castorapp.computeMSA(tree,utree,tm);
 
+            bpp::ApplicationTools::displayResult("Aligner optimised for:", castorapp.PAR_alignment_version);
+
+            bpp::ApplicationTools::displayBooleanResult("Stochastic backtracking active", castorapp.PAR_alignment_sbsolutions > 1);
+            if (castorapp.PAR_alignment_sbsolutions > 1) {
+                bpp::ApplicationTools::displayResult("Number of stochastic solutions:",TextTools::toString(castorapp.PAR_alignment_sbsolutions));
+            }
+
+            bpp::ApplicationTools::displayResult("Alignment log likelihood", TextTools::toString(castorapp.proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore(), 15));
         }
-        //**********************************************************************************************************
-        //**********************************************************************************************************
 
         /////////////////////////
-        // Homogeneous modeling - initialization likelihood functions
+        // HOMOGENEOUS MODELING - initialization likelihood functions
 
-        ApplicationTools::displayMessage("\n[Setting up likelihood functions]");
-
-        // Initialization likelihood functions
-        bpp::AbstractHomogeneousTreeLikelihood *tl;
-
-        // Get transition model from substitution model
-        if (!castorapp.PAR_model_indels) {
-            model = bpp::PhylogeneticsApplicationTools::getTransitionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
-                                                                           castorapp.getParams(), "", true, false, 0);
-        } else {
-            unique_ptr<TransitionModel> test;
-            test.reset(smodel);
-            model = test.release();
-        }
-
-        // Initialise likelihood functions
-        if (!castorapp.PAR_model_indels) {
-            //tl = new bpp::RHomogeneousTreeLikelihood_Generic(*tree, *sites, model, rDist, false, false, false);
-            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *castorapp.sites, model, castorapp.rDist, utree, &tm, true,
-                                                             castorapp.getParams(), "", false, false,
-                                                             false);
-
-        } else {
-            //tl = new bpp::RHomogeneousTreeLikelihood_PIP(*tree, *sites, model, rDist, &tm, false, false, false);
-            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *castorapp.sites, model, castorapp.rDist, utree, &tm, true,
-                                                                 castorapp.getParams(), "", false,
-                                                                 false, false);
-        }
-        ApplicationTools::displayResult("Tree likelihood model", std::string("Homogeneous"));
-
-
-        tl->initialize();
+        castorapp.initLkFun(tree,utree,tm);
 
         /////////////////////////
-        // Parameter sanity check
+        // PARAMETER SANITY CHECK
 
         ApplicationTools::displayMessage("\n[Parameter sanity check]");
 
-        //Listing parameters
-        string paramNameFile = ApplicationTools::getAFilePath("output.parameter_names.file", castorapp.getParams(), false,
-                                                              false, "", true, "none", 1);
-        if (paramNameFile != "none") {
-            ApplicationTools::displayResult("List parameters to", paramNameFile);
-            ofstream pnfile(paramNameFile.c_str(), ios::out);
-            ParameterList pl = tl->getParameters();
-            for (size_t i = 0; i < pl.size(); ++i) {
-                pnfile << pl[i].getName() << endl;
-            }
-            pnfile.close();
-        }
-
-        //Check initial likelihood:
-        double logL = tl->getValue();
-        if (std::isinf(logL)) {
-            // This may be due to null branch lengths, leading to null likelihood!
-            ApplicationTools::displayWarning("!!! Warning!!! Initial likelihood is zero.");
-            ApplicationTools::displayWarning("!!! This may be due to branch length == 0.");
-            ApplicationTools::displayWarning("!!! All null branch lengths will be set to 0.000001.");
-            ParameterList pl = tl->getBranchLengthsParameters();
-            for (unsigned int i = 0; i < pl.size(); i++) {
-                if (pl[i].getValue() < 0.000001) pl[i].setValue(0.000001);
-            }
-            tl->matchParametersValues(pl);
-            logL = tl->getLogLikelihood();
-        }
-        ApplicationTools::displayResult("Initial log likelihood", TextTools::toString(-logL, 15));
-        if (std::isinf(logL)) {
-            ApplicationTools::displayError("!!! Unexpected initial likelihood == 0.");
-            if (castorapp.codonAlphabet) {
-                bool f = false;
-                size_t s;
-                for (size_t i = 0; i < castorapp.sites->getNumberOfSites(); i++) {
-                    if (std::isinf(tl->getLogLikelihoodForASite(i))) {
-                        const Site &site = castorapp.sites->getSite(i);
-                        s = site.size();
-                        for (size_t j = 0; j < s; j++) {
-                            if (castorapp.gCode->isStop(site.getValue(j))) {
-                                (*ApplicationTools::error << "Stop Codon at site " << site.getPosition()
-                                                          << " in sequence "
-                                                          << castorapp.sites->getSequence(j).getName()).endLine();
-                                f = true;
-                            }
-                        }
-                    }
-                }
-                if (f)
-                    exit(-1);
-            }
-            bool removeSaturated = ApplicationTools::getBooleanParameter("input.sequence.remove_saturated_sites",
-                                                                         castorapp.getParams(), false, "",
-                                                                         true, 1);
-            if (!removeSaturated) {
-                ofstream debug("DEBUG_likelihoods.txt", ios::out);
-                for (size_t i = 0; i < castorapp.sites->getNumberOfSites(); i++) {
-                    debug << "Position " << castorapp.sites->getSite(i).getPosition() << " = " << tl->getLogLikelihoodForASite(i)
-                          << endl;
-                }
-                debug.close();
-                ApplicationTools::displayError(
-                        "!!! Site-specific likelihood have been written in file DEBUG_likelihoods.txt .");
-                ApplicationTools::displayError(
-                        "!!! 0 values (inf in log) may be due to computer overflow, particularily if datasets are big (>~500 sequences).");
-                ApplicationTools::displayError(
-                        "!!! You may want to try input.sequence.remove_saturated_sites = yes to ignore positions with likelihood 0.");
-                exit(1);
-            } else {
-                ApplicationTools::displayBooleanResult("Saturated site removal enabled", true);
-                for (size_t i = castorapp.sites->getNumberOfSites(); i > 0; --i) {
-                    if (std::isinf(tl->getLogLikelihoodForASite(i - 1))) {
-                        ApplicationTools::displayResult("Ignore saturated site", castorapp.sites->getSite(i - 1).getPosition());
-                        castorapp.sites->deleteSite(i - 1);
-                    }
-                }
-                ApplicationTools::displayResult("Number of sites retained", castorapp.sites->getNumberOfSites());
-                tl->setData(*castorapp.sites);
-                tl->initialize();
-                logL = tl->getValue();
-                if (std::isinf(logL)) {
-                    throw Exception("Likelihood is still 0 after saturated sites are removed! Looks like a bug...");
-                }
-                ApplicationTools::displayResult("Initial log likelihood", TextTools::toString(-logL, 15));
-            }
-        }
-
+        castorapp.parameterSanityCheck();
 
         /////////////////////////
-        // OPTIMISE PARAMETERS (numerical + topology) according to user parameters
-        // Optimise parameters automatically following standard pipeline
+        // OPTIMISE PARAMETERS
 
-        ApplicationTools::displayMessage("\n[Executing numerical parameters and topology optimization]");
+        bpp::ApplicationTools::displayMessage("\n[Executing numerical parameters and topology optimization]");
 
-        tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(tl,
-                                                                                                tl->getParameters(),
-                                                                                                castorapp.getParams(),
-                                                                                                "",
-                                                                                                true,
-                                                                                                true,
-                                                                                                0));
-
-        logL = tl->getLogLikelihood();
-
+        castorapp.optimizeParameters();
 
         /////////////////////////
         // OUTPUT
 
-        delete castorapp.sequences;
+        bpp::ApplicationTools::displayMessage("\n[Printing parameters]");
 
-        // Export final tree (if nexus is required, then our re-implementation of the the nexus writer is called)
-        tree = new TreeTemplate<Node>(tl->getTree());
+        castorapp.output();
 
-        std::string PAR_output_tree_format = ApplicationTools::getStringParameter("output.tree.format",
-                                                                                  castorapp.getParams(),
-                                                                                  "Newick",
-                                                                                  "",
-                                                                                  true,
-                                                                                  true);
-        if (PAR_output_tree_format.find("Nexus") != std::string::npos) {
-            std::vector<Tree *> tmp;
-            tmp.push_back(tree);
-            OutputUtils::writeNexusMetaTree(tmp, castorapp.getParams());
-        } else {
-            PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
-        }
+        /////////////////////////
+        // BOOTSTRAPING
 
+        castorapp.bootstrapping(utree,tm);
 
-        // Export annotation file (tab separated values)
-        std::string PAR_output_annotation_file = ApplicationTools::getAFilePath("output.annotation.file",
-                                                                                castorapp.getParams(),
-                                                                                false,
-                                                                                false,
-                                                                                "",
-                                                                                true,
-                                                                                "",
-                                                                                1);
-        if (PAR_output_annotation_file.find("none") == std::string::npos) {
-            ApplicationTools::displayResult("Output annotation to file", PAR_output_annotation_file);
-            OutputUtils::writeTreeAnnotations2TSV(tree, PAR_output_annotation_file);
-
-        }
-
-        // Write parameters to screen:
-        ApplicationTools::displayResult("Final Log likelihood", TextTools::toString(logL, 15));
-
-        parameters = tl->getSubstitutionModelParameters();
-        for (size_t i = 0; i < parameters.size(); i++) {
-            ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
-        }
-        if (castorapp.PAR_model_indels) {
-            double pip_intensity =
-                    parameters.getParameter("PIP.lambda").getValue() * parameters.getParameter("PIP.mu").getValue();
-            ApplicationTools::displayResult("PIP.intensity", TextTools::toString(pip_intensity));
-        }
-        parameters = tl->getRateDistributionParameters();
-        for (size_t i = 0; i < parameters.size(); i++) {
-            ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
-        }
-
-        // Checking convergence:
-        PhylogeneticsApplicationTools::checkEstimatedParameters(tl->getParameters());
-
-        // Write parameters to file (according to arguments)
-        OutputUtils::exportOutput(tl, castorapp.sites, castorapp.getParams());
-
-
-        // Compute support measures
-        std::string PAR_support = ApplicationTools::getStringParameter("support", castorapp.getParams(), "", "", true,
-                                                                       true);
-        if (PAR_support == "bootstrap") {
-            ApplicationTools::displayMessage("\n[Tree support measures]");
-
-            bpp::Bootstrap(tl, *castorapp.sites, castorapp.rDist, utree, &tm, castorapp.getParams(), "support.");
-        }
+        /////////////////////////
+        // CLEAR OBJECTS
 
         // Delete objects and free memory
         delete castorapp.alphabet;
         delete castorapp.alphabetNoGaps;
         delete castorapp.sites;
         delete castorapp.rDist;
-        delete tl;
+        delete castorapp.tl;
+        delete castorapp.sequences;
         delete tree;
 
+        /////////////////////////
+        // CLOSE APPLICATION
         castorapp.done();
         google::ShutdownGoogleLogging();
-        exit(0);
+        exit(EXIT_SUCCESS);
 
     } catch (exception &e) {
         cout << e.what() << endl;
         google::ShutdownGoogleLogging();
-        exit(1);
+        exit(EXIT_SUCCESS);
     }
 }
