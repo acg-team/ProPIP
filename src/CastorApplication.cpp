@@ -60,6 +60,11 @@
 #include <Bpp/App/ApplicationTools.h>
 #include <Bpp/Numeric/Random/RandomTools.h>
 #include <Bpp/Text/KeyvalTools.h>
+#include <Bpp/Seq/Alphabet/AlphabetTools.h>
+#include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
+#include <Bpp/Seq/App/SequenceApplicationTools.h>
+#include <Bpp/Seq/Alphabet/DNA.h>
+#include "ExtendedAlphabet.hpp"
 
 using namespace bpp;
 
@@ -121,6 +126,58 @@ void CastorApplication::start(int argc){
     } else {
         this->banner();
         this->startTimer();
+    }
+
+}
+
+void CastorApplication::getAlphabet(){
+
+    this->PAR_Alphabet = ApplicationTools::getStringParameter("alphabet", this->getParams(), "DNA", "",true, true);
+
+    // Alphabet without gaps
+    this->alphabetNoGaps = bpp::SequenceApplicationTools::getAlphabet(this->getParams(), "", false,false);
+
+    // Alphabet used for all the computational steps (it can allows for gap extension)
+    if (this->PAR_model_indels) {
+
+        if (this->PAR_Alphabet.find("DNA") != std::string::npos) {
+            this->alphabet = new bpp::DNA_EXTENDED();
+            this->codonAlphabet = false;
+        } else if(this->PAR_Alphabet.find("Codon") != std::string::npos){
+            this->alphabet = new bpp::DNA_EXTENDED();
+            // This is additional to the alphabet instance
+            this->alphabet = new CodonAlphabet_Extended(dynamic_cast<bpp::NucleicAlphabet *>(this->alphabet));
+            this->codonAlphabet = true;
+
+            this->codeDesc = ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
+            this->gCode.reset(bpp::SequenceApplicationTools::getGeneticCode(dynamic_cast<bpp::CodonAlphabet *>(this->alphabetNoGaps)->getNucleicAlphabet(),this->codeDesc));
+
+        } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
+            this->alphabet = new bpp::ProteicAlphabet_Extended();
+            this->codonAlphabet = false;
+        }
+
+    } else {
+
+        if (this->PAR_Alphabet.find("DNA") != std::string::npos) {
+            this->alphabet = new bpp::DNA();
+            this->codonAlphabet = false;
+        } else if (this->PAR_Alphabet.find("Codon") != std::string::npos){
+            this->alphabet = new bpp::DNA();
+            // This is additional to the alphabet instance
+            this->alphabet = new CodonAlphabet(dynamic_cast<bpp::NucleicAlphabet *>(this->alphabet));
+            this->codonAlphabet = true;
+
+            this->codeDesc = ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
+            this->gCode.reset(bpp::SequenceApplicationTools::getGeneticCode(dynamic_cast<bpp::CodonAlphabet *>(this->alphabetNoGaps)->getNucleicAlphabet(),this->codeDesc));
+
+        } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
+            this->alphabet = new bpp::ProteicAlphabet();
+            this->codonAlphabet = false;
+        } else {
+            exit(EXIT_FAILURE);
+        }
+
     }
 
 }

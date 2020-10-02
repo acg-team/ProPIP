@@ -61,9 +61,10 @@
 #include <glog/logging.h>
 #include <iostream>
 #include <Bpp/App/ApplicationTools.h>
-
+#include <Bpp/Seq/Alphabet/AlphabetTools.h>
 #include <boost/asio/ip/host_name.hpp>
-
+#include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
+#include <Bpp/Seq/App/SequenceApplicationTools.h>
 
 namespace bpp {
     class CastorApplication {
@@ -77,11 +78,19 @@ namespace bpp {
 
     public:
 
+
         std::string PAR_model_substitution;
         std::string modelStringName;
         std::map<std::string, std::string> modelMap;
         bool PAR_model_indels;
         bool PAR_alignment;
+        std::string PAR_Alphabet;
+        bpp::Alphabet *alphabetNoGaps;
+        std::unique_ptr<bpp::GeneticCode> gCode;
+        bool codonAlphabet;
+        bpp::Alphabet *alphabet;
+        std::string codeDesc;
+
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -136,6 +145,8 @@ namespace bpp {
         void getCLIarguments();
 
         void start(int argc);
+
+        void getAlphabet();
 
     };
 
