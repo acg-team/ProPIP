@@ -65,6 +65,22 @@
 #include <boost/asio/ip/host_name.hpp>
 #include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
 #include <Bpp/Seq/App/SequenceApplicationTools.h>
+#include <Bpp/Phyl/Model/RateDistribution/ConstantRateDistribution.h>
+#include <Bpp/Phyl/App/PhylogeneticsApplicationTools.h>
+#include <Bpp/Phyl/Model/Nucleotide/JCnuc.h>
+#include <Bpp/Phyl/Model/Nucleotide/K80.h>
+#include <Bpp/Phyl/Model/Nucleotide/GTR.h>
+#include <Bpp/Phyl/Distance/DistanceMethod.h>
+#include <Bpp/Phyl/Distance/DistanceEstimation.h>
+#include <Bpp/Phyl/Distance/BioNJ.h>
+#include <Bpp/Phyl/Io/Newick.h>
+#include <Bpp/Phyl/Distance/PGMA.h>
+#include <Bpp/Phyl/OptimizationTools.h>
+
+#include "pPIP.hpp"
+#include "progressivePIP.hpp"
+#include "FactoryPIPnode.hpp"
+#include "CompositePIPnode.hpp"
 
 namespace bpp {
     class CastorApplication {
@@ -93,6 +109,14 @@ namespace bpp {
         std::string PAR_input_sequences;
         bpp::SequenceContainer *sequences;
         bpp::SiteContainer *sites;
+        bpp::DiscreteDistribution *rDist;
+        pPIP *alignment = nullptr;
+        progressivePIP *proPIP = nullptr;
+        std::string PAR_output_file_msa;
+        std::string PAR_alignment_version;
+        int PAR_alignment_sbsolutions;
+        double PAR_alignment_sbtemperature;
+
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -159,6 +183,10 @@ namespace bpp {
         void getUnalignedSequences();
 
         void getAlignedSequences();
+
+        void getASRV(bpp::SubstitutionModel *smodel);
+
+        void computeMSA(bpp::SubstitutionModel *smodel,bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
 
     };
 

@@ -164,6 +164,8 @@ int main(int argc, char *argv[]) {
         //////////////////////////////////////////////
         // START
 
+        bpp::ApplicationTools::displayMessage("\n[Starting the application]");
+
         castorapp.start(argc);
 
         bpp::ApplicationTools::displayResult("Random seed set to", castorapp.getSeed());
@@ -172,10 +174,14 @@ int main(int argc, char *argv[]) {
         //////////////////////////////////////////////
         // CLI ARGUMENTS
 
+        bpp::ApplicationTools::displayMessage("\n[Getting CLI arguments]");
+
         castorapp.getCLIarguments();
 
         //////////////////////////////////////////////
         // ALPHABET
+
+        bpp::ApplicationTools::displayMessage("\n[Getting alphabet]");
 
         castorapp.getAlphabet();
 
@@ -187,7 +193,7 @@ int main(int argc, char *argv[]) {
 
         //////////////////////////////////////////////
         // DATA
-        ApplicationTools::displayMessage("\n[Preparing input data]");
+        bpp::ApplicationTools::displayMessage("\n[Preparing input data]");
 
         castorapp.getData();
 
@@ -201,7 +207,7 @@ int main(int argc, char *argv[]) {
 
         /////////////////////////////////////////
         // INITIAL TREE
-        ApplicationTools::displayMessage("\n[Preparing initial tree]");
+        bpp::ApplicationTools::displayMessage("\n[Preparing initial tree]");
 
         bpp::Tree *tree = nullptr;
         string initTreeOpt = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,
@@ -907,117 +913,18 @@ int main(int argc, char *argv[]) {
         /////////////////////////
         // AMONG-SITE-RATE-VARIATION
 
-        bpp::DiscreteDistribution *rDist = nullptr;
+        bpp::ApplicationTools::displayMessage("\n[Getting ASRV distribution]");
 
-        // Among site rate variation (ASVR)
-        if (smodel->getNumberOfStates() >= 2 * smodel->getAlphabet()->getSize()) {
-            // Markov-modulated Markov model!
-            rDist = new ConstantRateDistribution();
-        } else {
-            rDist = PhylogeneticsApplicationTools::getRateDistribution(castorapp.getParams());
-        }
+        castorapp.getASRV(smodel);
 
-        //**********************************************************************************************************
-        // ********  3D DP PIP  ************************************************************************************
-        //**********************************************************************************************************
-
-        // COMPUTE ALIGNMENT USING PROGRESSIVE-PIP
-        pPIP *alignment = nullptr;
-        progressivePIP *proPIP = nullptr;
+        /////////////////////////
+        // ALIGN SEQUENCES
 
         if (castorapp.PAR_alignment) {
 
-            std::string PAR_output_file_msa = ApplicationTools::getAFilePath("output.msa.file", castorapp.getParams(), false,
-                                                                             false, "", true, "", 1);
+            bpp::ApplicationTools::displayMessage("\n[Computing the alignment]");
 
-            std::string PAR_alignment_version = ApplicationTools::getStringParameter("alignment.version",
-                                                                                     castorapp.getParams(), "cpu", "",
-                                                                                     true, 0);
-
-            int PAR_alignment_sbsolutions = ApplicationTools::getIntParameter("alignment.sb_solutions",
-                                                                              castorapp.getParams(), 1, "", true, 0);
-
-            double PAR_alignment_sbtemperature = ApplicationTools::getDoubleParameter("alignment.sb_temperature",
-                                                                                      castorapp.getParams(), 1.0, "", true, 0);
-
-
-            ApplicationTools::displayMessage("\n[Computing the multi-sequence alignment]");
-            ApplicationTools::displayResult("Aligner optimised for:", PAR_alignment_version);
-
-            ApplicationTools::displayBooleanResult("Stochastic backtracking active", PAR_alignment_sbsolutions > 1);
-            if (PAR_alignment_sbsolutions > 1) {
-                ApplicationTools::displayResult("Number of stochastic solutions:",
-                                                TextTools::toString(PAR_alignment_sbsolutions));
-            }
-
-            DLOG(INFO) << "[Alignment sequences] Starting MSA_t inference using Pro-PIP...";
-
-            // Execute alignment on post-order node list
-            std::vector<tshlib::VirtualNode *> ftn = utree->getPostOrderNodeList();
-
-
-            int num_sb = 1;         // number of sub-optimal MSAs
-            double temperature = 0; // temperature for SB version
-
-            enumDP3Dversion DPversion = CPU; // DP3D version
-
-            if (PAR_alignment_version.find("cpu") != std::string::npos) {
-                DPversion = CPU; // slower but uses less memory
-                num_sb = 1;
-            } else if (PAR_alignment_version.find("ram") != std::string::npos) {
-                DPversion = RAM; // faster but uses more memory
-                num_sb = 1;
-            } else if (PAR_alignment_version.find("sb") != std::string::npos) {
-                DPversion = SB;  // stochastic backtracking version
-                num_sb = PAR_alignment_sbsolutions;
-                temperature = PAR_alignment_sbtemperature;
-            } else {
-                ApplicationTools::displayError("The user specified an unknown alignment.version. "
-                                               "The execution will not continue.");
-            }
-
-            std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-
-            proPIP = new bpp::progressivePIP(utree,               // tshlib tree
-                                             tree,                // bpp tree
-                                             smodel,              // substitution model
-                                             tm,                  // tree-map
-                                             castorapp.sequences,           // un-aligned input sequences
-                                             rDist,               // rate-variation among site distribution
-                                             castorapp.getSeed());  // seed for random number generation
-
-            proPIP->_initializePIP(ftn,          // list of tshlib nodes in on post-order (correct order of execution)
-                                   DPversion,    // version of the alignment algorithm
-                                   num_sb,       // number of suboptimal MSAs
-                                   temperature); // to tune the greedyness of the sub-optimal solution
-
-            proPIP->PIPnodeAlign(); // align input sequences with a DP algorithm under PIP
-
-            std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-            std::cout << "\nAlignment elapsed time (msec): " << duration << std::endl;
-            ApplicationTools::displayResult("\nAlignment elapsed time (msec):",
-                                            TextTools::toString((double) duration, 4));
-
-
-            // convert PIPmsa into a sites objects
-            castorapp.sites = PIPmsaUtils::PIPmsa2Sites(proPIP->alphabet_,
-                                              *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getseqNames()),
-                                              *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getMSA()));
-
-
-            // Export alignment to file
-            if (PAR_output_file_msa.find("none") == std::string::npos) {
-                DLOG(INFO) << "[Alignment sequences]\t The final alignment can be found in " << PAR_output_file_msa;
-                bpp::Fasta seqWriter;
-                seqWriter.writeAlignment(TextUtils::appendToFilePath(PAR_output_file_msa, "initial"), *castorapp.sites, true);
-            }
-
-            double MSAscore = proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getScore();
-
-            ApplicationTools::displayResult("Alignment log likelihood", TextTools::toString(MSAscore, 15));
-
+            castorapp.computeMSA(smodel,tree,utree,tm);
 
         }
         //**********************************************************************************************************
@@ -1044,13 +951,13 @@ int main(int argc, char *argv[]) {
         // Initialise likelihood functions
         if (!castorapp.PAR_model_indels) {
             //tl = new bpp::RHomogeneousTreeLikelihood_Generic(*tree, *sites, model, rDist, false, false, false);
-            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *castorapp.sites, model, rDist, utree, &tm, true,
+            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *castorapp.sites, model, castorapp.rDist, utree, &tm, true,
                                                              castorapp.getParams(), "", false, false,
                                                              false);
 
         } else {
             //tl = new bpp::RHomogeneousTreeLikelihood_PIP(*tree, *sites, model, rDist, &tm, false, false, false);
-            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *castorapp.sites, model, rDist, utree, &tm, true,
+            tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *castorapp.sites, model, castorapp.rDist, utree, &tm, true,
                                                                  castorapp.getParams(), "", false,
                                                                  false, false);
         }
@@ -1236,14 +1143,14 @@ int main(int argc, char *argv[]) {
         if (PAR_support == "bootstrap") {
             ApplicationTools::displayMessage("\n[Tree support measures]");
 
-            bpp::Bootstrap(tl, *castorapp.sites, rDist, utree, &tm, castorapp.getParams(), "support.");
+            bpp::Bootstrap(tl, *castorapp.sites, castorapp.rDist, utree, &tm, castorapp.getParams(), "support.");
         }
 
         // Delete objects and free memory
         delete castorapp.alphabet;
         delete castorapp.alphabetNoGaps;
         delete castorapp.sites;
-        delete rDist;
+        delete castorapp.rDist;
         delete tl;
         delete tree;
 
