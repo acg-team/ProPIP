@@ -801,14 +801,9 @@ void CastorApplication::getSubstitutionModel(){
 
 }
 
-void CastorApplication::getTree(){
+void CastorApplication::initTreeMethod(){
 
-    this->tree = nullptr;
-    this->initTreeOpt = ApplicationTools::getStringParameter("init.tree", this->getParams(), "user", "", false,1);
-
-    ApplicationTools::displayResult("Initial tree", this->initTreeOpt);
-
-    if (initTreeOpt == "user") {
+    if (this->initTreeOpt == "user") {
 
         this->tree = PhylogeneticsApplicationTools::getTree(this->getParams());
 
@@ -919,7 +914,9 @@ void CastorApplication::getTree(){
             delete dist_;
             delete bionj;
 
-        } else throw Exception("Unknown tree reconstruction method.");
+        } else{
+            throw Exception("Unknown tree reconstruction method.");
+        }
 
         //----------------------------------------------------------------
         //m@x
@@ -952,7 +949,7 @@ void CastorApplication::getTree(){
 
                 // Instantiation of the canonical substitution model
                 if (this->PAR_Alphabet.find("Codon") != std::string::npos ||
-                        this->PAR_Alphabet.find("Protein") != std::string::npos) {
+                    this->PAR_Alphabet.find("Protein") != std::string::npos) {
                     smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps, this->gCode.get(),
                                                                                       sitesDistMethod, this->modelMap, "",
                                                                                       true,
@@ -988,7 +985,7 @@ void CastorApplication::getTree(){
 
                         // Instatiate the corrisponding PIP model given the alphabet
                         if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-                                this->PAR_Alphabet.find("Codon") == std::string::npos) {
+                            this->PAR_Alphabet.find("Codon") == std::string::npos) {
                             smodel_tmp = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
                                                      *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
                         } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
@@ -1064,7 +1061,7 @@ void CastorApplication::getTree(){
 
                 // Instatiate the corrisponding PIP model given the alphabet
                 if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-                        this->PAR_Alphabet.find("Codon") == std::string::npos) {
+                    this->PAR_Alphabet.find("Codon") == std::string::npos) {
                     smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod), smodel,
                                          *sitesDistMethod, this->lambda, this->mu, false);
                 } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
@@ -1177,9 +1174,9 @@ void CastorApplication::getTree(){
 
                 //Here it is:
                 this->tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-                                                              !ignoreBrLen, PAR_optim_distance,
-                                                              tolerance, nbEvalMax, profiler, messenger,
-                                                              optVerbose);
+                                                                    !ignoreBrLen, PAR_optim_distance,
+                                                                    tolerance, nbEvalMax, profiler, messenger,
+                                                                    optVerbose);
 
             } else {
                 // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
@@ -1202,85 +1199,186 @@ void CastorApplication::getTree(){
         } //m@x
         //----------------------------------------------------------------
 
-    } else throw Exception("Unknown init tree method.");
+    } else{
+        throw Exception("Unknown init tree method.");
+    }
 
+}
+
+void CastorApplication::resolveMultifurcation(){
 
     // If the tree has multifurcation, then resolve it with midpoint rooting
-    auto ttree_ = new TreeTemplate<Node>(*tree);
+    bpp::TreeTemplate<Node> *ttree_ = new TreeTemplate<Node>(*tree);
+
     if (ttree_->getRootNode()->getNumberOfSons() > 2) {
         TreeTemplateTools::midRoot(*(ttree_), TreeTemplateTools::MIDROOT_VARIANCE, false);
-        tree = ttree_;
+        this->tree = ttree_;
     }
+
+}
+
+void CastorApplication::renameTreeNodes(){
 
     // Rename internal nodes with standard Vxx * where xx is a progressive number
     this->tree->setNodeName(tree->getRootId(), "root");
+
     UtreeBppUtils::renameInternalNodes(tree);
+
+}
+
+void CastorApplication::bpp2utree(){
+
+    // Convert the bpp into utree for tree-search engine
+    this->utree = new UtreeBppUtils::Utree();
+
+    UtreeBppUtils::convertTree_b2u(this->tree, this->utree, this->tm);
+
+    if (this->PAR_alignment) {
+        UtreeBppUtils::associateNode2Alignment(this->sequences, this->utree);
+    } else {
+        UtreeBppUtils::associateNode2Alignment(this->sites, this->utree);
+    }
+
+}
+
+void CastorApplication::setTreeBranchLengthsInput(std::map<std::string, std::string> &cmdArgs){
+
+    // Is the root has to be moved to the midpoint position along the branch that contains it ? If no, do nothing!
+    bool midPointRootBrLengths;
+
+    midPointRootBrLengths = bpp::ApplicationTools::getBooleanParameter("midpoint_root_branch", cmdArgs, false,"", true, 2);
+
+    if (midPointRootBrLengths){
+        TreeTools::constrainedMidPointRooting(*this->tree);
+    }
+
+}
+
+void CastorApplication::setTreeBranchLengthsEqual(std::map<std::string, std::string> &cmdArgs){
+
+    double value;
+
+    value = bpp::ApplicationTools::getDoubleParameter("value", cmdArgs, 0.1, "", true, 2);
+
+    if (value <= 0){
+        throw Exception("Value for branch length must be superior to 0");
+    }
+
+    bpp::ApplicationTools::displayResult("Branch lengths set to", value);
+
+    tree->setBranchLengths(value);
+
+}
+
+void CastorApplication::setTreeBranchLengthsClock(){
+
+    TreeTools::convertToClockTree(*this->tree, this->tree->getRootId(), true);
+
+}
+
+void CastorApplication::setTreeBranchLengthsGrafen(std::map<std::string, std::string> &cmdArgs){
+
+    std::string grafenHeight;
+    double h;
+    double rho;
+    double nh;
+
+    grafenHeight = ApplicationTools::getStringParameter("height", cmdArgs, "input", "", true, 2);
+
+    if (grafenHeight == "input") {
+
+        h = TreeTools::getHeight(*this->tree, this->tree->getRootId());
+
+    } else {
+
+        h = TextTools::toDouble(grafenHeight);
+
+        if (h <= 0){
+            throw Exception("Height must be positive in Grafen's method.");
+        }
+
+    }
+
+    bpp::ApplicationTools::displayResult("Total height", bpp::TextTools::toString(h));
+
+    rho = ApplicationTools::getDoubleParameter("rho", cmdArgs, 1., "", true, 2);
+
+    bpp::ApplicationTools::displayResult("Grafen's rho", rho);
+
+    TreeTools::computeBranchLengthsGrafen(*tree, rho);
+
+    nh = TreeTools::getHeight(*tree, tree->getRootId());
+
+    this->tree->scaleTree(h / nh);
+
+}
+
+void CastorApplication::setTreeBranchLengths(){
+
+    std::string cmdName;
+    std::map<std::string, std::string> cmdArgs;
+
+    // Setting branch lengths?
+    this->initBrLenMethod = bpp::ApplicationTools::getStringParameter("init.brlen.method", this->getParams(), "Input","", true, 1);
+
+    bpp::KeyvalTools::parseProcedure(this->initBrLenMethod, cmdName, cmdArgs);
+
+    bpp::ApplicationTools::displayResult("Branch lengths", cmdName);
+
+    if (cmdName == "Input") {
+
+        this->setTreeBranchLengthsInput(cmdArgs);
+
+    } else if (cmdName == "Equal") {
+
+        this->setTreeBranchLengthsEqual(cmdArgs);
+
+    } else if (cmdName == "Clock") {
+
+        this->setTreeBranchLengthsClock();
+
+    } else if (cmdName == "Grafen") {
+
+        this->setTreeBranchLengthsGrafen(cmdArgs);
+
+    } else{
+
+        throw Exception("Method '" + this->initBrLenMethod + "' unknown for computing branch lengths.");
+
+    }
+
+}
+
+void CastorApplication::getTree(){
+
+    this->tree = nullptr;
+
+    this->initTreeOpt = ApplicationTools::getStringParameter("init.tree", this->getParams(), "user", "", false,1);
+
+    bpp::ApplicationTools::displayResult("Initial tree", this->initTreeOpt);
+
+    this->initTreeMethod();
+
+    this->resolveMultifurcation();
+
+    this->renameTreeNodes();
 
     // Try to write the current tree to file. This will be overwritten by the optimized tree,
     // but allow to check file existence before running optimization!
-    PhylogeneticsApplicationTools::writeTree(*this->tree, this->getParams());
+    bpp::PhylogeneticsApplicationTools::writeTree(*this->tree, this->getParams());
 
-    // Setting branch lengths?
-    string initBrLenMethod = ApplicationTools::getStringParameter("init.brlen.method", this->getParams(), "Input",
-                                                                  "", true, 1);
-    string cmdName;
-    map<string, string> cmdArgs;
-    KeyvalTools::parseProcedure(initBrLenMethod, cmdName, cmdArgs);
-    if (cmdName == "Input") {
-        // Is the root has to be moved to the midpoint position along the branch that contains it ? If no, do nothing!
-        bool midPointRootBrLengths = ApplicationTools::getBooleanParameter("midpoint_root_branch", cmdArgs, false,
-                                                                           "", true, 2);
-        if (midPointRootBrLengths)
-            TreeTools::constrainedMidPointRooting(*tree);
-    } else if (cmdName == "Equal") {
-        double value = ApplicationTools::getDoubleParameter("value", cmdArgs, 0.1, "", true, 2);
-        if (value <= 0)
-            throw Exception("Value for branch length must be superior to 0");
-        ApplicationTools::displayResult("Branch lengths set to", value);
-        tree->setBranchLengths(value);
-    } else if (cmdName == "Clock") {
-        TreeTools::convertToClockTree(*tree, tree->getRootId(), true);
-    } else if (cmdName == "Grafen") {
-        string grafenHeight = ApplicationTools::getStringParameter("height", cmdArgs, "input", "", true, 2);
-        double h;
-        if (grafenHeight == "input") {
-            h = TreeTools::getHeight(*tree, tree->getRootId());
-        } else {
-            h = TextTools::toDouble(grafenHeight);
-            if (h <= 0) throw Exception("Height must be positive in Grafen's method.");
-        }
-        ApplicationTools::displayResult("Total height", TextTools::toString(h));
+    this->setTreeBranchLengths();
 
-        double rho = ApplicationTools::getDoubleParameter("rho", cmdArgs, 1., "", true, 2);
-        ApplicationTools::displayResult("Grafen's rho", rho);
-        TreeTools::computeBranchLengthsGrafen(*tree, rho);
-        double nh = TreeTools::getHeight(*tree, tree->getRootId());
-        tree->scaleTree(h / nh);
-    } else throw Exception("Method '" + initBrLenMethod + "' unknown for computing branch lengths.");
-    ApplicationTools::displayResult("Branch lengths", cmdName);
+    DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(this->tree);
 
-    DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(tree);
-
-    // Convert the bpp into utree for tree-search engine
-    //auto utree = new Utree();
-    this->utree = new UtreeBppUtils::Utree();
-
-    UtreeBppUtils::convertTree_b2u(this->tree, utree, this->tm);
-    if (this->PAR_alignment) {
-        UtreeBppUtils::associateNode2Alignment(this->sequences, utree);
-    } else {
-        UtreeBppUtils::associateNode2Alignment(this->sites, utree);
-    }
+    this->bpp2utree();
 
     DLOG(INFO) << "Bidirectional map size: " << this->tm.size();
-    DLOG(INFO) << "[Initial Utree Topology] " << utree->printTreeNewick(true);
+    DLOG(INFO) << "[Initial Utree Topology] " << this->utree->printTreeNewick(true);
 
     utree->addVirtualRootNode();
+
     // Once the tree has the root, then map it as well
-    //tm.insert(UtreeBppUtils::nodeassoc(tree->getRootId(), utree->rootnode));
-
-    this->tm.insert(UtreeBppUtils::nodeassoc(tree->getRootId(), utree->rootnode->getVnode_id()));
-
-
+    this->tm.insert(UtreeBppUtils::nodeassoc(this->tree->getRootId(), this->utree->rootnode->getVnode_id()));
 
 }

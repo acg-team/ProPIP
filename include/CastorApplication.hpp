@@ -140,6 +140,7 @@ namespace bpp {
         UtreeBppUtils::treemap tm;
         UtreeBppUtils::Utree *utree;
         enumDP3Dversion DPversion;
+        std::string initBrLenMethod;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -202,6 +203,24 @@ namespace bpp {
         void getAlphabetNoIndel();
 
         void getData();
+
+        void initTreeMethod();
+
+        void resolveMultifurcation();
+
+        void renameTreeNodes();
+
+        void bpp2utree();
+
+        void setTreeBranchLengths();
+
+        void setTreeBranchLengthsInput(std::map<std::string, std::string> &cmdArgs);
+
+        void setTreeBranchLengthsEqual(std::map<std::string, std::string> &cmdArgs);
+
+        void setTreeBranchLengthsClock();
+
+        void setTreeBranchLengthsGrafen(std::map<std::string, std::string> &cmdArgs);
 
         void getTree();
 
