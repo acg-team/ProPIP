@@ -207,6 +207,7 @@ int main(int argc, char *argv[]) {
         // INITIAL TREE
         bpp::ApplicationTools::displayMessage("\n[Preparing initial tree]");
 
+        /*
         bpp::Tree *tree = nullptr;
         string initTreeOpt = ApplicationTools::getStringParameter("init.tree", castorapp.getParams(), "user", "", false,
                                                                   1);
@@ -314,13 +315,6 @@ int main(int argc, char *argv[]) {
                 distMethod->setDistanceMatrix(*dist_);
                 distMethod->computeTree();
                 tree = distMethod->getTree();
-
-
-
-
-                //PhylogeneticsApplicationTools::writeTree(*tree, castorapp.getParams());
-
-
 
                 delete dist_factory_angle;
                 delete dist_;
@@ -619,31 +613,10 @@ int main(int argc, char *argv[]) {
                     }
 
                 }
-                /**/
+
 
                 delete sitesDistMethod;
                 delete distMethod;
-
-                //            } else {
-                //
-                //                // Use a distance matrix provided by the user
-                //
-                //                ApplicationTools::displayResult("Initial tree method", std::string("LZ compression"));
-                //                std::string PAR_distance_matrix;
-                //                try {
-                //                    PAR_distance_matrix = ApplicationTools::getAFilePath("init.distance.matrix.file",
-                //                                                                         castorapp.getParams(), true, true, "", false, "",
-                //                                                                         0);
-                //                } catch (bpp::Exception &e) {
-                //                    LOG(FATAL) << "Error when reading distance matrix file: " << e.message();
-                //                }
-                //
-                //                DLOG(INFO) << "initial tree method from LZ compression from matrix file" << PAR_distance_matrix;
-                //                distances = InputUtils::parseDistanceMatrix(PAR_distance_matrix);
-                //                bpp::BioNJ bionj(*distances, true, true, false);
-                //                tree = bionj.getTree();
-                //            }
-
 
             } //m@x
             //----------------------------------------------------------------
@@ -726,188 +699,18 @@ int main(int argc, char *argv[]) {
 
         tm.insert(UtreeBppUtils::nodeassoc(tree->getRootId(), utree->rootnode->getVnode_id()));
 
-        ApplicationTools::displayResult("Initial tree total length", TextTools::toString(tree->getTotalLength(), 6));
+        */
+
+        castorapp.getTree();
+
+
+        ApplicationTools::displayResult("Initial tree total length", TextTools::toString(castorapp.tree->getTotalLength(), 6));
         /////////////////////////
         // SUBSTITUTION MODEL
 
         bpp::ApplicationTools::displayMessage("\n[Setting up substitution model]");
-
-        /*
-        bool estimatePIPparameters = false;
-
-        // Instantiate a substitution model and extend it with PIP
-        if (castorapp.PAR_model_indels) {
-
-            bool computeFrequenciesFromData = false;
-
-            // If frequencies are estimated from the data, but there is no alignment, then flag it.
-            //if (!PAR_alignment) {
-            std::string baseModel;
-
-            std::map<std::string, std::string> basemodelMap;
-            KeyvalTools::parseProcedure(castorapp.modelMap["model"], baseModel, basemodelMap);
-
-            std::vector<std::string> keys;
-            for (auto it = basemodelMap.begin(); it != basemodelMap.end(); ++it) keys.push_back(it->first);
-
-            if (!keys.empty()) {
-                baseModel += "(";
-                for (auto &key:keys) {
-                    if (key != "initFreqs") {
-                        baseModel += key + "=" + basemodelMap[key];
-                    } else {
-                        if (basemodelMap[key] == "observed") {
-                            computeFrequenciesFromData = true;
-                        }
-                    }
-                    baseModel += ",";
-                }
-                baseModel.pop_back();
-                baseModel += ")";
-                castorapp.modelMap["model"] = baseModel;
-            }
-
-            // Instantiation of the canonical substitution model
-            if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos || castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
-                castorapp.smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabetNoGaps, castorapp.gCode.get(), castorapp.sites,
-                                                                                  castorapp.modelMap, "", true, false, 0);
-            } else {
-                castorapp.smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
-                                                                                  castorapp.modelMap, "", true, false, 0);
-            }
-
-            // If PIP, then check if lambda/mu initial values are estimated from the data
-            if (castorapp.modelMap.find("estimated") != castorapp.modelMap.end()) {
-                ApplicationTools::displayError(
-                        "The use of the tag [observed] is obsolete. Use the tag [initFreqs] instead");
-                exit(1);
-            } else if (castorapp.modelMap.find("initFreqs") != castorapp.modelMap.end()) {
-                if (castorapp.modelMap["initFreqs"] == "observed") {
-                    estimatePIPparameters = true;
-                }
-            } else if( (castorapp.modelMap.find("lambda") == castorapp.modelMap.end()) || (castorapp.modelMap.find("mu") == castorapp.modelMap.end())) {
-                estimatePIPparameters = true;
-            }
-
-            if (estimatePIPparameters) {
-
-                //lambda = bpp::estimateLambdaFromData(tree, sites);
-                //mu = bpp::estimateMuFromData(tree, sites);
-
-
-                inference_indel_rates::infere_indel_rates_from_sequences(castorapp.PAR_input_sequences,
-                                                                         castorapp.PAR_Alphabet,
-                                                                         castorapp.PAR_alignment,
-                                                                         castorapp.PAR_model_indels,
-                                                                         castorapp.getParams(),
-                                                                         tree,
-                                                                         &lambda,
-                                                                         &mu,
-                                                                         castorapp.gCode.get(),
-                                                                         castorapp.modelMap);
-
-
-                DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<
-                           lambda << ",mu=" << mu << "," "I=" << lambda * mu << ")";
-
-
-
-
-
-
-
-            } else {
-                lambda = (castorapp.modelMap.find("lambda") == castorapp.modelMap.end()) ? 0.1 : std::stod(castorapp.modelMap["lambda"]);
-                mu = (castorapp.modelMap.find("mu") == castorapp.modelMap.end()) ? 0.2 : std::stod(castorapp.modelMap["mu"]);
-            }
-
-            DLOG(INFO) << "[PIP model] Fixed PIP parameters to (lambda=" << lambda << ",mu=" << mu << "," "I="
-                       << lambda * mu << ")";
-
-            // Instantiate the corrisponding PIP model given the alphabet
-            if (castorapp.PAR_alignment) {
-                if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos && castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
-
-                    castorapp.smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sequences, lambda, mu,
-                                         computeFrequenciesFromData);
-
-                } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
-
-                    castorapp.smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sequences, lambda, mu,
-                                        computeFrequenciesFromData);
-
-                } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
-
-                    castorapp.smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), castorapp.smodel,
-                                           *castorapp.sequences, lambda, mu,
-                                           computeFrequenciesFromData);
-
-                    ApplicationTools::displayWarning(
-                            "Codon models are experimental in the current version... use with caution!");
-                    DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
-                }
-            } else {
-                if (castorapp.PAR_Alphabet.find("DNA") != std::string::npos && castorapp.PAR_Alphabet.find("Codon") == std::string::npos) {
-
-                    castorapp.smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sites, lambda, mu,
-                                         computeFrequenciesFromData);
-
-                } else if (castorapp.PAR_Alphabet.find("Protein") != std::string::npos) {
-
-                    castorapp.smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(castorapp.alphabet), castorapp.smodel, *castorapp.sites, lambda, mu,
-                                        computeFrequenciesFromData);
-
-                } else if (castorapp.PAR_Alphabet.find("Codon") != std::string::npos) {
-
-                    castorapp.smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(castorapp.alphabet), castorapp.gCode.get(), castorapp.smodel,
-                                           *castorapp.sites, lambda, mu,
-                                           computeFrequenciesFromData);
-
-                    ApplicationTools::displayWarning(
-                            "Codon models are experimental in the current version... use with caution!");
-                    DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
-                }
-            }
-
-        } else {
-            // if the alphabet is not extended, then the gap character is not supported
-            //if (!PAR_alignment) bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sites);
-            bpp::SiteContainerTools::changeGapsToUnknownCharacters(*castorapp.sites);
-            castorapp.smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(castorapp.alphabet, castorapp.gCode.get(), castorapp.sites,
-                                                                              castorapp.getParams(), "", true, false, 0);
-        }
-
-        DLOG(INFO) << "[Substitution model] Number of states: " << (int) castorapp.smodel->getNumberOfStates();
-
-        ApplicationTools::displayResult("Substitution model", castorapp.smodel->getName());
-        if (castorapp.PAR_model_indels)
-            ApplicationTools::displayResult("Indel parameter initial value",
-                                            (estimatePIPparameters) ? "estimated" : "fixed");
-
-        ParameterList parameters = castorapp.smodel->getParameters();
-        for (size_t i = 0; i < parameters.size(); i++) {
-            ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
-        }
-
-        for (size_t i = 0; i < castorapp.smodel->getFrequencies().size(); i++) {
-
-            ApplicationTools::displayResult("eq.freq(" + castorapp.smodel->getAlphabet()->getName(i) + ")",
-                                            TextTools::toString(castorapp.smodel->getFrequencies()[i], 4));
-        }
-
-
-        if (castorapp.PAR_model_indels) {
-            double pip_intensity =
-                    parameters.getParameter("PIP.lambda").getValue() * parameters.getParameter("PIP.mu").getValue();
-            ApplicationTools::displayResult("PIP.intensity", TextTools::toString(pip_intensity));
-        }
-
-        bpp::StdStr s1;
-        bpp::PhylogeneticsApplicationTools::printParameters(castorapp.smodel, s1, 1, true);
-        DLOG(INFO) << s1.str();
-        */
-
-        castorapp.getSubstitutionModel(tree);
+        
+        castorapp.getSubstitutionModel(castorapp.tree);
 
         /////////////////////////
         // AMONG-SITE-RATE-VARIATION
@@ -923,7 +726,7 @@ int main(int argc, char *argv[]) {
 
             bpp::ApplicationTools::displayMessage("\n[Computing the alignment]");
 
-            castorapp.computeMSA(tree,utree,tm);
+            castorapp.computeMSA(castorapp.tree,castorapp.utree,castorapp.tm);
 
             bpp::ApplicationTools::displayResult("Aligner optimised for:", castorapp.PAR_alignment_version);
 
@@ -938,7 +741,7 @@ int main(int argc, char *argv[]) {
         /////////////////////////
         // HOMOGENEOUS MODELING - initialization likelihood functions
 
-        castorapp.initLkFun(tree,utree,tm);
+        castorapp.initLkFun(castorapp.tree,castorapp.utree,castorapp.tm);
 
         /////////////////////////
         // PARAMETER SANITY CHECK
@@ -964,7 +767,7 @@ int main(int argc, char *argv[]) {
         /////////////////////////
         // BOOTSTRAPING
 
-        castorapp.bootstrapping(utree,tm);
+        castorapp.bootstrapping(castorapp.utree,castorapp.tm);
 
         /////////////////////////
         // CLEAR OBJECTS
@@ -976,7 +779,7 @@ int main(int argc, char *argv[]) {
         delete castorapp.rDist;
         delete castorapp.tl;
         delete castorapp.sequences;
-        delete tree;
+        delete castorapp.tree;
 
         /////////////////////////
         // CLOSE APPLICATION

@@ -132,6 +132,13 @@ namespace bpp {
         std::map<std::string, std::string> basemodelMap;
         double lambda;
         double mu;
+        std::string initTreeOpt;
+        bpp::Tree *tree;
+        std::string PAR_distance_method;
+        std::string PAR_distance_matrix;
+        std::string PAR_optim_distance;
+        UtreeBppUtils::treemap tm;
+        UtreeBppUtils::Utree *utree;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -194,6 +201,8 @@ namespace bpp {
         void getAlphabetNoIndel();
 
         void getData();
+
+        void getTree();
 
         void getUnalignedSequences();
 
