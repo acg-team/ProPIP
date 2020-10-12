@@ -138,12 +138,13 @@ void CastorApplication::done() {
 
 void CastorApplication::getCLIarguments(){
 
-    this->PAR_model_substitution = ApplicationTools::getStringParameter("model", this->getParams(), "JC69","", true, true);
+    this->PAR_model_substitution = bpp::ApplicationTools::getStringParameter("model", this->getParams(), "JC69","", true, true);
 
-    this->PAR_alignment = ApplicationTools::getBooleanParameter("alignment", this->getParams(), false);
+    this->PAR_alignment = bpp::ApplicationTools::getBooleanParameter("alignment", this->getParams(), false);
 
     // Split model string description and test if PIP is required
-    KeyvalTools::parseProcedure(this->PAR_model_substitution, this->modelStringName, this->modelMap);
+    bpp::KeyvalTools::parseProcedure(this->PAR_model_substitution, this->modelStringName, this->modelMap);
+
     this->PAR_model_indels = (modelStringName == "PIP");
 
 }
@@ -167,11 +168,12 @@ void CastorApplication::getAlphabetIndel(){
         this->codonAlphabet = false;
     } else if(this->PAR_Alphabet.find("Codon") != std::string::npos){
         this->alphabet = new bpp::DNA_EXTENDED();
+
         // This is additional to the alphabet instance
         this->alphabet = new CodonAlphabet_Extended(dynamic_cast<bpp::NucleicAlphabet *>(this->alphabet));
         this->codonAlphabet = true;
 
-        this->codeDesc = ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
+        this->codeDesc = bpp::ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
         this->gCode.reset(bpp::SequenceApplicationTools::getGeneticCode(dynamic_cast<bpp::CodonAlphabet *>(this->alphabetNoGaps)->getNucleicAlphabet(),this->codeDesc));
 
     } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
@@ -188,11 +190,12 @@ void CastorApplication::getAlphabetNoIndel(){
         this->codonAlphabet = false;
     } else if (this->PAR_Alphabet.find("Codon") != std::string::npos){
         this->alphabet = new bpp::DNA();
+
         // This is additional to the alphabet instance
         this->alphabet = new CodonAlphabet(dynamic_cast<bpp::NucleicAlphabet *>(this->alphabet));
         this->codonAlphabet = true;
 
-        this->codeDesc = ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
+        this->codeDesc = bpp::ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
         this->gCode.reset(bpp::SequenceApplicationTools::getGeneticCode(dynamic_cast<bpp::CodonAlphabet *>(this->alphabetNoGaps)->getNucleicAlphabet(),this->codeDesc));
 
     } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
@@ -206,7 +209,7 @@ void CastorApplication::getAlphabetNoIndel(){
 
 void CastorApplication::getAlphabet(){
 
-    this->PAR_Alphabet = ApplicationTools::getStringParameter("alphabet", this->getParams(), "DNA", "",true, true);
+    this->PAR_Alphabet = bpp::ApplicationTools::getStringParameter("alphabet", this->getParams(), "DNA", "",true, true);
 
     // Alphabet without gaps
     this->alphabetNoGaps = bpp::SequenceApplicationTools::getAlphabet(this->getParams(), "", false,false);
@@ -270,72 +273,73 @@ void CastorApplication::getData(){
 }
 
 void CastorApplication::getASRV(){
-    // Among site rate variation (ASVR)
 
+    // Among site rate variation (ASVR)
     this->rDist = nullptr;
 
     if (this->smodel->getNumberOfStates() >= 2 * smodel->getAlphabet()->getSize()) {
         // Markov-modulated Markov model!
         this->rDist = new ConstantRateDistribution();
     } else {
-        this->rDist = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
+        this->rDist = bpp::PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
     }
 
 }
 
-void CastorApplication::computeMSA(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+void CastorApplication::computeMSA(){
 
     std::chrono::high_resolution_clock::time_point t1;
     std::chrono::high_resolution_clock::time_point t2;
     std::vector<tshlib::VirtualNode *> ftn;
-    enumDP3Dversion DPversion = CPU;
     double duration = 0.0;
+
+    this->DPversion = CPU;
 
     this->alignment = nullptr;
     this->proPIP = nullptr;
 
-    this->PAR_output_file_msa = ApplicationTools::getAFilePath("output.msa.file", this->getParams(), false,false, "", true, "", 1);
+    this->PAR_output_file_msa = bpp::ApplicationTools::getAFilePath("output.msa.file", this->getParams(), false,false, "", true, "", 1);
 
-    this->PAR_alignment_version = ApplicationTools::getStringParameter("alignment.version",this->getParams(), "cpu", "",true, 0);
+    this->PAR_alignment_version = bpp::ApplicationTools::getStringParameter("alignment.version",this->getParams(), "cpu", "",true, 0);
 
-    this->PAR_alignment_sbsolutions = ApplicationTools::getIntParameter("alignment.sb_solutions",this->getParams(), 1, "", true, 0);
+    this->PAR_alignment_sbsolutions = bpp::ApplicationTools::getIntParameter("alignment.sb_solutions",this->getParams(), 1, "", true, 0);
 
-    this->PAR_alignment_sbtemperature = ApplicationTools::getDoubleParameter("alignment.sb_temperature",this->getParams(), 1.0, "", true, 0);
+    this->PAR_alignment_sbtemperature = bpp::ApplicationTools::getDoubleParameter("alignment.sb_temperature",this->getParams(), 1.0, "", true, 0);
 
     // Execute alignment on post-order node list
     ftn = utree->getPostOrderNodeList();
 
     // DP3D version
     if (this->PAR_alignment_version.find("cpu") != std::string::npos) {
-        DPversion = CPU; // slower but uses less memory
+        this->DPversion = CPU; // slower but uses less memory
         this->num_sb = 1;
         this->temperature = 0;
     } else if (this->PAR_alignment_version.find("ram") != std::string::npos) {
-        DPversion = RAM; // faster but uses more memory
+        this->DPversion = RAM; // faster but uses more memory
         this->num_sb = 1;
         this->temperature = 0;
     } else if (this->PAR_alignment_version.find("sb") != std::string::npos) {
-        DPversion = SB;  // stochastic backtracking version
-        this->num_sb = PAR_alignment_sbsolutions;
-        this->temperature = PAR_alignment_sbtemperature;
+        this->DPversion = SB;  // stochastic backtracking version
+        this->num_sb = this->PAR_alignment_sbsolutions;
+        this->temperature = this->PAR_alignment_sbtemperature;
     } else {
-        ApplicationTools::displayError("The user specified an unknown alignment.version. The execution will not continue.");
+        bpp::ApplicationTools::displayError("The user specified an unknown alignment.version. The execution will not continue.");
     }
 
     t1 = std::chrono::high_resolution_clock::now();
 
-    this->proPIP = new bpp::progressivePIP(utree,               // tshlib tree
-                                     tree,                // bpp tree
-                                     this->smodel,              // substitution model
-                                     tm,                  // tree-map
-                                     this->sequences,           // un-aligned input sequences
-                                     this->rDist,               // rate-variation among site distribution
-                                     this->getSeed());  // seed for random number generation
+    this->proPIP = new bpp::progressivePIP(this->utree,               // tshlib tree
+                                           this->tree,                // bpp tree
+                                           this->smodel,              // substitution model
+                                           this->tm,                  // tree-map
+                                           this->sequences,           // un-aligned input sequences
+                                           this->rDist,               // rate-variation among site distribution
+                                           this->getSeed());          // seed for random number generation
 
     this->proPIP->_initializePIP(ftn,          // list of tshlib nodes in on post-order (correct order of execution)
-                           DPversion,    // version of the alignment algorithm
-                           num_sb,       // number of suboptimal MSAs
-                           temperature); // to tune the greedyness of the sub-optimal solution
+                                 this->DPversion,    // version of the alignment algorithm
+                                 this->num_sb,       // number of suboptimal MSAs
+                                 this->temperature); // to tune the greedyness of the sub-optimal solution
 
     this->proPIP->PIPnodeAlign(); // align input sequences with a DP algorithm under PIP
 
@@ -345,12 +349,12 @@ void CastorApplication::computeMSA(bpp::Tree *tree,tshlib::Utree *utree,UtreeBpp
     duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
     bpp::ApplicationTools::displayResult("\nAlignment elapsed time (msec): ",duration);
-    bpp::ApplicationTools::displayResult("\nAlignment elapsed time (msec):",TextTools::toString((double) duration, 4));
+    bpp::ApplicationTools::displayResult("\nAlignment elapsed time (msec):",bpp::TextTools::toString((double) duration, 4));
 
     // convert PIPmsa into a sites objects
-    this->sites = PIPmsaUtils::PIPmsa2Sites(proPIP->alphabet_,
-                                                *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getseqNames()),
-                                                *(proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getMSA()));
+    this->sites = PIPmsaUtils::PIPmsa2Sites(this->proPIP->alphabet_,
+                                            *(this->proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getseqNames()),
+                                            *(this->proPIP->getPIPnodeRootNode()->MSA_->getMSA()->_getMSA()));
 
     // Export alignment to file
     if (this->PAR_output_file_msa.find("none") == std::string::npos) {
@@ -364,7 +368,7 @@ void CastorApplication::computeMSA(bpp::Tree *tree,tshlib::Utree *utree,UtreeBpp
 
 }
 
-void CastorApplication::initLkFun(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+void CastorApplication::initLkFun(){
 
     // Initialization likelihood functions
     this->tl = nullptr;
@@ -381,15 +385,15 @@ void CastorApplication::initLkFun(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppU
     // Initialise likelihood functions
     if (!this->PAR_model_indels) {
 
-        tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*tree, *this->sites, this->model, this->rDist, utree, &tm, true,this->getParams(), "", false, false,false);
+        this->tl = new bpp::UnifiedTSHomogeneousTreeLikelihood(*this->tree, *this->sites, this->model, this->rDist, this->utree, &this->tm, true,this->getParams(), "", false, false,false);
 
     } else {
 
-        tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *this->sites, this->model, this->rDist, utree, &tm, true,this->getParams(), "", false,false, false);
+        this->tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*this->tree, *this->sites, this->model, this->rDist, this->utree, &this->tm, true,this->getParams(), "", false,false, false);
 
     }
 
-    tl->initialize();
+    this->tl->initialize();
 
 }
 
@@ -450,7 +454,7 @@ void CastorApplication::parameterSanityCheck(){
 
     }
 
-    bpp::ApplicationTools::displayResult("Initial log likelihood", TextTools::toString(-this->logL, 15));
+    bpp::ApplicationTools::displayResult("Initial log likelihood", bpp::TextTools::toString(-this->logL, 15));
 
     if (std::isinf(this->logL)) {
 
@@ -533,7 +537,7 @@ void CastorApplication::parameterSanityCheck(){
                 throw Exception("Likelihood is still 0 after saturated sites are removed! Looks like a bug...");
             }
 
-            bpp::ApplicationTools::displayResult("Initial log likelihood", TextTools::toString(-this->logL, 15));
+            bpp::ApplicationTools::displayResult("Initial log likelihood", bpp::TextTools::toString(-this->logL, 15));
 
         }
     }
@@ -543,51 +547,51 @@ void CastorApplication::parameterSanityCheck(){
 void CastorApplication::output(){
 
     // Export final tree (if nexus is required, then our re-implementation of the the nexus writer is called)
-    bpp::Tree *tree = nullptr;
-    bpp::ParameterList parameters;
+    bpp::Tree *local_tree = nullptr;
+    bpp::ParameterList local_parameters;
 
-    tree = new TreeTemplate<Node>(this->tl->getTree());
+    local_tree = new TreeTemplate<Node>(this->tl->getTree());
 
     this->PAR_output_tree_format = bpp::ApplicationTools::getStringParameter("output.tree.format",this->getParams(),"Newick","",true,true);
 
     if (this->PAR_output_tree_format.find("Nexus") != std::string::npos) {
-        std::vector<Tree *> tmp;
-        tmp.push_back(tree);
-        OutputUtils::writeNexusMetaTree(tmp, this->getParams());
+        std::vector<Tree *> tmp_vector_tree;
+        tmp_vector_tree.push_back(local_tree);
+        OutputUtils::writeNexusMetaTree(tmp_vector_tree, this->getParams());
     } else {
-        PhylogeneticsApplicationTools::writeTree(*tree, this->getParams());
+        bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, this->getParams());
     }
 
     // Export annotation file (tab separated values)
-    this->PAR_output_annotation_file = ApplicationTools::getAFilePath("output.annotation.file",this->getParams(),false,false,"",true,"",1);
+    this->PAR_output_annotation_file = bpp::ApplicationTools::getAFilePath("output.annotation.file",this->getParams(),false,false,"",true,"",1);
 
     if (this->PAR_output_annotation_file.find("none") == std::string::npos) {
         bpp::ApplicationTools::displayResult("Output annotation to file", this->PAR_output_annotation_file);
-        OutputUtils::writeTreeAnnotations2TSV(tree, this->PAR_output_annotation_file);
+        OutputUtils::writeTreeAnnotations2TSV(local_tree, this->PAR_output_annotation_file);
     }
 
-    // Write parameters to screen:
-    bpp::ApplicationTools::displayResult("Final Log likelihood", TextTools::toString(this->logL, 15));
+    // Write local_parameters to screen:
+    bpp::ApplicationTools::displayResult("Final Log likelihood", bpp::TextTools::toString(this->logL, 15));
 
-    parameters = this->tl->getSubstitutionModelParameters();
-    for (size_t i = 0; i < parameters.size(); i++) {
-        bpp::ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
+    local_parameters = this->tl->getSubstitutionModelParameters();
+    for (size_t i = 0; i < local_parameters.size(); i++) {
+        bpp::ApplicationTools::displayResult(local_parameters[i].getName(), bpp::TextTools::toString(local_parameters[i].getValue()));
     }
 
-    parameters = this->tl->getRateDistributionParameters();
-    for (size_t i = 0; i < parameters.size(); i++) {
-        bpp::ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
+    local_parameters = this->tl->getRateDistributionParameters();
+    for (size_t i = 0; i < local_parameters.size(); i++) {
+        bpp::ApplicationTools::displayResult(local_parameters[i].getName(), bpp::TextTools::toString(local_parameters[i].getValue()));
     }
 
     // Checking convergence:
-    PhylogeneticsApplicationTools::checkEstimatedParameters(this->tl->getParameters());
+    bpp::PhylogeneticsApplicationTools::checkEstimatedParameters(this->tl->getParameters());
 
-    // Write parameters to file (according to arguments)
+    // Write local_parameters to file (according to arguments)
     OutputUtils::exportOutput(this->tl, this->sites, this->getParams());
 
 }
 
-void CastorApplication::bootstrapping(tshlib::Utree *utree,UtreeBppUtils::treemap &tm){
+void CastorApplication::bootstrapping(){
 
     // Compute support measures
     this->PAR_support = bpp::ApplicationTools::getStringParameter("support", this->getParams(), "", "", true,true);
@@ -596,152 +600,203 @@ void CastorApplication::bootstrapping(tshlib::Utree *utree,UtreeBppUtils::treema
 
         bpp::ApplicationTools::displayMessage("\n[Tree support measures]");
 
-        bpp::Bootstrap(this->tl, *this->sites, this->rDist, utree, &tm, this->getParams(), "support.");
+        bpp::Bootstrap(this->tl, *this->sites, this->rDist, this->utree, &this->tm, this->getParams(), "support.");
     }
 
 }
 
-void CastorApplication::getSubstitutionModel(bpp::Tree *tree){
+void CastorApplication::initCanonicalSubstitutionModel(){
+
+    // Instantiation of the canonical substitution model
+    if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
+        this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps,this->gCode.get(), this->sites,this->modelMap, "", true,false, 0);
+    }else if (this->PAR_Alphabet.find("Protein") != std::string::npos){
+        this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps, this->gCode.get(), this->sites,this->modelMap, "", true, false, 0);
+    } else {
+        this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabet, this->gCode.get(), this->sites,this->modelMap, "", true, false, 0);
+    }
+
+}
+
+void CastorApplication::instantiateCanonicalSubstitutionModel(){
+
+    if (this->PAR_Alphabet.find("DNA") != std::string::npos && this->PAR_Alphabet.find("Codon") == std::string::npos) {
+
+        this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *this->sites, lambda, mu,computeFrequenciesFromData);
+
+    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
+
+        this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *this->sites, lambda, mu,computeFrequenciesFromData);
+
+    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
+
+        this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*this->sites, lambda, mu,computeFrequenciesFromData);
+
+        bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
+        DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
+    }
+
+}
+
+void CastorApplication::instantiatePIPSubstitutionModel(double lambda,double mu){
+
+    if (this->PAR_Alphabet.find("DNA") != std::string::npos && this->PAR_Alphabet.find("Codon") == std::string::npos) {
+
+        this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *this->sequences, lambda, mu,this->computeFrequenciesFromData);
+
+    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
+
+        this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *this->sequences, lambda, mu,this->computeFrequenciesFromData);
+
+    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
+
+        this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*this->sequences, lambda, mu,this->computeFrequenciesFromData);
+
+        bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
+
+        DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
+    }
+
+}
+
+void CastorApplication::getIndelRates(){
+
+    // If PIP, then check if lambda/mu initial values are estimated from the data
+    if (this->modelMap.find("estimated") != this->modelMap.end()) {
+
+        bpp::ApplicationTools::displayError("The use of the tag [observed] is obsolete. Use the tag [initFreqs] instead");
+
+        exit(EXIT_FAILURE);
+
+    } else if (this->modelMap.find("initFreqs") != this->modelMap.end()) {
+
+        if (this->modelMap["initFreqs"] == "observed") {
+            this->estimatePIPparameters = true;
+        }
+
+    } else if( (this->modelMap.find("lambda") == this->modelMap.end()) || (this->modelMap.find("mu") == this->modelMap.end())) {
+
+        this->estimatePIPparameters = true;
+
+    }
+
+    if (this->estimatePIPparameters) {
+
+        inference_indel_rates::infere_indel_rates_from_sequences(this->PAR_input_sequences,
+                                                                 this->PAR_Alphabet,
+                                                                 this->PAR_alignment,
+                                                                 this->PAR_model_indels,
+                                                                 this->getParams(),
+                                                                 this->tree,
+                                                                 this->lambda,
+                                                                 this->mu,
+                                                                 this->gCode.get(),
+                                                                 this->modelMap);
+
+    } else {
+        this->lambda = (this->modelMap.find("lambda") == this->modelMap.end()) ? 0.1 : std::stod(this->modelMap["lambda"]);
+        this->mu = (this->modelMap.find("mu") == this->modelMap.end()) ? 0.2 : std::stod(this->modelMap["mu"]);
+    }
+
+    DLOG(INFO) << "[PIP model] Fixed PIP parameters to (lambda=" << this->lambda << ",mu=" << this->mu << "," "I="<< this->lambda * this->mu << ")";
+
+}
+
+void CastorApplication::getBackgroundFrequencies(){
 
     std::vector<std::string> keys;
+
+    this->computeFrequenciesFromData = false;
+
+    // If frequencies are estimated from the data, but there is no alignment, then flag it.
+    bpp::KeyvalTools::parseProcedure(this->modelMap["model"], this->baseModel, this->basemodelMap);
+
+    for (auto it = this->basemodelMap.begin(); it != this->basemodelMap.end(); ++it){
+        keys.push_back(it->first);
+    }
+
+    if (!keys.empty()) {
+        this->baseModel += "(";
+
+        for (auto &key:keys) {
+
+            if (key != "initFreqs") {
+                this->baseModel += key + "=" + this->basemodelMap[key];
+            } else {
+                if (this->basemodelMap[key] == "observed") {
+                    this->computeFrequenciesFromData = true;
+                }
+            }
+
+            this->baseModel += ",";
+        }
+
+        this->baseModel.pop_back();
+        this->baseModel += ")";
+        this->modelMap["model"] = this->baseModel;
+    }
+
+}
+
+void CastorApplication::getSubstitutionIndelModel(){
+
+    this->getBackgroundFrequencies();
+
+    // Instantiation of the canonical substitution model
+    this->initCanonicalSubstitutionModel();
+
+    this->getIndelRates();
+
+    // Instantiate the corrisponding PIP model given the alphabet
+    if (this->PAR_alignment) {
+        this->instantiatePIPSubstitutionModel(this->lambda,this->mu);
+    } else {
+        this->instantiateCanonicalSubstitutionModel();
+    }
+
+}
+
+void CastorApplication::getSubstitutionNoIndelModel(){
+
+    bpp::SiteContainerTools::changeGapsToUnknownCharacters(*this->sites);
+
+    this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabet, this->gCode.get(), this->sites,this->getParams(), "", true, false, 0);
+
+}
+
+void CastorApplication::getSubstitutionModel(){
+
+    bpp::StdStr s1;
+    ParameterList local_parameters;
 
     this->estimatePIPparameters = false;
 
     // Instantiate a substitution model and extend it with PIP
     if (this->PAR_model_indels) {
-
-        this->computeFrequenciesFromData = false;
-
-        // If frequencies are estimated from the data, but there is no alignment, then flag it.
-        bpp::KeyvalTools::parseProcedure(this->modelMap["model"], this->baseModel, this->basemodelMap);
-
-        for (auto it = this->basemodelMap.begin(); it != this->basemodelMap.end(); ++it){
-            keys.push_back(it->first);
-        }
-
-        if (!keys.empty()) {
-            this->baseModel += "(";
-
-            for (auto &key:keys) {
-
-                if (key != "initFreqs") {
-                    this->baseModel += key + "=" + this->basemodelMap[key];
-                } else {
-                    if (this->basemodelMap[key] == "observed") {
-                        computeFrequenciesFromData = true;
-                    }
-                }
-
-                this->baseModel += ",";
-            }
-
-            this->baseModel.pop_back();
-            this->baseModel += ")";
-            this->modelMap["model"] = this->baseModel;
-        }
-
-        // Instantiation of the canonical substitution model
-        if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-            this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps,this->gCode.get(), this->sites,this->modelMap, "", true,false, 0);
-        }else if (this->PAR_Alphabet.find("Protein") != std::string::npos){
-            this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps, this->gCode.get(), this->sites,this->modelMap, "", true, false, 0);
-        } else {
-            this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabet, this->gCode.get(), this->sites,this->modelMap, "", true, false, 0);
-        }
-
-        // If PIP, then check if lambda/mu initial values are estimated from the data
-        if (this->modelMap.find("estimated") != this->modelMap.end()) {
-            bpp::ApplicationTools::displayError("The use of the tag [observed] is obsolete. Use the tag [initFreqs] instead");
-            exit(EXIT_FAILURE);
-        } else if (this->modelMap.find("initFreqs") != this->modelMap.end()) {
-            if (this->modelMap["initFreqs"] == "observed") {
-                estimatePIPparameters = true;
-            }
-        } else if( (this->modelMap.find("lambda") == this->modelMap.end()) || (this->modelMap.find("mu") == this->modelMap.end())) {
-            estimatePIPparameters = true;
-        }
-
-        if (estimatePIPparameters) {
-
-            inference_indel_rates::infere_indel_rates_from_sequences(this->PAR_input_sequences,
-                                                                     this->PAR_Alphabet,
-                                                                     this->PAR_alignment,
-                                                                     this->PAR_model_indels,
-                                                                     this->getParams(),
-                                                                     tree,
-                                                                     this->lambda,
-                                                                     this->mu,
-                                                                     this->gCode.get(),
-                                                                     this->modelMap);
-
-
-            DLOG(INFO) << "[PIP model] Estimated PIP parameters from data using input sequences (lambda=" <<lambda << ",mu=" << mu << "," "I=" << lambda * mu << ")";
-
-        } else {
-            lambda = (this->modelMap.find("lambda") == this->modelMap.end()) ? 0.1 : std::stod(this->modelMap["lambda"]);
-            mu = (this->modelMap.find("mu") == this->modelMap.end()) ? 0.2 : std::stod(this->modelMap["mu"]);
-        }
-
-        DLOG(INFO) << "[PIP model] Fixed PIP parameters to (lambda=" << lambda << ",mu=" << mu << "," "I="<< lambda * mu << ")";
-
-        // Instantiate the corrisponding PIP model given the alphabet
-        if (this->PAR_alignment) {
-            if (this->PAR_Alphabet.find("DNA") != std::string::npos && this->PAR_Alphabet.find("Codon") == std::string::npos) {
-
-                this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *this->sequences, lambda, mu,computeFrequenciesFromData);
-
-            } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-
-                this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *this->sequences, lambda, mu,computeFrequenciesFromData);
-
-            } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-
-                this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*this->sequences, lambda, mu,computeFrequenciesFromData);
-
-                bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
-                DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
-            }
-        } else {
-            if (this->PAR_Alphabet.find("DNA") != std::string::npos && this->PAR_Alphabet.find("Codon") == std::string::npos) {
-
-                this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *this->sites, lambda, mu,computeFrequenciesFromData);
-
-            } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-
-                this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *this->sites, lambda, mu,computeFrequenciesFromData);
-
-            } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-
-                this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*this->sites, lambda, mu,computeFrequenciesFromData);
-
-                bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
-                DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
-            }
-        }
-
+        this->getSubstitutionIndelModel();
     } else {
-        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*this->sites);
-        this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabet, this->gCode.get(), this->sites,this->getParams(), "", true, false, 0);
+        this->getSubstitutionNoIndelModel();
+    }
+
+    bpp::ApplicationTools::displayResult("Substitution model", this->smodel->getName());
+
+    if (this->PAR_model_indels){
+        bpp::ApplicationTools::displayResult("Indel parameter initial value",(this->estimatePIPparameters) ? "estimated" : "fixed");
+    }
+
+    local_parameters = this->smodel->getParameters();
+    for (size_t i = 0; i < local_parameters.size(); i++) {
+        bpp::ApplicationTools::displayResult(local_parameters[i].getName(), bpp::TextTools::toString(local_parameters[i].getValue()));
+    }
+
+    for (size_t i = 0; i < this->smodel->getFrequencies().size(); i++) {
+        bpp::ApplicationTools::displayResult("eq.freq(" + this->smodel->getAlphabet()->getName(i) + ")",bpp::TextTools::toString(this->smodel->getFrequencies()[i], 4));
     }
 
     DLOG(INFO) << "[Substitution model] Number of states: " << (int) this->smodel->getNumberOfStates();
 
-    bpp::ApplicationTools::displayResult("Substitution model", this->smodel->getName());
-    if (this->PAR_model_indels){
-        bpp::ApplicationTools::displayResult("Indel parameter initial value",(estimatePIPparameters) ? "estimated" : "fixed");
-    }
-
-    ParameterList parameters = this->smodel->getParameters();
-    for (size_t i = 0; i < parameters.size(); i++) {
-        bpp::ApplicationTools::displayResult(parameters[i].getName(), TextTools::toString(parameters[i].getValue()));
-    }
-
-    for (size_t i = 0; i < this->smodel->getFrequencies().size(); i++) {
-        bpp::ApplicationTools::displayResult("eq.freq(" + this->smodel->getAlphabet()->getName(i) + ")",TextTools::toString(this->smodel->getFrequencies()[i], 4));
-    }
-
-    bpp::StdStr s1;
     bpp::PhylogeneticsApplicationTools::printParameters(this->smodel, s1, 1, true);
+
     DLOG(INFO) << s1.str();
 
 }

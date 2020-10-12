@@ -139,6 +139,7 @@ namespace bpp {
         std::string PAR_optim_distance;
         UtreeBppUtils::treemap tm;
         UtreeBppUtils::Utree *utree;
+        enumDP3Dversion DPversion;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -208,19 +209,33 @@ namespace bpp {
 
         void getAlignedSequences();
 
-        void getSubstitutionModel(bpp::Tree *tree);
+        void getSubstitutionIndelModel();
+
+        void getSubstitutionNoIndelModel();
+
+        void initCanonicalSubstitutionModel();
+
+        void instantiateCanonicalSubstitutionModel();
+
+        void instantiatePIPSubstitutionModel(double lambda,double mu);
+
+        void getIndelRates();
+
+        void getBackgroundFrequencies();
+
+        void getSubstitutionModel();
 
         void getASRV();
 
-        void computeMSA(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+        void computeMSA();
 
-        void initLkFun(bpp::Tree *tree,tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+        void initLkFun();
 
         void optimizeParameters();
 
         void parameterSanityCheck();
 
-        void bootstrapping(tshlib::Utree *utree,UtreeBppUtils::treemap &tm);
+        void bootstrapping();
 
         void output();
 
