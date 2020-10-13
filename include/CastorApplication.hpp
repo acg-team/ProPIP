@@ -141,6 +141,7 @@ namespace bpp {
         UtreeBppUtils::Utree *utree;
         enumDP3Dversion DPversion;
         std::string initBrLenMethod;
+        AgglomerativeDistanceMethod *distMethod;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -179,9 +180,6 @@ namespace bpp {
             bpp::ApplicationTools::displayMessage("On date: "+ appBuild_);
             bpp::ApplicationTools::displayMessage("------------------------------------------------------------------------------");
             bpp::ApplicationTools::displayResult("Execution started on:", host_name);
-
-
-
 
         }
 
@@ -222,6 +220,40 @@ namespace bpp {
 
         void setTreeBranchLengthsGrafen(std::map<std::string, std::string> &cmdArgs);
 
+        void initTreeMethodUser();
+
+        void initTreeMethodRandom();
+
+        void initTreeMethodDistance();
+
+        void initTreeMethodDistanceWPGMA();
+
+        void initTreeMethodDistanceUPGMA();
+
+        void initTreeMethodDistanceNJ();
+
+        void initTreeMethodDistanceBIONJ();
+
+        void initTreeMethodDistanceDistMatrix();
+
+        void initTreeMethodDistanceInfereDistanceMatrix();
+
+        void initTreeMethodDistanceML(bpp::TransitionModel *dmodel,DiscreteDistribution *local_rDist,bpp::VectorSiteContainer *sitesDistMethod);
+
+        void initTreeMethodDistanceFast(bpp::TransitionModel *dmodel,DiscreteDistribution *local_rDist,bpp::VectorSiteContainer *sitesDistMethod);
+
+        void infereTree();
+
+        void infereTreeIndelModel(std::map<std::string, std::string> &parmap,
+                                  bpp::VectorSiteContainer *sitesDistMethod,
+                                  bpp::Alphabet *alphabetDistMethod);
+
+        bpp::TransitionModel *getTransitionModel(std::map<std::string, std::string> &parmap,
+                                                 bpp::VectorSiteContainer *sitesDistMethod,
+                                                 bpp::Alphabet *alphabetDistMethod);
+
+        DiscreteDistribution *addASRVdistribution(bpp::TransitionModel *dmodel);
+
         void getTree();
 
         void getUnalignedSequences();
@@ -236,7 +268,15 @@ namespace bpp {
 
         void instantiateCanonicalSubstitutionModel();
 
-        void instantiatePIPSubstitutionModel(double lambda,double mu);
+        void instantiatePIPSubstitutionModel();
+
+        bpp::SubstitutionModel *initializeCanonicalSubstModel(bpp::VectorSiteContainer *sitesDistMethod,bpp::Alphabet *alphabetDistMethod);
+
+        bpp::SubstitutionModel *extendSubstModelWithPIP(bpp::VectorSiteContainer *sitesDistMethod,bpp::Alphabet *alphabetDistMethod);
+
+        void InfereIndelRates(std::map<std::string, std::string> &parmap,
+                              bpp::VectorSiteContainer *sitesDistMethod,
+                              bpp::Alphabet *alphabetDistMethod);
 
         void getIndelRates();
 
