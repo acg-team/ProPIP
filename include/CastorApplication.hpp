@@ -140,6 +140,8 @@ namespace bpp {
         UtreeBppUtils::Utree *utree;
         enumDP3Dversion DPversion;
         std::string initBrLenMethod;
+        bpp::DistanceMatrix *distances;
+        AgglomerativeDistanceMethod *distMethod;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -191,6 +193,30 @@ namespace bpp {
         void initTreeBranchLengthGrafen(std::map<std::string, std::string> &cmdArgs);
 
         void convertBppTree2Utree();
+
+        void initTreeMethodUser();
+
+        void initTreeMethodRandom();
+
+        void initTreeMethodDistance();
+
+        void initTreeMethodDistanceWPGMA();
+
+        void initTreeMethodDistanceUPGMA();
+
+        void initTreeMethodDistanceNJ();
+
+        void initTreeMethodDistanceBIONJ();
+
+        void initTreeMethodDistanceDistmatrix();
+
+        void initTreeMethodDistanceInfereDistanceMatrix();
+
+        void infereDistanceTree();
+
+        void infereDistanceTreeFast(bpp::TransitionModel *local_dmodel,
+                                    bpp::VectorSiteContainer *local_sitesDistMethod,
+                                    DiscreteDistribution *local_rDist);
 
         void getTree();
 
