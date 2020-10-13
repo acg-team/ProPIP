@@ -218,6 +218,17 @@ namespace bpp {
                                     bpp::VectorSiteContainer *local_sitesDistMethod,
                                     DiscreteDistribution *local_rDist);
 
+        void infereDistanceTreeML(bpp::TransitionModel *local_dmodel,
+                                  DiscreteDistribution *local_rDist,
+                                  bpp::VectorSiteContainer *local_sitesDistMethod);
+
+        void removeGaps(bpp::VectorSiteContainer *local_sitesDistMethod);
+
+        void addASRVdistribution(DiscreteDistribution *local_rDist,
+                                 bpp::TransitionModel *local_dmodel);
+
+        void getUsersIndelRates();
+
         void getTree();
 
         void getUnalignedSequences();
