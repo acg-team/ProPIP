@@ -94,7 +94,6 @@ namespace bpp {
 
     public:
 
-
         std::string PAR_model_substitution;
         std::string modelStringName;
         std::map<std::string, std::string> modelMap;
@@ -141,7 +140,6 @@ namespace bpp {
         UtreeBppUtils::Utree *utree;
         enumDP3Dversion DPversion;
         std::string initBrLenMethod;
-        AgglomerativeDistanceMethod *distMethod;
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
@@ -152,43 +150,17 @@ namespace bpp {
 
         std::map<std::string, std::string> &getParams() { return params_; }
 
-        const std::string &getParam(const std::string &name) const {
-            if (params_.find(name) == params_.end()) throw bpp::Exception("BppApplication::getParam(). Parameter '" + name + "' not found.");
-            return params_[name];
-        }
+        const std::string &getParam(const std::string &name) const;
 
         std::string &getParam(const std::string &name) { return params_[name]; }
 
         long getSeed() {return seed_;}
 
-        void help() {
-            std::cout << appName_ << std::endl << std::endl;
-            std::cout << "Usage: Castor [arguments] or [params=file.txt]" << std::endl;
-            std::cout << "Documentation can be found at https://bitbucket.org/lorenzogatti89/castor/" << std::endl;
-        }
+        void help();
 
+        void banner();
 
-        void banner() {
-
-            auto host_name = boost::asio::ip::host_name();
-
-            bpp::ApplicationTools::displayMessage("------------------------------------------------------------------------------");
-            bpp::ApplicationTools::displayMessage(appName_);
-            bpp::ApplicationTools::displayMessage("Phylogenetic Tree Inference and Multiple Sequence Alignment under Indel models");
-            bpp::ApplicationTools::displayMessage("Authors: Lorenzo Gatti & Massimo Maiolo");
-            bpp::ApplicationTools::displayMessage("Build on commit: " + appVersion_);
-            bpp::ApplicationTools::displayMessage("On date: "+ appBuild_);
-            bpp::ApplicationTools::displayMessage("------------------------------------------------------------------------------");
-            bpp::ApplicationTools::displayResult("Execution started on:", host_name);
-
-        }
-
-        void version() {
-            std::cout << appName_ << std::endl;
-            std::cout << appVersion_ << std::endl;
-            std::cout << appBuild_ << std::endl;
-        }
-
+        void version();
 
         void getCLIarguments();
 
@@ -204,55 +176,21 @@ namespace bpp {
 
         void initTreeMethod();
 
-        void resolveMultifurcation();
+        void resolveMultifurcations();
 
         void renameTreeNodes();
 
-        void bpp2utree();
+        void initTreeBranchLength();
 
-        void setTreeBranchLengths();
+        void initTreeBranchLengthInput(std::map<std::string, std::string> &cmdArgs);
 
-        void setTreeBranchLengthsInput(std::map<std::string, std::string> &cmdArgs);
+        void initTreeBranchLengthEqual(std::map<std::string, std::string> &cmdArgs);
 
-        void setTreeBranchLengthsEqual(std::map<std::string, std::string> &cmdArgs);
+        void initTreeBranchLengthClock();
 
-        void setTreeBranchLengthsClock();
+        void initTreeBranchLengthGrafen(std::map<std::string, std::string> &cmdArgs);
 
-        void setTreeBranchLengthsGrafen(std::map<std::string, std::string> &cmdArgs);
-
-        void initTreeMethodUser();
-
-        void initTreeMethodRandom();
-
-        void initTreeMethodDistance();
-
-        void initTreeMethodDistanceWPGMA();
-
-        void initTreeMethodDistanceUPGMA();
-
-        void initTreeMethodDistanceNJ();
-
-        void initTreeMethodDistanceBIONJ();
-
-        void initTreeMethodDistanceDistMatrix();
-
-        void initTreeMethodDistanceInfereDistanceMatrix();
-
-        void initTreeMethodDistanceML(bpp::TransitionModel *dmodel,DiscreteDistribution *local_rDist,bpp::VectorSiteContainer *sitesDistMethod);
-
-        void initTreeMethodDistanceFast(bpp::TransitionModel *dmodel,DiscreteDistribution *local_rDist,bpp::VectorSiteContainer *sitesDistMethod);
-
-        void infereTree();
-
-        void infereTreeIndelModel(std::map<std::string, std::string> &parmap,
-                                  bpp::VectorSiteContainer *sitesDistMethod,
-                                  bpp::Alphabet *alphabetDistMethod);
-
-        bpp::TransitionModel *getTransitionModel(std::map<std::string, std::string> &parmap,
-                                                 bpp::VectorSiteContainer *sitesDistMethod,
-                                                 bpp::Alphabet *alphabetDistMethod);
-
-        DiscreteDistribution *addASRVdistribution(bpp::TransitionModel *dmodel);
+        void convertBppTree2Utree();
 
         void getTree();
 
@@ -269,14 +207,6 @@ namespace bpp {
         void instantiateCanonicalSubstitutionModel();
 
         void instantiatePIPSubstitutionModel();
-
-        bpp::SubstitutionModel *initializeCanonicalSubstModel(bpp::VectorSiteContainer *sitesDistMethod,bpp::Alphabet *alphabetDistMethod);
-
-        bpp::SubstitutionModel *extendSubstModelWithPIP(bpp::VectorSiteContainer *sitesDistMethod,bpp::Alphabet *alphabetDistMethod);
-
-        void InfereIndelRates(std::map<std::string, std::string> &parmap,
-                              bpp::VectorSiteContainer *sitesDistMethod,
-                              bpp::Alphabet *alphabetDistMethod);
 
         void getIndelRates();
 
