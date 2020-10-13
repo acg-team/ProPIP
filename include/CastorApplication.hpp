@@ -83,69 +83,94 @@
 #include "CompositePIPnode.hpp"
 
 namespace bpp {
+
     class CastorApplication {
+
     private:
+
+        mutable std::map<std::string, std::string> params_;
+
+        bool timerStarted_;
+        bool codonAlphabet_;
+        bool estimatePIPparameters;
+        bool computeFrequenciesFromData;
+
+        double lambda;
+        double mu;
+        double logL;
+        double temperature;
+
+        long seed_;
+
+        int num_sb;
+
+        enumDP3Dversion DPversion;
+
         std::string appName_;
         std::string appBuild_;
         std::string appVersion_;
-        mutable std::map<std::string, std::string> params_;
-        bool timerStarted_;
-        long seed_;
+        std::string modelStringName;
+        std::string paramNameFile;
+        std::string initBrLenMethod;
+        std::string baseModel;
+        std::string initTreeOpt;
+
+        std::map<std::string, std::string> modelMap;
+        std::map<std::string, std::string> basemodelMap;
+
+        bpp::DistanceMatrix *distances;
+        bpp::AgglomerativeDistanceMethod *distMethod;
+
+        bpp::SubstitutionModel *smodel;
+        bpp::TransitionModel *model;
+
+        UtreeBppUtils::Utree *utree;
+        UtreeBppUtils::treemap tm;
+
+        std::unique_ptr<bpp::GeneticCode> gCode;
+
+        pPIP *alignment;
 
     public:
 
-        std::string PAR_model_substitution;
-        std::string modelStringName;
-        std::map<std::string, std::string> modelMap;
         bool PAR_model_indels;
         bool PAR_alignment;
-        std::string PAR_Alphabet;
-        bpp::Alphabet *alphabetNoGaps;
-        std::unique_ptr<bpp::GeneticCode> gCode;
-        bool codonAlphabet;
-        bpp::Alphabet *alphabet;
-        std::string codeDesc;
-        std::string PAR_input_sequences;
-        bpp::SequenceContainer *sequences;
-        bpp::SiteContainer *sites;
-        bpp::DiscreteDistribution *rDist;
-        pPIP *alignment = nullptr;
-        progressivePIP *proPIP = nullptr;
-        std::string PAR_output_file_msa;
-        std::string PAR_alignment_version;
-        int PAR_alignment_sbsolutions;
+
         double PAR_alignment_sbtemperature;
-        int num_sb;
-        double temperature;
-        bpp::AbstractHomogeneousTreeLikelihood *tl;
-        bpp::SubstitutionModel *smodel;
-        bpp::TransitionModel *model;
-        double logL;
-        std::string paramNameFile;
+
+        int PAR_alignment_sbsolutions;
+
+        std::string PAR_model_substitution;
+        std::string PAR_Alphabet;
+        std::string PAR_input_sequences;
         std::string PAR_support;
         std::string PAR_output_tree_format;
         std::string PAR_output_annotation_file;
-        bool estimatePIPparameters;
-        bool computeFrequenciesFromData;
-        std::string baseModel;
-        std::map<std::string, std::string> basemodelMap;
-        double lambda;
-        double mu;
-        std::string initTreeOpt;
-        bpp::Tree *tree;
         std::string PAR_distance_method;
         std::string PAR_distance_matrix;
         std::string PAR_optim_distance;
-        UtreeBppUtils::treemap tm;
-        UtreeBppUtils::Utree *utree;
-        enumDP3Dversion DPversion;
-        std::string initBrLenMethod;
-        bpp::DistanceMatrix *distances;
-        AgglomerativeDistanceMethod *distMethod;
+        std::string PAR_output_file_msa;
+        std::string PAR_alignment_version;
+        std::string codeDesc;
+
+        bpp::Alphabet *alphabetNoGaps;
+        bpp::Alphabet *alphabet;
+
+        bpp::AbstractHomogeneousTreeLikelihood *tl;
+
+        bpp::SequenceContainer *sequences;
+        bpp::SiteContainer *sites;
+        bpp::DiscreteDistribution *rDist;
+        bpp::Tree *tree;
+
+        progressivePIP *proPIP;
+
+    public:
 
         CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date);
 
-    public:
+        void init();
+
         void startTimer();
 
         void done();
@@ -239,11 +264,9 @@ namespace bpp {
 
         void getSubstitutionNoIndelModel();
 
+        void extendSubstitutionModelWithPIP(const SequenceContainer *data);
+
         void initCanonicalSubstitutionModel();
-
-        void instantiateCanonicalSubstitutionModel();
-
-        void instantiatePIPSubstitutionModel();
 
         void getIndelRates();
 

@@ -200,26 +200,17 @@ int main(int argc, char *argv[]) {
         castorapp.bootstrapping();
 
         /////////////////////////
-        // CLEAR OBJECTS
-
-        // Delete objects and free memory
-        delete castorapp.alphabet;
-        delete castorapp.alphabetNoGaps;
-        delete castorapp.sites;
-        delete castorapp.rDist;
-        delete castorapp.tl;
-        delete castorapp.sequences;
-        delete castorapp.tree;
-
-        /////////////////////////
         // CLOSE APPLICATION
         castorapp.done();
+
         google::ShutdownGoogleLogging();
 
         exit(EXIT_SUCCESS);
 
     } catch (exception &e) {
+
         std::cout << e.what() << std::endl;
+
         google::ShutdownGoogleLogging();
 
         exit(EXIT_SUCCESS);

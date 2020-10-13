@@ -98,19 +98,67 @@
 
 using namespace bpp;
 
+void CastorApplication::init() {
+
+    this->timerStarted_ = false;
+    this->codonAlphabet_ = false;
+    this->estimatePIPparameters = false;
+    this->computeFrequenciesFromData = false;
+    this->PAR_model_indels = false;
+    this->PAR_alignment = false;
+
+    this->lambda = 0.0;
+    this->mu = 0.0;
+    this->logL = 0.0;
+    this->temperature = 0.0;
+    this->PAR_alignment_sbtemperature = 0.0;
+    this->seed_ = 0.0;
+
+    this->num_sb = 0;
+    this->PAR_alignment_sbsolutions = 0;
+
+    this->DPversion = CPU;
+
+    this->distances = nullptr;
+    this->distMethod = nullptr;
+    this->smodel = nullptr;
+    this->model = nullptr;
+    this->utree = nullptr;
+    this->alignment = nullptr;
+    this->alphabetNoGaps = nullptr;
+    this->alphabet = nullptr;
+    this->tl = nullptr;
+    this->sequences = nullptr;
+    this->sites = nullptr;
+    this->rDist = nullptr;
+    this->tree = nullptr;
+    this->proPIP = nullptr;
+
+}
+
 CastorApplication::CastorApplication(int argc, char *argv[], const std::string &name, const std::string &strVersion, const std::string &build_date) :
         appName_(name), appBuild_(build_date), appVersion_(strVersion), params_(), timerStarted_(false) {
 
+
+    init();
+
+    bool showversion = false;
+    bool noint = false;
+
     params_ = bpp::AttributesTools::parseOptions(argc, argv);
-    bool showversion = bpp::ApplicationTools::getBooleanParameter("version", params_, false, "", true, 3);
+
+    showversion = bpp::ApplicationTools::getBooleanParameter("version", params_, false, "", true, 3);
+
     bpp::ApplicationTools::warningLevel = bpp::ApplicationTools::getIntParameter("warning", params_, 0, "", true, 3);
-    bool noint = bpp::ApplicationTools::getBooleanParameter("noninteractive", params_, false, "", true, 3);
+
+    noint = bpp::ApplicationTools::getBooleanParameter("noninteractive", params_, false, "", true, 3);
+
     bpp::ApplicationTools::interactive = !noint;
 
     seed_ = bpp::ApplicationTools::getParameter<long>("seed", params_, -1, "", true, 3);
+
     if (seed_ >= 0) {
         bpp::RandomTools::setSeed(seed_);
-
     }else{
         unsigned int time_ui = (unsigned int) std::time(NULL);
         seed_ = time_ui;
@@ -118,10 +166,9 @@ CastorApplication::CastorApplication(int argc, char *argv[], const std::string &
     }
 
     // Print version header
-
     if (showversion) {
         this->version();
-        exit(0);
+        exit(EXIT_SUCCESS);
     }
 }
 
@@ -163,9 +210,21 @@ void CastorApplication::startTimer() {
 }
 
 void CastorApplication::done() {
+
+    // Delete objects and free memory
+    delete this->alphabet;
+    delete this->alphabetNoGaps;
+    delete this->sites;
+    delete this->rDist;
+    delete this->tl;
+    delete this->sequences;
+    delete this->tree;
+
     DLOG(INFO) << appName_ << "'s done. Bye.";
-    if (timerStarted_)
+
+    if (timerStarted_){
         bpp::ApplicationTools::displayTime("Total execution time:");
+    }
 }
 
 void CastorApplication::getCLIarguments(){
@@ -197,20 +256,20 @@ void CastorApplication::getAlphabetIndel(){
 
     if (this->PAR_Alphabet.find("DNA") != std::string::npos) {
         this->alphabet = new bpp::DNA_EXTENDED();
-        this->codonAlphabet = false;
+        this->codonAlphabet_ = false;
     } else if(this->PAR_Alphabet.find("Codon") != std::string::npos){
         this->alphabet = new bpp::DNA_EXTENDED();
 
         // This is additional to the alphabet instance
         this->alphabet = new CodonAlphabet_Extended(dynamic_cast<bpp::NucleicAlphabet *>(this->alphabet));
-        this->codonAlphabet = true;
+        this->codonAlphabet_ = true;
 
         this->codeDesc = bpp::ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
         this->gCode.reset(bpp::SequenceApplicationTools::getGeneticCode(dynamic_cast<bpp::CodonAlphabet *>(this->alphabetNoGaps)->getNucleicAlphabet(),this->codeDesc));
 
     } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
         this->alphabet = new bpp::ProteicAlphabet_Extended();
-        this->codonAlphabet = false;
+        this->codonAlphabet_ = false;
     }
 
 }
@@ -219,20 +278,20 @@ void CastorApplication::getAlphabetNoIndel(){
 
     if (this->PAR_Alphabet.find("DNA") != std::string::npos) {
         this->alphabet = new bpp::DNA();
-        this->codonAlphabet = false;
+        this->codonAlphabet_ = false;
     } else if (this->PAR_Alphabet.find("Codon") != std::string::npos){
         this->alphabet = new bpp::DNA();
 
         // This is additional to the alphabet instance
         this->alphabet = new CodonAlphabet(dynamic_cast<bpp::NucleicAlphabet *>(this->alphabet));
-        this->codonAlphabet = true;
+        this->codonAlphabet_ = true;
 
         this->codeDesc = bpp::ApplicationTools::getStringParameter("genetic_code", this->getParams(), "Standard","", true, true);
         this->gCode.reset(bpp::SequenceApplicationTools::getGeneticCode(dynamic_cast<bpp::CodonAlphabet *>(this->alphabetNoGaps)->getNucleicAlphabet(),this->codeDesc));
 
     } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
         this->alphabet = new bpp::ProteicAlphabet();
-        this->codonAlphabet = false;
+        this->codonAlphabet_ = false;
     } else {
         exit(EXIT_FAILURE);
     }
@@ -307,8 +366,6 @@ void CastorApplication::getData(){
 void CastorApplication::getASRV(){
 
     // Among site rate variation (ASVR)
-    this->rDist = nullptr;
-
     if (this->smodel->getNumberOfStates() >= 2 * smodel->getAlphabet()->getSize()) {
         // Markov-modulated Markov model!
         this->rDist = new ConstantRateDistribution();
@@ -324,11 +381,6 @@ void CastorApplication::computeMSA(){
     std::chrono::high_resolution_clock::time_point t2;
     std::vector<tshlib::VirtualNode *> ftn;
     double duration = 0.0;
-
-    this->DPversion = CPU;
-
-    this->alignment = nullptr;
-    this->proPIP = nullptr;
 
     this->PAR_output_file_msa = bpp::ApplicationTools::getAFilePath("output.msa.file", this->getParams(), false,false, "", true, "", 1);
 
@@ -492,7 +544,7 @@ void CastorApplication::parameterSanityCheck(){
 
         bpp::ApplicationTools::displayError("!!! Unexpected initial likelihood == 0.");
 
-        if (this->codonAlphabet) {
+        if (this->codonAlphabet_) {
 
             f = false;
 
@@ -637,52 +689,39 @@ void CastorApplication::bootstrapping(){
 
 }
 
+
 void CastorApplication::initCanonicalSubstitutionModel(){
 
     // Instantiation of the canonical substitution model
     if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
+
         this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps,this->gCode.get(), this->sites,this->modelMap, "", true,false, 0);
+
     }else if (this->PAR_Alphabet.find("Protein") != std::string::npos){
+
         this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps, this->gCode.get(), this->sites,this->modelMap, "", true, false, 0);
+
     } else {
+
         this->smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabet, this->gCode.get(), this->sites,this->modelMap, "", true, false, 0);
+
     }
 
 }
 
-void CastorApplication::instantiateCanonicalSubstitutionModel(){
+void CastorApplication::extendSubstitutionModelWithPIP(const SequenceContainer *data){
 
     if (this->PAR_Alphabet.find("DNA") != std::string::npos && this->PAR_Alphabet.find("Codon") == std::string::npos) {
 
-        this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *this->sites, lambda, mu,computeFrequenciesFromData);
+        this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *data, this->lambda, this->mu,computeFrequenciesFromData);
 
     } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
 
-        this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *this->sites, lambda, mu,computeFrequenciesFromData);
+        this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *data, this->lambda, this->mu,computeFrequenciesFromData);
 
     } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
 
-        this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*this->sites, lambda, mu,computeFrequenciesFromData);
-
-        bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
-        DLOG(WARNING) << "CODONS activated byt the program is not fully tested under these settings!";
-    }
-
-}
-
-void CastorApplication::instantiatePIPSubstitutionModel(){
-
-    if (this->PAR_Alphabet.find("DNA") != std::string::npos && this->PAR_Alphabet.find("Codon") == std::string::npos) {
-
-        this->smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(this->alphabet), this->smodel, *this->sequences, this->lambda, this->mu,this->computeFrequenciesFromData);
-
-    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-
-        this->smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(this->alphabet), this->smodel, *this->sequences, this->lambda, this->mu,this->computeFrequenciesFromData);
-
-    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-
-        this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*this->sequences, this->lambda, this->mu,this->computeFrequenciesFromData);
+        this->smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(this->alphabet), this->gCode.get(), this->smodel,*data, lambda, mu,computeFrequenciesFromData);
 
         bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
 
@@ -703,7 +742,14 @@ void CastorApplication::getIndelRates(){
     } else if (this->modelMap.find("initFreqs") != this->modelMap.end()) {
 
         if (this->modelMap["initFreqs"] == "observed") {
+
             this->estimatePIPparameters = true;
+
+        } else{
+
+            bpp::ApplicationTools::displayError("Unknow option");
+
+            exit(EXIT_FAILURE);
         }
 
     } else if( (this->modelMap.find("lambda") == this->modelMap.end()) || (this->modelMap.find("mu") == this->modelMap.end())) {
@@ -726,8 +772,10 @@ void CastorApplication::getIndelRates(){
                                                                  this->modelMap);
 
     } else {
+
         this->lambda = (this->modelMap.find("lambda") == this->modelMap.end()) ? 0.1 : std::stod(this->modelMap["lambda"]);
         this->mu = (this->modelMap.find("mu") == this->modelMap.end()) ? 0.2 : std::stod(this->modelMap["mu"]);
+
     }
 
     DLOG(INFO) << "[PIP model] Fixed PIP parameters to (lambda=" << this->lambda << ",mu=" << this->mu << "," "I="<< this->lambda * this->mu << ")";
@@ -772,6 +820,8 @@ void CastorApplication::getBackgroundFrequencies(){
 
 void CastorApplication::getSubstitutionIndelModel(){
 
+    const SequenceContainer *data;
+
     this->getBackgroundFrequencies();
 
     // Instantiation of the canonical substitution model
@@ -781,10 +831,12 @@ void CastorApplication::getSubstitutionIndelModel(){
 
     // Instantiate the corrisponding PIP model given the alphabet
     if (this->PAR_alignment) {
-        this->instantiatePIPSubstitutionModel();
+        data = this->sequences;
     } else {
-        this->instantiateCanonicalSubstitutionModel();
+        data = this->sites;
     }
+
+    this->extendSubstitutionModelWithPIP(data);
 
 }
 
@@ -800,8 +852,6 @@ void CastorApplication::getSubstitutionModel(){
 
     bpp::StdStr s1;
     ParameterList local_parameters;
-
-    this->estimatePIPparameters = false;
 
     // Instantiate a substitution model and extend it with PIP
     if (this->PAR_model_indels) {

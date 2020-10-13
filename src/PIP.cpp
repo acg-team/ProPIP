@@ -64,11 +64,14 @@
 #include <glog/logging.h>
 
 
-PIP_Nuc::PIP_Nuc(const NucleicAlphabet *alpha, SubstitutionModel *basemodel, const SequenceContainer &data, double lambda, double mu,
-                 bool initFreqFromData) :
-        AbstractParameterAliasable("PIP."),
-        AbstractReversibleNucleotideSubstitutionModel(alpha, new CanonicalStateMap(alpha, false), "PIP."),
-        lambda_(lambda), mu_(mu), r_(), l_(), k_(), exp1_(), exp2_(), p_(size_, size_) {
+PIP_Nuc::PIP_Nuc(const NucleicAlphabet *alpha,
+                 SubstitutionModel *basemodel,
+                 const SequenceContainer &data,
+                 double lambda,
+                 double mu,
+                 bool initFreqFromData) :AbstractParameterAliasable("PIP."),
+                 AbstractReversibleNucleotideSubstitutionModel(alpha, new CanonicalStateMap(alpha, false), "PIP."),
+                 lambda_(lambda), mu_(mu), r_(), l_(), k_(), exp1_(), exp2_(), p_(size_, size_) {
 
 
     // Setting basemodel to PIP
@@ -107,6 +110,7 @@ PIP_Nuc::PIP_Nuc(const NucleicAlphabet *alpha, SubstitutionModel *basemodel, con
                                                                                             " != [1.0]";
 
     updateMatrices();
+
 }
 
 void PIP_Nuc::updateMatrices() {
