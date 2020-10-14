@@ -375,6 +375,30 @@ void CastorApplication::getASRV(){
 
 }
 
+bpp::TransitionModel * CastorApplication::getTransitionModelFromSubsModel(bool PAR_model_indels,
+                            const Alphabet* alphabet,
+                            const GeneticCode* gCode,
+                            const SiteContainer* data,
+                            std::map<std::string, std::string>& params,
+                            const std::string& suffix,
+                            bool suffixIsOptional,
+                            bool verbose,
+                            int warn){
+
+    bpp::TransitionModel *model = nullptr;
+
+    // Get transition model from substitution model
+    if (!PAR_model_indels) {
+        model = bpp::PhylogeneticsApplicationTools::getTransitionModel(alphabet,gCode,data,params,suffix,suffixIsOptional,verbose,warn);
+    } else {
+        std::unique_ptr<bpp::TransitionModel> test;
+        test.reset(smodel);
+        model = test.release();
+    }
+
+    return model;
+}
+
 void CastorApplication::computeMSA(){
 
     std::chrono::high_resolution_clock::time_point t1;
@@ -457,14 +481,40 @@ void CastorApplication::initLkFun(){
     // Initialization likelihood functions
     this->tl = nullptr;
 
+    /*
     // Get transition model from substitution model
     if (!this->PAR_model_indels) {
-        this->model = bpp::PhylogeneticsApplicationTools::getTransitionModel(this->alphabet, this->gCode.get(), this->sites,this->getParams(), "", true, false, 0);
+        this->model = bpp::PhylogeneticsApplicationTools::getTransitionModel(this->alphabet,
+                                                                             this->gCode.get(),
+                                                                             this->sites,
+                                                                             this->getParams(),
+                                                                             "",
+                                                                             true,
+                                                                             false,
+                                                                             0);
     } else {
         std::unique_ptr<bpp::TransitionModel> test;
         test.reset(this->smodel);
         this->model = test.release();
     }
+    */
+
+
+    // Get transition model from substitution model
+    this->model=getTransitionModelFromSubsModel(this->PAR_model_indels,
+                                                this->alphabet,
+                                                this->gCode.get(),
+                                                this->sites,
+                                                this->getParams(),
+                                                "",
+                                                true,
+                                                false,
+                                                0);
+
+
+
+
+
 
     // Initialise likelihood functions
     if (!this->PAR_model_indels) {
@@ -1018,294 +1068,6 @@ void CastorApplication::initTreeMethodDistanceInfereDistanceMatrix(){
 
 }
 
-/*
-void CastorApplication::infereDistanceTree(){
-
-    // Compute bioNJ tree using the GTR model
-    std::map<std::string, std::string> parmap;
-    bpp::VectorSiteContainer *allSites = nullptr;
-    bpp::VectorSiteContainer *sitesDistMethod = nullptr;
-    bpp::Alphabet *alphabetDistMethod = nullptr;
-    bpp::SubstitutionModel *smodel = nullptr;
-    bpp::TransitionModel *dmodel = nullptr;
-
-    //----------------------------------------------------------------
-    //m@x
-    if (true) {
-
-        if (this->PAR_model_indels) {
-            alphabetDistMethod = this->alphabet;
-            parmap["model"] = this->modelMap["model"];
-        } else {
-            alphabetDistMethod = this->alphabetNoGaps;
-            parmap["model"] = this->getParams()["model"];
-        }
-
-        allSites = SequenceApplicationTools::getSiteContainer(alphabetDistMethod, this->getParams());
-        sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*allSites, this->getParams());
-
-        if (this->PAR_model_indels) {
-            //this->infereDistanceTreeIndelModel(parmap,smodel,sitesDistMethod,alphabetDistMethod);
-
-            // Instantiation of the canonical substitution model
-            if (this->PAR_Alphabet.find("Codon") != std::string::npos ||
-                this->PAR_Alphabet.find("Protein") != std::string::npos) {
-                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps, this->gCode.get(),
-                                                                                  sitesDistMethod, this->modelMap, "",
-                                                                                  true,
-                                                                                  false, 0);
-            } else {
-                smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(alphabetDistMethod,
-                                                                                  this->gCode.get(), sitesDistMethod,
-                                                                                  this->modelMap,
-                                                                                  "", true,
-                                                                                  false, 0);
-            }
-
-
-            if(this->modelMap.find("lambda") == this->modelMap.end() || this->modelMap.find("mu") == this->modelMap.end()){
-
-
-                //==================================================================================
-                //==================================================================================
-                //==================================================================================
-                //==================================================================================
-                //==================================================================================
-                // m@x:: new code
-                if(!this->tree){
-
-                    double lambda_tmp = 10.0;
-                    double mu_tmp = 0.1;
-
-                    bpp::SubstitutionModel *smodel_tmp;
-                    bpp::SubstitutionModel *smodel_copy = smodel->clone();
-
-                    VectorSiteContainer *sitesDistMethod_tmp = sitesDistMethod->clone();
-                    bpp::Alphabet *alphabetDistMethod_tmp = alphabetDistMethod->clone();
-
-                    // Instatiate the corrisponding PIP model given the alphabet
-                    if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-                        this->PAR_Alphabet.find("Codon") == std::string::npos) {
-                        smodel_tmp = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
-                                                 *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
-                    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-                        smodel_tmp = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
-                                                *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
-                    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-                        smodel_tmp = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod_tmp), this->gCode.get(),
-                                                   smodel_copy, *sitesDistMethod_tmp,lambda_tmp,mu_tmp, false);
-                        ApplicationTools::displayWarning(
-                                "Codon models are experimental in the current version... use with caution!");
-                        DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-                    }
-
-                    TransitionModel *dmodel_tmp;
-                    // Get transition model from substitution model
-                    if (!this->PAR_model_indels) {
-                        dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp, this->gCode.get(),sitesDistMethod_tmp, parmap);
-                    } else {
-                        unique_ptr<TransitionModel> test;
-                        test.reset(smodel_tmp);
-                        dmodel_tmp = test.release();
-                    }
-
-                    // Add a ASRV distribution
-                    DiscreteDistribution *rDist_tmp = nullptr;
-                    if (dmodel_tmp->getNumberOfStates() > dmodel_tmp->getAlphabet()->getSize()) {
-                        //Markov-modulated Markov model!
-                        rDist_tmp = new ConstantRateDistribution();
-                    } else {
-                        rDist_tmp = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
-                    }
-
-                    // Remove gap characters since we are roughly estimating the initial topology
-                    if (!this->PAR_model_indels) {
-                        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod_tmp);
-                    }
-
-                    UnifiedDistanceEstimation distEstimation_tmp(dmodel_tmp, rDist_tmp, sitesDistMethod_tmp, 1, false);
-
-                    bpp::DistanceMatrix * dm_tmp = bpp::SiteContainerTools::computeSimilarityMatrix(*sitesDistMethod_tmp,true,"no full gap",true);
-
-                    bpp::DistanceMethod *distMethod_tmp = nullptr;
-                    auto *bionj_tmp = new BioNJ(true, true, false);
-                    bionj_tmp->outputPositiveLengths(true);
-                    distMethod_tmp = bionj_tmp;
-                    distMethod_tmp->setDistanceMatrix((*dm_tmp));
-                    distMethod_tmp->computeTree();
-                    tree = distMethod_tmp->getTree();
-
-                }
-                //==================================================================================
-                //==================================================================================
-                //==================================================================================
-                //==================================================================================
-                //==================================================================================
-
-                inference_indel_rates::infere_indel_rates_from_sequences(this->PAR_input_sequences,
-                                                                         this->PAR_Alphabet,
-                                                                         this->PAR_alignment,
-                                                                         this->PAR_model_indels,
-                                                                         this->getParams(),
-                                                                         this->tree,
-                                                                         this->lambda,
-                                                                         this->mu,
-                                                                         this->gCode.get(),
-                                                                         this->modelMap);
-
-
-            }else{
-                this->lambda = std::stod(this->modelMap["lambda"]);
-                this->mu = std::stod(this->modelMap["mu"]);
-            }
-
-            // Instatiate the corrisponding PIP model given the alphabet
-            if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-                this->PAR_Alphabet.find("Codon") == std::string::npos) {
-                smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod), smodel,
-                                     *sitesDistMethod, this->lambda, this->mu, false);
-            } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-                smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod), smodel,
-                                    *sitesDistMethod, this->lambda, this->mu, false);
-            } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-                smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod), this->gCode.get(),
-                                       smodel, *sitesDistMethod,
-                                       this->lambda,
-                                       this->mu, false);
-                ApplicationTools::displayWarning(
-                        "Codon models are experimental in the current version... use with caution!");
-                DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-            }
-
-        }
-
-        // Get transition model from substitution model
-        if (!this->PAR_model_indels) {
-            dmodel = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod, this->gCode.get(),sitesDistMethod, parmap);
-        } else {
-            unique_ptr<TransitionModel> test;
-            test.reset(smodel);
-            dmodel = test.release();
-        }
-
-        // Add a ASRV distribution
-        DiscreteDistribution *rDist = nullptr;
-        if (dmodel->getNumberOfStates() > dmodel->getAlphabet()->getSize()) {
-            //Markov-modulated Markov model!
-            rDist = new ConstantRateDistribution();
-        } else {
-            rDist = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
-        }
-
-        // Remove gap characters since we are roughly estimating the initial topology
-        if (!this->PAR_model_indels) {
-            bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod);
-        }
-
-
-
-        if (this->PAR_distance_method.find("-ml") != std::string::npos) {
-
-            UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
-
-            this->PAR_optim_distance = ApplicationTools::getStringParameter("init.distance.optimization.method", this->getParams(),"init");
-
-            bpp::ApplicationTools::displayResult("Initial tree model parameters estimation method",this->PAR_optim_distance);
-
-            if (this->PAR_optim_distance == "init") this->PAR_optim_distance = Optimizators::DISTANCEMETHOD_INIT;
-            else if (this->PAR_optim_distance == "pairwise")
-                this->PAR_optim_distance = Optimizators::DISTANCEMETHOD_PAIRWISE;
-            else if (this->PAR_optim_distance == "iterations")
-                this->PAR_optim_distance = Optimizators::DISTANCEMETHOD_ITERATIONS;
-            else throw Exception("Unknown parameter estimation procedure '" + this->PAR_optim_distance + "'.");
-
-            // Optimisation method verbosity
-            auto optVerbose = ApplicationTools::getParameter<unsigned int>("optimization.verbose",this->getParams(), 2);
-            string mhPath = ApplicationTools::getAFilePath("optimization.message_handler", this->getParams(),
-                                                           false, false);
-            auto *messenger = (mhPath == "none") ? nullptr : (mhPath == "std") ? bpp::ApplicationTools::message.get(): new StlOutputStream(new ofstream(mhPath.c_str(), ios::out));
-
-            bpp::ApplicationTools::displayResult("Initial tree optimization handler", mhPath);
-
-            // Optimisation method profiler
-            string prPath = ApplicationTools::getAFilePath("optimization.profiler", this->getParams(), false,false);
-
-            auto *profiler = (prPath == "none") ? nullptr : (prPath == "std") ? bpp::ApplicationTools::message.get(): new StlOutputStream(new ofstream(prPath.c_str(), ios::out));
-
-            if (profiler) profiler->setPrecision(20);
-            bpp::ApplicationTools::displayResult("Initial tree optimization profiler", prPath);
-
-            // Should I ignore some parameters?
-            ParameterList allParameters = dmodel->getParameters();
-            allParameters.addParameters(rDist->getParameters());
-
-            ParameterList parametersToIgnore;
-            string paramListDesc = ApplicationTools::getStringParameter(
-                    "init.distance.optimization.ignore_parameter", this->getParams(),
-                    "", "", true, false);
-            bool ignoreBrLen = false;
-            StringTokenizer st(paramListDesc, ",");
-
-            while (st.hasMoreToken()) {
-                try {
-                    string param = st.nextToken();
-                    if (param == "BrLen")
-                        ignoreBrLen = true;
-                    else {
-                        if (allParameters.hasParameter(param)) {
-                            Parameter *p = &allParameters.getParameter(param);
-                            parametersToIgnore.addParameter(*p);
-                        } else ApplicationTools::displayWarning("Parameter '" + param + "' not found.");
-                    }
-                } catch (ParameterNotFoundException &pnfe) {
-                    ApplicationTools::displayError(
-                            "Parameter '" + pnfe.getParameter() + "' not found, and so can't be ignored!");
-                }
-            }
-
-            auto nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval",
-                                                                          this->getParams(), 1000000);
-            ApplicationTools::displayResult("Initial tree optimization | max # ML evaluations",
-                                            TextTools::toString(nbEvalMax));
-
-            double tolerance = ApplicationTools::getDoubleParameter("optimization.tolerance",
-                                                                    this->getParams(), .000001);
-            ApplicationTools::displayResult("Initial tree optimization | Tolerance",
-                                            TextTools::toString(tolerance));
-
-            //Here it is:
-            this->tree = Optimizators::buildDistanceTreeGeneric(distEstimation, *distMethod, parametersToIgnore,
-                                                                !ignoreBrLen, PAR_optim_distance,
-                                                                tolerance, nbEvalMax, profiler, messenger,
-                                                                optVerbose);
-
-        } else {
-            // Fast but rough estimate of the initial tree topology (distance based without optimisation -ML)
-
-            if(!tree) {
-
-                UnifiedDistanceEstimation distEstimation(dmodel, rDist, sitesDistMethod, 1, false);
-
-                // LORENZO version
-                distEstimation.computeMatrix();
-                DistanceMatrix *dm = distEstimation.getMatrix();
-                distMethod->setDistanceMatrix((*dm));
-                distMethod->computeTree();
-                tree = distMethod->getTree();
-            }
-
-        }
-
-        delete sitesDistMethod;
-        delete distMethod;
-        delete allSites;
-
-    } //m@x
-    //----------------------------------------------------------------
-
-}
-*/
-
 void CastorApplication::infereDistanceTreeFast(bpp::TransitionModel *local_dmodel,
                                                bpp::VectorSiteContainer *local_sitesDistMethod,
                                                DiscreteDistribution *local_rDist){
@@ -1427,321 +1189,12 @@ void CastorApplication::addASRVdistribution(DiscreteDistribution *local_rDist,bp
 
 }
 
-/*
-void CastorApplication::infereDistanceTreeIndelModel(bpp::SubstitutionModel *local_smodel,
-                                                     bpp::VectorSiteContainer *local_sitesDistMethod,
-                                                     bpp::Alphabet *local_alphabetDistMethod,
-                                                     std::map<std::string, std::string> &local_parmap){
-
-    // Instantiation of the canonical substitution model
-    if (this->PAR_Alphabet.find("Codon") != std::string::npos ||
-        this->PAR_Alphabet.find("Protein") != std::string::npos) {
-        local_smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(this->alphabetNoGaps, this->gCode.get(),
-                                                                                local_sitesDistMethod, this->modelMap, "",
-                                                                                true,
-                                                                                false, 0);
-    } else {
-        local_smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(local_alphabetDistMethod,
-                                                                                this->gCode.get(), local_sitesDistMethod,
-                                                                                this->modelMap,
-                                                                                "", true,
-                                                                                false, 0);
-    }
-
-
-    if(this->modelMap.find("lambda") == this->modelMap.end() || this->modelMap.find("mu") == this->modelMap.end()){
-
-
-        //==================================================================================
-        //==================================================================================
-        //==================================================================================
-        //==================================================================================
-        //==================================================================================
-        // m@x:: new code
-        if(!this->tree){
-
-            double lambda_tmp = 10.0;
-            double mu_tmp = 0.1;
-
-            bpp::SubstitutionModel *smodel_tmp;
-            bpp::SubstitutionModel *smodel_copy = local_smodel->clone();
-
-            VectorSiteContainer *sitesDistMethod_tmp = local_sitesDistMethod->clone();
-            bpp::Alphabet *alphabetDistMethod_tmp = local_alphabetDistMethod->clone();
-
-            // Instatiate the corrisponding PIP model given the alphabet
-            if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-                this->PAR_Alphabet.find("Codon") == std::string::npos) {
-                smodel_tmp = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
-                                         *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
-            } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-                smodel_tmp = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
-                                        *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
-            } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-                smodel_tmp = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod_tmp), this->gCode.get(),
-                                           smodel_copy, *sitesDistMethod_tmp,lambda_tmp,mu_tmp, false);
-                ApplicationTools::displayWarning(
-                        "Codon models are experimental in the current version... use with caution!");
-                DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-            }
-
-            TransitionModel *dmodel_tmp;
-            // Get transition model from substitution model
-            if (!this->PAR_model_indels) {
-                dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp, this->gCode.get(),sitesDistMethod_tmp, local_parmap);
-            } else {
-                unique_ptr<TransitionModel> test;
-                test.reset(smodel_tmp);
-                dmodel_tmp = test.release();
-            }
-
-            // Add a ASRV distribution
-            DiscreteDistribution *rDist_tmp = nullptr;
-            if (dmodel_tmp->getNumberOfStates() > dmodel_tmp->getAlphabet()->getSize()) {
-                //Markov-modulated Markov model!
-                rDist_tmp = new ConstantRateDistribution();
-            } else {
-                rDist_tmp = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
-            }
-
-            // Remove gap characters since we are roughly estimating the initial topology
-            if (!this->PAR_model_indels) {
-                bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod_tmp);
-            }
-
-            UnifiedDistanceEstimation distEstimation_tmp(dmodel_tmp, rDist_tmp, sitesDistMethod_tmp, 1, false);
-
-            bpp::DistanceMatrix * dm_tmp = bpp::SiteContainerTools::computeSimilarityMatrix(*sitesDistMethod_tmp,true,"no full gap",true);
-
-            bpp::DistanceMethod *distMethod_tmp = nullptr;
-            auto *bionj_tmp = new BioNJ(true, true, false);
-            bionj_tmp->outputPositiveLengths(true);
-            distMethod_tmp = bionj_tmp;
-            distMethod_tmp->setDistanceMatrix((*dm_tmp));
-            distMethod_tmp->computeTree();
-            tree = distMethod_tmp->getTree();
-
-        }
-        //==================================================================================
-        //==================================================================================
-        //==================================================================================
-        //==================================================================================
-        //==================================================================================
-
-        inference_indel_rates::infere_indel_rates_from_sequences(this->PAR_input_sequences,
-                                                                 this->PAR_Alphabet,
-                                                                 this->PAR_alignment,
-                                                                 this->PAR_model_indels,
-                                                                 this->getParams(),
-                                                                 this->tree,
-                                                                 this->lambda,
-                                                                 this->mu,
-                                                                 this->gCode.get(),
-                                                                 this->modelMap);
-
-
-    }else{
-        this->lambda = std::stod(this->modelMap["lambda"]);
-        this->mu = std::stod(this->modelMap["mu"]);
-    }
-
-    // Instatiate the corrisponding PIP model given the alphabet
-    if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-        this->PAR_Alphabet.find("Codon") == std::string::npos) {
-        local_smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(local_alphabetDistMethod), local_smodel,
-                                   *local_sitesDistMethod, this->lambda, this->mu, false);
-    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-        local_smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(local_alphabetDistMethod), local_smodel,
-                                  *local_sitesDistMethod, this->lambda, this->mu, false);
-    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-        local_smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(local_alphabetDistMethod), this->gCode.get(),
-                                     local_smodel, *local_sitesDistMethod,
-                                     this->lambda,
-                                     this->mu, false);
-        ApplicationTools::displayWarning(
-                "Codon models are experimental in the current version... use with caution!");
-        DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-    }
-
-
-}
-*/
-
 void CastorApplication::getUsersIndelRates(){
 
     this->lambda = std::stod(this->modelMap["lambda"]);
     this->mu = std::stod(this->modelMap["mu"]);
 
 }
-
-/*
-bpp::SubstitutionModel *CastorApplication::intatiateCanonicalSubsModel(bpp::VectorSiteContainer *local_sitesDistMethod,
-                                                    bpp::Alphabet *local_alphabetDistMethod){
-
-    bpp::SubstitutionModel *local_smodel;
-
-    // Instantiation of the canonical substitution model
-    if (this->PAR_Alphabet.find("Codon") != std::string::npos){
-
-        local_smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(local_alphabetDistMethod,//this->alphabetNoGaps,
-                                                                                this->gCode.get(),
-                                                                                local_sitesDistMethod,
-                                                                                this->modelMap,
-                                                                                "",
-                                                                                true,
-                                                                                false,
-                                                                                0);
-
-    }else if(this->PAR_Alphabet.find("Protein") != std::string::npos){
-
-        local_smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(local_alphabetDistMethod,//this->alphabetNoGaps,
-                                                                                this->gCode.get(),
-                                                                                local_sitesDistMethod,
-                                                                                this->modelMap,
-                                                                                "",
-                                                                                true,
-                                                                                false,
-                                                                                0);
-
-    } else if(this->PAR_Alphabet.find("DNA") != std::string::npos){
-
-        local_smodel = bpp::PhylogeneticsApplicationTools::getSubstitutionModel(local_alphabetDistMethod,
-                                                                                this->gCode.get(),
-                                                                                local_sitesDistMethod,
-                                                                                this->modelMap,
-                                                                                "",
-                                                                                true,
-                                                                                false,
-                                                                                0);
-
-    }else{
-        throw Exception("Unknown option");
-    }
-
-    return local_smodel;
-}
-*/
-/*
-void CastorApplication::extendSubsModelWithPIP(bpp::SubstitutionModel *local_smodel,
-                                               bpp::VectorSiteContainer *local_sitesDistMethod,
-                                               bpp::Alphabet *local_alphabetDistMethod){
-
-    // Instatiate the corrisponding PIP model given the alphabet
-    if (this->PAR_Alphabet.find("DNA") != std::string::npos){
-        //&&this->PAR_Alphabet.find("Codon") == std::string::npos) {
-
-        local_smodel = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(local_alphabetDistMethod),
-                                   local_smodel,
-                                   *local_sitesDistMethod,
-                                   this->lambda,
-                                   this->mu,
-                                   false);
-
-    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-
-        local_smodel = new PIP_AA(dynamic_cast<ProteicAlphabet *>(local_alphabetDistMethod),
-                                  local_smodel,
-                                  *local_sitesDistMethod,
-                                  this->lambda,
-                                  this->mu,
-                                  false);
-
-    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-
-        local_smodel = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(local_alphabetDistMethod),
-                                     this->gCode.get(),
-                                     local_smodel,
-                                     *local_sitesDistMethod,
-                                     this->lambda,
-                                     this->mu,
-                                     false);
-
-        bpp::ApplicationTools::displayWarning("Codon models are experimental in the current version... use with caution!");
-
-        DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-    }else{
-        throw Exception("Unknown option");
-    }
-
-}
-*/
-/*
-void CastorApplication::infereTreeWithoutIndelRates(std::map<std::string, std::string> local_parmap,
-                                                    bpp::SubstitutionModel *local_smodel,
-                                                    bpp::VectorSiteContainer *local_sitesDistMethod,
-                                                    bpp::Alphabet *local_alphabetDistMethod){
-
-    bpp::SubstitutionModel *smodel_tmp = nullptr;
-    bpp::SubstitutionModel *smodel_copy = nullptr;
-    VectorSiteContainer *sitesDistMethod_tmp = nullptr;
-    bpp::Alphabet *alphabetDistMethod_tmp = nullptr;
-    TransitionModel *dmodel_tmp = nullptr;
-    DiscreteDistribution *rDist_tmp = nullptr;
-    bpp::DistanceMatrix *dm_tmp = nullptr;
-    bpp::DistanceMethod *distMethod_tmp = nullptr;
-
-    double lambda_tmp = 10.0;
-    double mu_tmp = 0.1;
-
-    auto *bionj_tmp = new BioNJ(true, true, false);
-
-    smodel_copy = local_smodel->clone();
-
-    sitesDistMethod_tmp = local_sitesDistMethod->clone();
-    alphabetDistMethod_tmp = local_alphabetDistMethod->clone();
-
-    // Instatiate the corrisponding PIP model given the alphabet
-    if (this->PAR_Alphabet.find("DNA") != std::string::npos &&
-        this->PAR_Alphabet.find("Codon") == std::string::npos) {
-        smodel_tmp = new PIP_Nuc(dynamic_cast<NucleicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
-                                 *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
-    } else if (this->PAR_Alphabet.find("Protein") != std::string::npos) {
-        smodel_tmp = new PIP_AA(dynamic_cast<ProteicAlphabet *>(alphabetDistMethod_tmp), smodel_copy,
-                                *sitesDistMethod_tmp, lambda_tmp, mu_tmp, false);
-    } else if (this->PAR_Alphabet.find("Codon") != std::string::npos) {
-        smodel_tmp = new PIP_Codon(dynamic_cast<CodonAlphabet_Extended *>(alphabetDistMethod_tmp), this->gCode.get(),
-                                   smodel_copy, *sitesDistMethod_tmp,lambda_tmp,mu_tmp, false);
-        ApplicationTools::displayWarning(
-                "Codon models are experimental in the current version... use with caution!");
-        DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
-    }
-
-
-    // Get transition model from substitution model
-    if (!this->PAR_model_indels) {
-        dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp, this->gCode.get(),sitesDistMethod_tmp, local_parmap);
-    } else {
-        unique_ptr<TransitionModel> test;
-        test.reset(smodel_tmp);
-        dmodel_tmp = test.release();
-    }
-
-    // Add a ASRV distribution
-    if (dmodel_tmp->getNumberOfStates() > dmodel_tmp->getAlphabet()->getSize()) {
-        //Markov-modulated Markov model!
-        rDist_tmp = new ConstantRateDistribution();
-    } else {
-        rDist_tmp = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
-    }
-
-    // Remove gap characters since we are roughly estimating the initial topology
-    if (!this->PAR_model_indels) {
-        bpp::SiteContainerTools::changeGapsToUnknownCharacters(*sitesDistMethod_tmp);
-    }
-
-    UnifiedDistanceEstimation distEstimation_tmp(dmodel_tmp, rDist_tmp, sitesDistMethod_tmp, 1, false);
-
-    dm_tmp = bpp::SiteContainerTools::computeSimilarityMatrix(*sitesDistMethod_tmp,true,"no full gap",true);
-
-    bionj_tmp->outputPositiveLengths(true);
-    distMethod_tmp = bionj_tmp;
-    distMethod_tmp->setDistanceMatrix((*dm_tmp));
-    distMethod_tmp->computeTree();
-
-    this->tree = distMethod_tmp->getTree();
-
-}
-*/
 
 void CastorApplication::infereDistanceTree(){
 
@@ -1837,14 +1290,33 @@ void CastorApplication::infereDistanceTree(){
                     }
 
 
+
                     // Get transition model from substitution model
                     if (!this->PAR_model_indels) {
-                        dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp, this->gCode.get(),sitesDistMethod_tmp, local_parmap);
+                        dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp,
+                                                                                       this->gCode.get(),
+                                                                                       sitesDistMethod_tmp,
+                                                                                       local_parmap);
                     } else {
                         unique_ptr<TransitionModel> test;
                         test.reset(smodel_tmp);
                         dmodel_tmp = test.release();
                     }
+
+                    /*
+                                       // Get transition model from substitution model
+                                       dmodel_tmp=getTransitionModelFromSubsModel(this->PAR_model_indels,
+                                                                                  alphabetDistMethod_tmp,
+                                                                                   this->gCode.get(),
+                                                                                  sitesDistMethod_tmp,
+                                                                                  local_parmap,
+                                                                                   "",
+                                                                                   true,
+                                                                                   true,
+                                                                                   1);
+
+
+                   */
 
                     // Add a ASRV distribution
                     if (dmodel_tmp->getNumberOfStates() > dmodel_tmp->getAlphabet()->getSize()) {
@@ -1926,17 +1398,29 @@ void CastorApplication::infereDistanceTree(){
 
         // Get transition model from substitution model
         if (!this->PAR_model_indels) {
-            local_dmodel = PhylogeneticsApplicationTools::getTransitionModel(local_alphabetDistMethod, this->gCode.get(),local_sitesDistMethod, local_parmap);
+            local_dmodel = PhylogeneticsApplicationTools::getTransitionModel(local_alphabetDistMethod,
+                                                                              this->gCode.get(),
+                                                                              local_sitesDistMethod,
+                                                                              local_parmap);
         } else {
             unique_ptr<TransitionModel> test;
             test.reset(local_smodel);
             local_dmodel = test.release();
         }
 
+        /*
+        // Get transition model from substitution model
+        local_dmodel=getTransitionModelFromSubsModel(this->PAR_model_indels,
+                                                     local_alphabetDistMethod,
+                                                     this->gCode.get(),
+                                                     local_sitesDistMethod,
+                                                     local_parmap,
+                                                     "",
+                                                     true,
+                                                     true,
+                                                     1);
 
-
-
-
+            */
 
 
 

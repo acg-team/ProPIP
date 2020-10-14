@@ -288,6 +288,16 @@ namespace bpp {
 
         void output();
 
+        bpp::TransitionModel * getTransitionModelFromSubsModel(bool PAR_model_indels,
+                                                               const Alphabet* alphabet,
+                                                               const GeneticCode* gCode,
+                                                               const SiteContainer* data,
+                                                               std::map<std::string, std::string>& params,
+                                                               const std::string& suffix,
+                                                               bool suffixIsOptional,
+                                                               bool verbose,
+                                                               int warn);
+
     };
 
 
