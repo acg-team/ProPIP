@@ -82,6 +82,8 @@
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPnode.hpp"
 
+#define MIN_BRANCH_LEN 0.000001
+
 namespace bpp {
 
     class CastorApplication {
@@ -289,6 +291,7 @@ namespace bpp {
         void output();
 
         bpp::TransitionModel * getTransitionModelFromSubsModel(bool PAR_model_indels,
+                                                               bpp::SubstitutionModel *smodel,
                                                                const Alphabet* alphabet,
                                                                const GeneticCode* gCode,
                                                                const SiteContainer* data,
@@ -297,6 +300,16 @@ namespace bpp {
                                                                bool suffixIsOptional,
                                                                bool verbose,
                                                                int warn);
+
+        bpp::ParameterList getParametersList();
+
+        double checkLkValue(bpp::ParameterList &pl);
+
+        void resolveZeroLKValue();
+
+        void checkStopCodon();
+
+        void removeSaturatedSite();
 
     };
 

@@ -376,27 +376,28 @@ void CastorApplication::getASRV(){
 }
 
 bpp::TransitionModel * CastorApplication::getTransitionModelFromSubsModel(bool PAR_model_indels,
-                            const Alphabet* alphabet,
-                            const GeneticCode* gCode,
-                            const SiteContainer* data,
-                            std::map<std::string, std::string>& params,
-                            const std::string& suffix,
-                            bool suffixIsOptional,
-                            bool verbose,
-                            int warn){
+                                                                          bpp::SubstitutionModel *smodel,
+                                                                          const Alphabet* alphabet,
+                                                                          const GeneticCode* gCode,
+                                                                          const SiteContainer* data,
+                                                                          std::map<std::string, std::string>& params,
+                                                                          const std::string& suffix,
+                                                                          bool suffixIsOptional,
+                                                                          bool verbose,
+                                                                          int warn){
 
-    bpp::TransitionModel *model = nullptr;
+    bpp::TransitionModel *transition_model = nullptr;
 
     // Get transition model from substitution model
     if (!PAR_model_indels) {
-        model = bpp::PhylogeneticsApplicationTools::getTransitionModel(alphabet,gCode,data,params,suffix,suffixIsOptional,verbose,warn);
+        transition_model = bpp::PhylogeneticsApplicationTools::getTransitionModel(alphabet,gCode,data,params,suffix,suffixIsOptional,verbose,warn);
     } else {
         std::unique_ptr<bpp::TransitionModel> test;
         test.reset(smodel);
-        model = test.release();
+        transition_model = test.release();
     }
 
-    return model;
+    return transition_model;
 }
 
 void CastorApplication::computeMSA(){
@@ -481,27 +482,9 @@ void CastorApplication::initLkFun(){
     // Initialization likelihood functions
     this->tl = nullptr;
 
-    /*
-    // Get transition model from substitution model
-    if (!this->PAR_model_indels) {
-        this->model = bpp::PhylogeneticsApplicationTools::getTransitionModel(this->alphabet,
-                                                                             this->gCode.get(),
-                                                                             this->sites,
-                                                                             this->getParams(),
-                                                                             "",
-                                                                             true,
-                                                                             false,
-                                                                             0);
-    } else {
-        std::unique_ptr<bpp::TransitionModel> test;
-        test.reset(this->smodel);
-        this->model = test.release();
-    }
-    */
-
-
     // Get transition model from substitution model
     this->model=getTransitionModelFromSubsModel(this->PAR_model_indels,
+                                                this->smodel,
                                                 this->alphabet,
                                                 this->gCode.get(),
                                                 this->sites,
@@ -510,11 +493,6 @@ void CastorApplication::initLkFun(){
                                                 true,
                                                 false,
                                                 0);
-
-
-
-
-
 
     // Initialise likelihood functions
     if (!this->PAR_model_indels) {
@@ -539,15 +517,12 @@ void CastorApplication::optimizeParameters(){
 
 }
 
-void CastorApplication::parameterSanityCheck(){
+bpp::ParameterList CastorApplication::getParametersList(){
 
     bpp::ParameterList pl;
-    bool f = false;
-    bool removeSaturated = false;
-    size_t s = 0;
 
     //Listing parameters
-    this->paramNameFile = ApplicationTools::getAFilePath("output.parameter_names.file", this->getParams(), false,false, "", true, "none", 1);
+    this->paramNameFile = bpp::ApplicationTools::getAFilePath("output.parameter_names.file", this->getParams(), false,false, "", true, "none", 1);
 
     if (this->paramNameFile != "none") {
 
@@ -564,10 +539,17 @@ void CastorApplication::parameterSanityCheck(){
         pnfile.close();
     }
 
-    //Check initial likelihood:
-    this->logL = this->tl->getValue();
+    return pl;
+}
 
-    if (std::isinf(this->logL)) {
+double CastorApplication::checkLkValue(bpp::ParameterList &pl){
+
+    double logL = 0.0;
+
+    //Check initial likelihood:
+    logL = this->tl->getValue();
+
+    if (std::isinf(logL)) {
 
         // This may be due to null branch lengths, leading to null likelihood!
         bpp::ApplicationTools::displayWarning("!!! Warning!!! Initial likelihood is zero.");
@@ -577,103 +559,136 @@ void CastorApplication::parameterSanityCheck(){
         pl = this->tl->getBranchLengthsParameters();
 
         for (unsigned int i = 0; i < pl.size(); i++) {
-            if (pl[i].getValue() < 0.000001){
-                pl[i].setValue(0.000001);
+            if (pl[i].getValue() < MIN_BRANCH_LEN){
+                pl[i].setValue(MIN_BRANCH_LEN);
             }
         }
 
         this->tl->matchParametersValues(pl);
 
-        this->logL = this->tl->getLogLikelihood();
+        logL = this->tl->getLogLikelihood();
 
+    }
+
+    return logL;
+}
+
+void CastorApplication::checkStopCodon(){
+
+    bool f = false;
+    size_t s = 0;
+
+    for (size_t i = 0; i < this->sites->getNumberOfSites(); i++) {
+
+        if (std::isinf(this->tl->getLogLikelihoodForASite(i))) {
+
+            const Site &site = this->sites->getSite(i);
+
+            s = site.size();
+
+            for (size_t j = 0; j < s; j++) {
+
+                if (this->gCode->isStop(site.getValue(j))) {
+
+                    (*bpp::ApplicationTools::error << "Stop Codon at site " << site.getPosition()<< " in sequence "<< this->sites->getSequence(j).getName()).endLine();
+
+                    f = true;
+                }
+
+            }
+
+        }
+
+    }
+
+    if (f){
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+void CastorApplication::removeSaturatedSite(){
+
+    bpp::ApplicationTools::displayBooleanResult("Saturated site removal enabled", true);
+
+    for (size_t i = this->sites->getNumberOfSites(); i > 0; --i) {
+
+        if (std::isinf(this->tl->getLogLikelihoodForASite(i - 1))) {
+
+            bpp::ApplicationTools::displayResult("Ignore saturated site", this->sites->getSite(i - 1).getPosition());
+
+            this->sites->deleteSite(i - 1);
+        }
+    }
+
+    bpp::ApplicationTools::displayResult("Number of sites retained", this->sites->getNumberOfSites());
+
+    this->tl->setData(*this->sites);
+
+    this->tl->initialize();
+
+    this->logL = this->tl->getValue();
+
+    if (std::isinf(this->logL)) {
+        throw Exception("Likelihood is still 0 after saturated sites are removed! Looks like a bug...");
     }
 
     bpp::ApplicationTools::displayResult("Initial log likelihood", bpp::TextTools::toString(-this->logL, 15));
 
+}
+
+void CastorApplication::resolveZeroLKValue(){
+
+    bool removeSaturated = false;
+
+    bpp::ApplicationTools::displayError("!!! Unexpected initial likelihood == 0.");
+
+    if (this->codonAlphabet_) {
+
+        this->checkStopCodon();
+
+    }
+
+    removeSaturated = bpp::ApplicationTools::getBooleanParameter("input.sequence.remove_saturated_sites",this->getParams(), false, "",true, 1);
+
+    if (removeSaturated) {
+
+        this->removeSaturatedSite();
+
+    } else {
+
+        std::ofstream debug("DEBUG_likelihoods.txt", ios::out);
+
+        for (size_t i = 0; i < this->sites->getNumberOfSites(); i++) {
+            debug << "Position " << this->sites->getSite(i).getPosition() << " = " << this->tl->getLogLikelihoodForASite(i)<< endl;
+        }
+
+        debug.close();
+
+        bpp::ApplicationTools::displayError("!!! Site-specific likelihood have been written in file DEBUG_likelihoods.txt .");
+        bpp::ApplicationTools::displayError("!!! 0 values (inf in log) may be due to computer overflow, particularily if datasets are big (>~500 sequences).");
+        bpp::ApplicationTools::displayError("!!! You may want to try input.sequence.remove_saturated_sites = yes to ignore positions with likelihood 0.");
+
+        exit(EXIT_FAILURE);
+
+    }
+
+}
+
+void CastorApplication::parameterSanityCheck(){
+
+    bpp::ParameterList pl;
+
+    //Listing parameters
+    pl=getParametersList();
+
+    //Check initial likelihood
+    this->logL=checkLkValue(pl);
+
+    bpp::ApplicationTools::displayResult("Initial log likelihood", bpp::TextTools::toString(-this->logL, 15));
+
     if (std::isinf(this->logL)) {
-
-        bpp::ApplicationTools::displayError("!!! Unexpected initial likelihood == 0.");
-
-        if (this->codonAlphabet_) {
-
-            f = false;
-
-            for (size_t i = 0; i < this->sites->getNumberOfSites(); i++) {
-
-                if (std::isinf(this->tl->getLogLikelihoodForASite(i))) {
-
-                    const Site &site = this->sites->getSite(i);
-
-                    s = site.size();
-
-                    for (size_t j = 0; j < s; j++) {
-
-                        if (this->gCode->isStop(site.getValue(j))) {
-
-                            (*bpp::ApplicationTools::error << "Stop Codon at site " << site.getPosition()<< " in sequence "<< this->sites->getSequence(j).getName()).endLine();
-
-                            f = true;
-                        }
-
-                    }
-
-                }
-
-            }
-
-            if (f){
-                exit(EXIT_FAILURE);
-            }
-
-        }
-
-        removeSaturated = bpp::ApplicationTools::getBooleanParameter("input.sequence.remove_saturated_sites",this->getParams(), false, "",true, 1);
-
-        if (!removeSaturated) {
-
-            std::ofstream debug("DEBUG_likelihoods.txt", ios::out);
-
-            for (size_t i = 0; i < this->sites->getNumberOfSites(); i++) {
-                debug << "Position " << this->sites->getSite(i).getPosition() << " = " << this->tl->getLogLikelihoodForASite(i)<< endl;
-            }
-
-            debug.close();
-
-            bpp::ApplicationTools::displayError("!!! Site-specific likelihood have been written in file DEBUG_likelihoods.txt .");
-            bpp::ApplicationTools::displayError("!!! 0 values (inf in log) may be due to computer overflow, particularily if datasets are big (>~500 sequences).");
-            bpp::ApplicationTools::displayError("!!! You may want to try input.sequence.remove_saturated_sites = yes to ignore positions with likelihood 0.");
-
-            exit(EXIT_FAILURE);
-
-        } else {
-
-            bpp::ApplicationTools::displayBooleanResult("Saturated site removal enabled", true);
-
-            for (size_t i = this->sites->getNumberOfSites(); i > 0; --i) {
-
-                if (std::isinf(this->tl->getLogLikelihoodForASite(i - 1))) {
-
-                    bpp::ApplicationTools::displayResult("Ignore saturated site", this->sites->getSite(i - 1).getPosition());
-
-                    this->sites->deleteSite(i - 1);
-                }
-            }
-
-            bpp::ApplicationTools::displayResult("Number of sites retained", this->sites->getNumberOfSites());
-
-            this->tl->setData(*this->sites);
-
-            this->tl->initialize();
-
-            this->logL = this->tl->getValue();
-
-            if (std::isinf(this->logL)) {
-                throw Exception("Likelihood is still 0 after saturated sites are removed! Looks like a bug...");
-            }
-
-            bpp::ApplicationTools::displayResult("Initial log likelihood", bpp::TextTools::toString(-this->logL, 15));
-
-        }
+        this->resolveZeroLKValue();
     }
 
 }
