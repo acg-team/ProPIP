@@ -56,6 +56,8 @@
 #define CASTOR_OPTIMIZATORS_HPP
 #include <Bpp/Phyl/Distance/DistanceMethod.h>
 #include "UnifiedDistanceEstimation.hpp"
+#include "UnifiedTSHTopologySearch.hpp"
+#include "UnifiedTSHomogeneousTreeLikelihood_PIP.hpp"
 
 namespace bpp {
 
@@ -188,6 +190,85 @@ namespace bpp {
         static std::string DISTANCEMETHOD_INIT;
         static std::string DISTANCEMETHOD_PAIRWISE;
         static std::string DISTANCEMETHOD_ITERATIONS;
+
+        static void scaleTreeTopology(bpp::AbstractHomogeneousTreeLikelihood *tl,
+                               std::map<std::string, std::string> &params,
+                               const std::string &suffix,
+                               bool suffixIsOptional,
+                               OutputStream *messageHandler,
+                               OutputStream *profiler,
+                               bool verbose,
+                               int warn);
+
+        static void getParametersToEstimate(ParameterList &parametersToEstimate,
+                                                     std::string &paramListDesc,
+                                                     std::vector<std::string> &parNames,
+                                                     bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                     std::map<std::string, std::string> &params,
+                                                     const ParameterList &parameters,
+                                                     const std::string &suffix,
+                                                     bool suffixIsOptional,
+                                                     bool verbose,
+                                                     int warn);
+
+        static void setParametersConstaints(ParameterList &parametersToEstimate,
+                                            std::string &paramListDesc,
+                                            std::vector<std::string> &parNames,
+                                            bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                            std::map<std::string, std::string> &params,
+                                            const std::string &suffix,
+                                            bool suffixIsOptional,
+                                            bool verbose,
+                                            int warn);
+
+        static void getOptmizatorsOptions(unsigned int &nbEvalMax,
+                                            double &tolerance,
+                                            unique_ptr<BackupListener> &backupListener,
+                                            std::string &backupFile,
+                                            bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                            std::map<std::string, std::string> &params,
+                                            const ParameterList &parameters,
+                                            const std::string &suffix,
+                                            bool suffixIsOptional,
+                                            bool verbose,
+                                            int warn);
+
+        static void setOptMethodDeriv(std::string &optMethodDeriv,
+                                      std::string &order,
+                                      std::map<std::string, std::string> &optArgs,
+                                      int warn);
+
+        static void checkMolecularClockConstraints(bool &useClock,
+                                                   bool optimizeTopo,
+                                                   std::map<std::string, std::string> &params,
+                                                   const ParameterList &parameters,
+                                                   const std::string &suffix,
+                                                   bool suffixIsOptional,
+                                                   bool verbose,
+                                                   int warn);
+
+        static void performOptimization(unique_ptr<BackupListener> &backupListener,
+                                        unsigned int nstep,
+                                        double tolerance,
+                                        unsigned int nbEvalMax,
+                                        std::string optName,
+                                        std::string optMethodDeriv,
+                                        ParameterList &parametersToEstimate,
+                                        bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                        bool optimizeTopo,
+                                        tshlib::TreeSearch *treesearch,
+                                        OutputStream *messageHandler,
+                                        OutputStream *profiler,
+                                        std::map<std::string, std::string> &params,
+                                        const ParameterList &parameters,
+                                        bool reparam,
+                                        bool useClock,
+                                        const std::string &suffix,
+                                        bool suffixIsOptional,
+                                        unsigned int optVerbose,
+                                        bool verbose,
+                                        int warn);
+
     };
 } // end of namespace bpp.
 
