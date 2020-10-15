@@ -269,6 +269,22 @@ namespace bpp {
                                         bool verbose,
                                         int warn);
 
+        static void finalOptimizationStep(std::string finalMethod,
+                                          bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                          ParameterList &parametersToEstimate,
+                                          std::string optName,
+                                          unique_ptr<BackupListener> &backupListener,
+                                          unsigned int nstep,
+                                          double tolerance,
+                                          unsigned int nbEvalMax,
+                                          OutputStream *messageHandler,
+                                          OutputStream *profiler,
+                                          bool reparam,
+                                          unsigned int optVerbose,
+                                          std::string optMethodDeriv,
+                                          int &n,
+                                          bool verbose);
+
     };
 } // end of namespace bpp.
 

@@ -690,6 +690,84 @@ namespace bpp {
 
     }
 
+    void Optimizators::finalOptimizationStep(std::string finalMethod,
+                                             bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                             ParameterList &parametersToEstimate,
+                                             std::string optName,
+                                             unique_ptr<BackupListener> &backupListener,
+                                             unsigned int nstep,
+                                             double tolerance,
+                                             unsigned int nbEvalMax,
+                                             OutputStream *messageHandler,
+                                             OutputStream *profiler,
+                                             bool reparam,
+                                             unsigned int optVerbose,
+                                             std::string optMethodDeriv,
+                                             int &n,
+                                             bool verbose){
+
+        Optimizer *finalOptimizer = nullptr;
+
+        if (finalMethod == "simplex") {
+            finalOptimizer = new DownhillSimplexMethod(tl);
+        } else if (finalMethod == "powell") {
+            finalOptimizer = new PowellMultiDimensions(tl);
+        } else if (finalMethod == "bfgs") {
+
+            parametersToEstimate.matchParametersValues(tl->getParameters());
+
+            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+                n = OptimizationTools::optimizeNumericalParameters(
+                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                        parametersToEstimate,
+                        backupListener.get(),
+                        nstep,
+                        tolerance,
+                        nbEvalMax,
+                        messageHandler,
+                        profiler,
+                        reparam,
+                        optVerbose,
+                        optMethodDeriv,
+                        OptimizationTools::OPTIMIZATION_BFGS);
+            } else {
+                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
+                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parametersToEstimate,
+                        backupListener.get(),
+                        nstep,
+                        tolerance,
+                        nbEvalMax,
+                        messageHandler,
+                        profiler,
+                        reparam,
+                        optVerbose,
+                        optMethodDeriv,
+                        OptimizationTools::OPTIMIZATION_BFGS);
+
+
+            }
+
+        } else{
+            throw Exception("Unknown final optimization method: " + finalMethod);
+        }
+
+        if (finalOptimizer) {
+            parametersToEstimate.matchParametersValues(tl->getParameters());
+
+            finalOptimizer->setProfiler(profiler);
+            finalOptimizer->setMessageHandler(messageHandler);
+            finalOptimizer->setMaximumNumberOfEvaluations(nbEvalMax);
+            finalOptimizer->getStopCondition()->setTolerance(tolerance);
+            finalOptimizer->setVerbose((unsigned int) verbose);
+            finalOptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);
+            finalOptimizer->init(parametersToEstimate);
+            finalOptimizer->optimize();
+            n += finalOptimizer->getNumberOfEvaluations();
+            delete finalOptimizer;
+        }
+
+    }
+
     TreeLikelihood *Optimizators::optimizeParameters(
             bpp::AbstractHomogeneousTreeLikelihood *inTL,
             const ParameterList &parameters,
@@ -700,31 +778,33 @@ namespace bpp {
             int warn)
     throw(Exception) {
 
-        bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
+
         std::string optimization;
         std::string optName;
         std::string mhPath;
         std::string prPath;
         std::string paramListDesc;
-        std::map<std::string, std::string> optArgs;
-        unsigned int optVerbose = 0;
-        OutputStream *messageHandler = nullptr;
-        OutputStream *profiler = nullptr;
-        bool scaleFirst = false;
-        ParameterList parametersToEstimate;
-        std::vector<std::string> parNames;
-        unsigned int nbEvalMax = 0.0;
-        double tolerance = 0.0;
-        unique_ptr<BackupListener> backupListener;
-        std::string backupFile;
-        bool optimizeTopo = false;
-        tshlib::TreeSearch *treesearch = nullptr;
+        std::string finalMethod;
         std::string optMethodDeriv;
         std::string order;
+        std::string backupFile;
+        std::map<std::string, std::string> optArgs;
+        std::vector<std::string> parNames;
+        int n = 0;
+        unsigned int optVerbose = 0;
+        unsigned int nbEvalMax = 0;
+        unsigned int nstep = 0;
+        bool scaleFirst = false;
+        bool optimizeTopo = false;
         bool reparam = false;
         bool useClock = false;
-        unsigned int nstep = 0;
-        int n = 0;
+        double tolerance = 0.0;
+        ParameterList parametersToEstimate;
+        unique_ptr<BackupListener> backupListener;
+        bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
+        tshlib::TreeSearch *treesearch = nullptr;
+        OutputStream *messageHandler = nullptr;
+        OutputStream *profiler = nullptr;
 
         tl = inTL;
 
@@ -901,98 +981,33 @@ namespace bpp {
                                           warn);
 
 
-
-
-        string finalMethod = ApplicationTools::getStringParameter("optimization.final", params, "none", suffix, suffixIsOptional, warn + 1);
+        // -------------------------------------------------------------------------
+        // Final optimisation
+        // -------------------------------------------------------------------------
+        finalMethod = bpp::ApplicationTools::getStringParameter("optimization.final", params, "none", suffix, suffixIsOptional, warn + 1);
 
         if (verbose){
             bpp::ApplicationTools::displayResult("\nFinal optimization step", finalMethod);
         }
 
+        if (finalMethod != "none") {
 
-
-
-
-
-
-
-
-
-        Optimizer *finalOptimizer = nullptr;
-        if (finalMethod == "none") {}
-        else if (finalMethod == "simplex") {
-            finalOptimizer = new DownhillSimplexMethod(tl);
-        } else if (finalMethod == "powell") {
-            finalOptimizer = new PowellMultiDimensions(tl);
-        } else if (finalMethod == "bfgs") {
-
-            parametersToEstimate.matchParametersValues(tl->getParameters());
-
-            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
-                n = OptimizationTools::optimizeNumericalParameters(
-                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                        parametersToEstimate,
-                        backupListener.get(),
-                        nstep,
-                        tolerance,
-                        nbEvalMax,
-                        messageHandler,
-                        profiler,
-                        reparam,
-                        optVerbose,
-                        optMethodDeriv,
-                        OptimizationTools::OPTIMIZATION_BFGS);
-            } else {
-                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
-                        dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parametersToEstimate,
-                        backupListener.get(),
-                        nstep,
-                        tolerance,
-                        nbEvalMax,
-                        messageHandler,
-                        profiler,
-                        reparam,
-                        optVerbose,
-                        optMethodDeriv,
-                        OptimizationTools::OPTIMIZATION_BFGS);
-
-
-            }
-
-        } else{
-            throw Exception("Unknown final optimization method: " + finalMethod);
+            Optimizators::finalOptimizationStep(finalMethod,
+                                                tl,
+                                                parametersToEstimate,
+                                                optName,
+                                                backupListener,
+                                                nstep,
+                                                tolerance,
+                                                nbEvalMax,
+                                                messageHandler,
+                                                profiler,
+                                                reparam,
+                                                optVerbose,
+                                                optMethodDeriv,
+                                                n,
+                                                verbose);
         }
-
-
-
-
-
-
-
-
-
-        if (finalOptimizer) {
-            parametersToEstimate.matchParametersValues(tl->getParameters());
-
-            finalOptimizer->setProfiler(profiler);
-            finalOptimizer->setMessageHandler(messageHandler);
-            finalOptimizer->setMaximumNumberOfEvaluations(nbEvalMax);
-            finalOptimizer->getStopCondition()->setTolerance(tolerance);
-            finalOptimizer->setVerbose((unsigned int) verbose);
-            finalOptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);
-            finalOptimizer->init(parametersToEstimate);
-            finalOptimizer->optimize();
-            n += finalOptimizer->getNumberOfEvaluations();
-            delete finalOptimizer;
-        }
-
-
-
-
-
-
-
-
 
         if (verbose){
             bpp::ApplicationTools::displayResult("\nPerformed", bpp::TextTools::toString(n) + " function evaluations.");
@@ -1002,23 +1017,13 @@ namespace bpp {
             bpp::ApplicationTools::displayResult("Log likelihood after num/top optimisation", bpp::TextTools::toString(-tl->getValue(), 15));
         }
 
-
-
-
-
-
+        // -------------------------------------------------------------------------
+        // Rename backup file
+        // -------------------------------------------------------------------------
         if (backupFile != "none") {
             std::string bf = backupFile + ".def";
             rename(backupFile.c_str(), bf.c_str());
         }
-
-
-
-
-
-
-
-
 
         return tl;
     }
