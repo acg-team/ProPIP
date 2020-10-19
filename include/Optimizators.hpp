@@ -360,6 +360,19 @@ namespace bpp {
                                           int &n,
                                           bool verbose);
 
+        static MetaOptimizer *optimization_BRENT(const ParameterList &parameters,
+                                                 DiscreteRatesAcrossSitesTreeLikelihood *tl,
+                                                 MetaOptimizerInfos *desc,
+                                                 AbstractNumericalDerivative *fnum5,
+                                                 unsigned int nstep);
+
+        static MetaOptimizer *optimization_BFGS(const ParameterList &parameters,
+                                                DiscreteRatesAcrossSitesTreeLikelihood *tl,
+                                                MetaOptimizerInfos *desc,
+                                                AbstractNumericalDerivative *fnum,
+                                                AbstractNumericalDerivative *fnum5,
+                                                unsigned int nstep);
+
     };
 } // end of namespace bpp.
 

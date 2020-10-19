@@ -597,9 +597,6 @@ namespace bpp {
             bpp::ApplicationTools::displayMessage("");
         }
 
-        // Instantiate tree-search object
-        treesearch = new tshlib::TreeSearch;
-
         treesearch->setTreeSearchStrategy(tsh, tro);
 
         // Set initial score of the reference topology (up to this point in the optimisation process)
@@ -1050,7 +1047,6 @@ namespace bpp {
             int warn)
     throw(Exception) {
 
-
         std::string optimization;
         std::string optName;
         std::string mhPath;
@@ -1230,14 +1226,8 @@ namespace bpp {
         // -------------------------------------------------------------------------
         // Perform optimisation
         // -------------------------------------------------------------------------
+        treesearch = new tshlib::TreeSearch;
 
-        //==========================================
-        //==========================================
-        //==========================================
-        // @new
-
-
-        /*
         Optimizators::performOptimization(backupListener,
                                           nstep,
                                           tolerance,
@@ -1260,283 +1250,6 @@ namespace bpp {
                                           optVerbose,
                                           verbose,
                                           warn);
-
-        */
-
-        // Execute numopt + treesearch iteratively until convergence is reached.
-        std::string optMethodModel;
-
-        if ((optName == "D-Brent") || (optName == "D-BFGS") || (optName == "ND-Brent") || (optName == "ND-BFGS")) {
-
-            // Uses Newton-Brent method or Newton-BFGS method
-            if ((optName == "D-Brent") || (optName == "ND-Brent")){
-                optMethodModel = OptimizationTools::OPTIMIZATION_BRENT;
-            }else{
-                optMethodModel = OptimizationTools::OPTIMIZATION_BFGS;
-            }
-
-
-            //***************************************
-            //***************************************
-            //***************************************
-            /*
-            Optimizators::performOptimizationNumerical(optMethodModel,
-                                                       backupListener,
-                                                       nstep,
-                                                       tolerance,
-                                                       nbEvalMax,
-                                                       optName,
-                                                       optMethodDeriv,
-                                                       parametersToEstimate,
-                                                       tl,
-                                                       optimizeTopo,
-                                                       treesearch,
-                                                       messageHandler,
-                                                       profiler,
-                                                       params,
-                                                       parameters,
-                                                       reparam,
-                                                       useClock,
-                                                       n,
-                                                       suffix,
-                                                       suffixIsOptional,
-                                                       optVerbose,
-                                                       verbose,
-                                                       warn);
-            */
-
-            parametersToEstimate.matchParametersValues(tl->getParameters());
-
-            if (optimizeTopo) {
-
-
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                /*
-                Optimizators::performOptimizationTopology(optMethodModel,
-                                                          params,
-                                                          treesearch,
-                                                          tl,
-                                                          suffix,
-                                                          suffixIsOptional,
-                                                          optVerbose,
-                                                          verbose,
-                                                          warn);
-                */
-                std::string PAR_optim_topology_algorithm;
-                std::string optTopology_MethodName;
-                std::string optTopology_StartingNodes_MethodName;
-                std::string PAR_optim_topology_coverage;
-                std::string PAR_optim_topology_branchoptim;
-                std::string PAR_lkmove;
-                std::map<std::string, std::string> optTopology_MethodDetails;
-                std::map<std::string, std::string> optTopology_StartingNodes_MethodDetails;
-                int PAR_optim_topology_startnodes = 1;
-                int PAR_optim_topology_maxcycles = 0;
-                int PAR_optim_topology_threads = 0;
-                double PAR_optim_topology_tolerance;
-                tshlib::StartingNodeHeuristics snh;
-
-                PAR_optim_topology_algorithm = bpp::ApplicationTools::getStringParameter("optimization.topology.algorithm", params, "", suffix,suffixIsOptional, warn + 1);
-
-                // Parse string with tree search algorithm details
-                bpp::KeyvalTools::parseProcedure(PAR_optim_topology_algorithm, optTopology_MethodName, optTopology_MethodDetails);
-
-                // Find parameters for tree search, if not found then set to default
-                PAR_optim_topology_coverage = bpp::ApplicationTools::getStringParameter("coverage", optTopology_MethodDetails, "best-search",suffix, suffixIsOptional, warn + 1);
-
-                PAR_optim_topology_branchoptim = ApplicationTools::getStringParameter("brlen_optimisation", optTopology_MethodDetails,"Brent", suffix, suffixIsOptional, warn + 1);
-
-                PAR_optim_topology_maxcycles = ApplicationTools::getIntParameter("max_cycles", optTopology_MethodDetails, 100, suffix,suffixIsOptional, warn + 1);
-
-                PAR_optim_topology_tolerance = ApplicationTools::getDoubleParameter("tolerance", optTopology_MethodDetails, 0.001, suffix,suffixIsOptional, warn + 1);
-
-                PAR_optim_topology_threads = ApplicationTools::getIntParameter("threads", optTopology_MethodDetails, 1, suffix,suffixIsOptional, warn + 1);
-
-                PAR_lkmove = ApplicationTools::getStringParameter("optimization.topology.likelihood", params, "bothways", "", true, true);
-
-                // Prepare settings for the tree-search object (method + coverage)
-                tshlib::TreeSearchHeuristics tsh = tshlib::TreeSearchHeuristics::nosearch;
-
-                if (optTopology_MethodName == "Swap") {
-                    tsh = tshlib::TreeSearchHeuristics::swap;
-                } else if (optTopology_MethodName == "Phyml") {
-                    tsh = tshlib::TreeSearchHeuristics::phyml;
-                } else if (optTopology_MethodName == "Mixed") {
-                    tsh = tshlib::TreeSearchHeuristics::mixed;
-                }
-
-                // Coverage setting
-                tshlib::TreeRearrangmentOperations tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
-
-                if (PAR_optim_topology_coverage == "nni-search") {
-                    tro = tshlib::TreeRearrangmentOperations::classic_NNI;
-                } else if (PAR_optim_topology_coverage == "spr-search") {
-                    tro = tshlib::TreeRearrangmentOperations::classic_SPR;
-                } else if (PAR_optim_topology_coverage == "tbr-search") {
-                    tro = tshlib::TreeRearrangmentOperations::classic_TBR;
-                } else {
-                    tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
-                }
-
-                // if the user requests PhyML-like moves, then the search should cover only spr-like moves
-                if (tsh == tshlib::TreeSearchHeuristics::phyml && tro != tshlib::TreeRearrangmentOperations::classic_SPR) {
-
-                    tro = tshlib::TreeRearrangmentOperations::classic_SPR;
-
-                    PAR_optim_topology_coverage = "spr-search";
-
-                    if (verbose){
-                        bpp::ApplicationTools::displayWarning("PhyML-like moves are supported only for SPR-coverage tree-search.\n The execution will continue with the following settings:");
-                    }
-                }
-
-                // Print on screen if verbose level is sufficient
-                if (verbose){
-                    bpp::ApplicationTools::displayResult("Topology optimization | Algorithm", optTopology_MethodName);
-                    bpp::ApplicationTools::displayResult("Topology optimization | Moves class", PAR_optim_topology_coverage);
-                }
-
-                if (optTopology_MethodDetails.find("starting_nodes") != optTopology_MethodDetails.end()) {
-                    bpp::KeyvalTools::parseProcedure(optTopology_MethodDetails["starting_nodes"], optTopology_StartingNodes_MethodName,optTopology_StartingNodes_MethodDetails);
-
-                    PAR_optim_topology_startnodes = bpp::ApplicationTools::getIntParameter("n", optTopology_StartingNodes_MethodDetails, 0, suffix,suffixIsOptional, warn + 1);
-                }
-
-                if (verbose) {
-                    bpp::ApplicationTools::displayResult("Topology optimization | Node seeding",optTopology_StartingNodes_MethodName);
-                    bpp::ApplicationTools::displayResult("Topology optimization | # start nodes", PAR_optim_topology_startnodes);
-                    bpp::ApplicationTools::displayResult("Topology optimization | BrLen optimisation",PAR_optim_topology_branchoptim);
-                    bpp::ApplicationTools::displayResult("Topology optimization | Max # cycles", PAR_optim_topology_maxcycles);
-                    bpp::ApplicationTools::displayResult("Topology optimization | Tolerance", PAR_optim_topology_tolerance);
-                    bpp::ApplicationTools::displayMessage("");
-                }
-
-                // Instantiate tree-search object
-                treesearch = new tshlib::TreeSearch;
-
-                treesearch->setTreeSearchStrategy(tsh, tro);
-
-                // Set initial score of the reference topology (up to this point in the optimisation process)
-                treesearch->setScoringMethod(PAR_lkmove);
-
-                // Pass the reference of the likelihood function to score the candidate topologies
-                treesearch->setLikelihoodFunc(tl);
-
-                // Set starting node method and number of nodes
-                snh = tshlib::StartingNodeHeuristics::undef;
-
-                if (optTopology_StartingNodes_MethodName == "Greedy") {
-                    snh = tshlib::StartingNodeHeuristics::greedy;
-                } else if (optTopology_StartingNodes_MethodName == "Hillclimbing") {
-                    snh = tshlib::StartingNodeHeuristics::hillclimbing;
-                }
-
-                treesearch->setStartingNodeHeuristic(snh, PAR_optim_topology_startnodes);
-
-                // Set stop condition and threshold to reach (either no. iterations or tolerance)
-                treesearch->setTolerance(PAR_optim_topology_tolerance);
-                treesearch->setMaxCycles(PAR_optim_topology_maxcycles);
-                treesearch->setMaxNumThreads(PAR_optim_topology_threads);
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-            }
-            //***************************************
-            //***************************************
-            //***************************************
-
-            // Execute numopt + treesearch iteratively until convergence is reached.
-            Optimizators::performOptimizationParamsAndTreeIterative(treesearch,
-                                                                    optMethodModel,
-                                                                    backupListener,
-                                                                    parametersToEstimate,
-                                                                    tl,
-                                                                    nstep,
-                                                                    tolerance,
-                                                                    nbEvalMax,
-                                                                    optName,
-                                                                    optMethodDeriv,
-                                                                    messageHandler,
-                                                                    profiler,
-                                                                    reparam,
-                                                                    optimizeTopo,
-                                                                    optVerbose,
-                                                                    n);
-
-
-        } else if (optName == "FullD") {
-
-            Optimizators::performOptimizationFullD(backupListener,
-                                                   nstep,
-                                                   tolerance,
-                                                   nbEvalMax,
-                                                   optName,
-                                                   optMethodDeriv,
-                                                   parametersToEstimate,
-                                                   tl,
-                                                   optimizeTopo,
-                                                   treesearch,
-                                                   messageHandler,
-                                                   profiler,
-                                                   params,
-                                                   parameters,
-                                                   reparam,
-                                                   useClock,
-                                                   n,
-                                                   suffix,
-                                                   suffixIsOptional,
-                                                   optVerbose,
-                                                   verbose,
-                                                   warn);
-
-        } else{
-            throw Exception("Unknown optimization method: " + optName);
-        }
-        //end @new
-        //==========================================
-        //==========================================
-        //==========================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         // -------------------------------------------------------------------------
         // Final optimisation
@@ -1750,6 +1463,50 @@ namespace bpp {
     }
 
 
+    MetaOptimizer * Optimizators::optimization_BRENT(const ParameterList &parameters,
+                                                     DiscreteRatesAcrossSitesTreeLikelihood *tl,
+                                                     MetaOptimizerInfos *desc,
+                                                     AbstractNumericalDerivative *fnum5,
+                                                     unsigned int nstep){
+
+        MetaOptimizer *poptimizer = nullptr;
+
+        ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+        desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
+        ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+        desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
+        poptimizer = new MetaOptimizer(fnum5, desc, nstep);
+
+        return poptimizer;
+    }
+
+    MetaOptimizer * Optimizators::optimization_BFGS(const ParameterList &parameters,
+                                                    DiscreteRatesAcrossSitesTreeLikelihood *tl,
+                                                    MetaOptimizerInfos *desc,
+                                                    AbstractNumericalDerivative *fnum,
+                                                    AbstractNumericalDerivative *fnum5,
+                                                    unsigned int nstep){
+
+        MetaOptimizer *poptimizer = nullptr;
+
+        vector<string> vNameDer;
+
+        ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+        vNameDer = plsm.getParameterNames();
+
+        ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+
+        vector<string> vNameDer2 = plrd.getParameterNames();
+
+        vNameDer.insert(vNameDer.begin(), vNameDer2.begin(), vNameDer2.end());
+        fnum->setParametersToDerivate(vNameDer);
+
+        desc->addOptimizer("Rate & model distribution parameters", new BfgsMultiDimensions(fnum), vNameDer, 1, MetaOptimizerInfos::IT_TYPE_FULL);
+        poptimizer = new MetaOptimizer(fnum, desc, nstep);
+
+        return poptimizer;
+    }
+
     unsigned int Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
             DiscreteRatesAcrossSitesTreeLikelihood *tl,
             const ParameterList &parameters,
@@ -1764,11 +1521,21 @@ namespace bpp {
             const std::string &optMethodDeriv,
             const std::string &optMethodModel)
     throw(Exception) {
-        DerivableSecondOrder *f = tl;
-        ParameterList pl = parameters;
+
+        NaNListener *nanListener = nullptr;
+        DerivableSecondOrder *f = nullptr;
+        MetaOptimizerInfos *desc = nullptr;
+        MetaOptimizer *poptimizer = nullptr;
+        AbstractNumericalDerivative *fnum = nullptr;
+        AbstractNumericalDerivative *fnum5 = nullptr;
+        unsigned int nb = 0;
+        ParameterList pl;
+        unique_ptr<DerivableSecondOrder> frep;
+
+        f = tl;
+        pl = parameters;
 
         // Shall we reparametrize the function to remove constraints?
-        unique_ptr<DerivableSecondOrder> frep;
         if (reparametrization) {
             frep.reset(new ReparametrizationDerivableSecondOrderWrapper(f, parameters));
             f = frep.get();
@@ -1782,40 +1549,41 @@ namespace bpp {
 
         // Branch lengths (via numerical derivatives)
 
-        MetaOptimizerInfos *desc = new MetaOptimizerInfos();
-        MetaOptimizer *poptimizer = 0;
-        AbstractNumericalDerivative *fnum = new ThreePointsNumericalDerivative(f);
-        AbstractNumericalDerivative *fnum5 = new FivePointsNumericalDerivative(f);
+        desc = new MetaOptimizerInfos();
+        fnum = new ThreePointsNumericalDerivative(f);
+        fnum5 = new FivePointsNumericalDerivative(f);
 
         if (optMethodDeriv == OPTIMIZATION_GRADIENT)
-            desc->addOptimizer("Branch length parameters", new ConjugateGradientMultiDimensions(fnum5),
-                               tl->getBranchLengthsParameters().getParameterNames(), 2, MetaOptimizerInfos::IT_TYPE_FULL);
+            desc->addOptimizer("Branch length parameters", new ConjugateGradientMultiDimensions(fnum5),tl->getBranchLengthsParameters().getParameterNames(), 2, MetaOptimizerInfos::IT_TYPE_FULL);
         else if (optMethodDeriv == OPTIMIZATION_NEWTON)
-            desc->addOptimizer("Branch length parameters", new PseudoNewtonOptimizer(fnum), tl->getBranchLengthsParameters().getParameterNames(), 2,
-                               MetaOptimizerInfos::IT_TYPE_FULL);
+            desc->addOptimizer("Branch length parameters", new PseudoNewtonOptimizer(fnum), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
         else if (optMethodDeriv == OPTIMIZATION_BFGS)
-            desc->addOptimizer("Branch length parameters", new BfgsMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,
-                               MetaOptimizerInfos::IT_TYPE_FULL);
+            desc->addOptimizer("Branch length parameters", new BfgsMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
         else if (optMethodDeriv == OPTIMIZATION_BRENT)
-            desc->addOptimizer("Branch length parameters", new SimpleMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,
-                               MetaOptimizerInfos::IT_TYPE_FULL);
-        else
+            desc->addOptimizer("Branch length parameters", new SimpleMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+        else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodDeriv);
+        }
 
         // Other parameters
 
         if (optMethodModel == OPTIMIZATION_BRENT) {
+
+            poptimizer=Optimizators::optimization_BRENT(parameters,tl,desc,fnum5,nstep);
+
+            /*
             ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
-            desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,
-                               MetaOptimizerInfos::IT_TYPE_STEP);
-
-
+            desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
             ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
-            desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,
-                               MetaOptimizerInfos::IT_TYPE_STEP);
+            desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
             poptimizer = new MetaOptimizer(fnum5, desc, nstep);
+            */
 
         } else if (optMethodModel == OPTIMIZATION_BFGS) {
+
+            poptimizer=Optimizators::optimization_BFGS(parameters,tl,desc,fnum,fnum5,nstep);
+
+            /*
             vector<string> vNameDer;
 
             ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
@@ -1830,8 +1598,11 @@ namespace bpp {
 
             desc->addOptimizer("Rate & model distribution parameters", new BfgsMultiDimensions(fnum), vNameDer, 1, MetaOptimizerInfos::IT_TYPE_FULL);
             poptimizer = new MetaOptimizer(fnum, desc, nstep);
-        } else
+            */
+
+        } else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodModel);
+        }
 
         poptimizer->setVerbose(verbose);
         poptimizer->setProfiler(profiler);
@@ -1842,19 +1613,25 @@ namespace bpp {
 
         // Optimize TreeLikelihood function:
         poptimizer->setConstraintPolicy(AutoParameter::CONSTRAINTS_AUTO);
-        NaNListener *nanListener = new NaNListener(poptimizer, tl);
+        nanListener = new NaNListener(poptimizer, tl);
         poptimizer->addOptimizationListener(nanListener);
-        if (listener)
+
+        if (listener){
             poptimizer->addOptimizationListener(listener);
+        }
+
         poptimizer->init(pl);
         poptimizer->optimize();
 
-        if (verbose > 0)
-            ApplicationTools::displayMessage("\n");
+        if (verbose > 0){
+            bpp::ApplicationTools::displayMessage("\n");
+        }
 
         // We're done.
-        unsigned int nb = poptimizer->getNumberOfEvaluations();
+        nb = poptimizer->getNumberOfEvaluations();
+
         delete poptimizer;
+
         return nb;
     }
 
