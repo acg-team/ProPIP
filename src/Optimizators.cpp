@@ -252,91 +252,124 @@ namespace bpp {
                                                bool verbose,
                                                int warn){
 
-        vector<string> parToEstNames = parametersToEstimate.getParameterNames();
+        vector<string> parToEstNames;
+        std::string constraint;
+        std::string pc;
+        std::string param;
+
+        parToEstNames = parametersToEstimate.getParameterNames();
 
         if (params.find("optimization.constrain_parameter") != params.end()){
             throw Exception("optimization.constrain_parameter is deprecated, use optimization.constrain_parameters instead!");
         }
 
-        paramListDesc = ApplicationTools::getStringParameter("optimization.constrain_parameters", params, "", suffix, suffixIsOptional, warn + 1);
-
-        string constraint;
-        string pc, param;
+        paramListDesc = bpp::ApplicationTools::getStringParameter("optimization.constrain_parameters", params, "", suffix, suffixIsOptional, warn + 1);
 
         StringTokenizer st2(paramListDesc, ",");
 
         while (st2.hasMoreToken()) {
             try {
+
+                std::vector<std::string> parNames2;
+
                 pc = st2.nextToken();
+
                 std::string::size_type index = pc.find('=');
-                if (index == std::string::npos)
+
+                if (index == std::string::npos){
                     throw Exception("PhylogeneticsApplicationTools::optimizeParamaters. Bad constrain syntax, should contain `=' symbol: " + pc);
+                }
+
                 param = pc.substr(0, index);
+
                 constraint = pc.substr(index + 1);
+
                 IntervalConstraint ic(constraint);
 
-                vector<string> parNames2;
+                if (param == "BrLen"){
 
-                if (param == "BrLen")
                     parNames2 = tl->getBranchLengthsParameters().getParameterNames();
-                else if (param == "Ancient") {
-                    auto *nhtl = dynamic_cast<NonHomogeneousTreeLikelihood *>(tl);
-                    if (!nhtl)
-                        ApplicationTools::displayWarning("The 'Ancient' parameters do not exist in homogeneous models, and will be ignored.");
 
-                    else {
-                        parNames2 = nhtl->getRootFrequenciesParameters().getParameterNames();
-                        ApplicationTools::displayResult("Numerical opt. | Parameter ignored", string("Root frequencies"));
-                    }
-                } else if (param == "Model") {
-                    vector<string> vs1 = tl->getSubstitutionModelParameters().getParameterNames();
+                }else if (param == "Ancient") {
+
                     auto *nhtl = dynamic_cast<NonHomogeneousTreeLikelihood *>(tl);
+
+                    if (!nhtl){
+                        bpp::ApplicationTools::displayWarning("The 'Ancient' parameters do not exist in homogeneous models, and will be ignored.");
+                    }else {
+                        parNames2 = nhtl->getRootFrequenciesParameters().getParameterNames();
+                        bpp::ApplicationTools::displayResult("Numerical opt. | Parameter ignored", string("Root frequencies"));
+                    }
+
+                } else if (param == "Model") {
+
+                    std::vector<std::string> vs1;
+
+                    vs1 = tl->getSubstitutionModelParameters().getParameterNames();
+
+                    auto *nhtl = dynamic_cast<NonHomogeneousTreeLikelihood *>(tl);
+
                     if (nhtl != nullptr) {
-                        vector<string> vs2 = nhtl->getRootFrequenciesParameters().getParameterNames();
+                        std::vector<std::string> vs2 = nhtl->getRootFrequenciesParameters().getParameterNames();
                         VectorTools::diff(vs1, vs2, parNames2);
-                    } else
+                    } else{
                         parNames2 = vs1;
-                } else if (param.find('*') != std::string::npos)
+                    }
+
+                } else if (param.find('*') != std::string::npos){
                     parNames2 = ApplicationTools::matchingParameters(param, parToEstNames);
-                else
+                }else{
                     parNames2.push_back(param);
+                }
 
 
                 for (size_t i = 0; i < parNames2.size(); i++) {
+
                     Parameter &par = parametersToEstimate.getParameter(parNames2[i]);
+
                     if (par.hasConstraint()) {
+
                         par.setConstraint(ic & (*par.getConstraint()), true);
-                        if (par.getConstraint()->isEmpty())
+
+                        if (par.getConstraint()->isEmpty()){
                             throw Exception("Empty interval for parameter " + parNames[i] + par.getConstraint()->getDescription());
-                    } else
+                        }
+
+                    } else{
                         par.setConstraint(ic.clone(), true);
+                    }
 
-                    ApplicationTools::displayResult("Numerical opt. | Parameter constrained " + par.getName(), par.getConstraint()->getDescription());
+                    bpp::ApplicationTools::displayResult("Numerical opt. | Parameter constrained " + par.getName(), par.getConstraint()->getDescription());
                 }
-            }
-            catch (ParameterNotFoundException &pnfe) {
-                ApplicationTools::displayWarning("Parameter '" + pnfe.getParameter() + "' not found, and so can't be constrained!");
-            }
-            catch (ConstraintException &pnfe) {
 
-                string exception_desc = "Parameter '" + param + "' does not fit the constraint " + constraint;
+            }catch (ParameterNotFoundException &pnfe) {
+
+                bpp::ApplicationTools::displayWarning("Parameter '" + pnfe.getParameter() + "' not found, and so can't be constrained!");
+
+            }catch (ConstraintException &pnfe) {
+
+                std::string exception_desc;
+
+                exception_desc = "Parameter '" + param + "' does not fit the constraint " + constraint;
+
                 throw Exception(exception_desc);
             }
+
         }
 
     }
 
     void Optimizators::getOptmizatorsOptions(unsigned int &nbEvalMax,
-    double &tolerance,
-                                             unique_ptr<BackupListener> &backupListener,
-                                             std::string &backupFile,
-            bpp::AbstractHomogeneousTreeLikelihood *tl,
-            std::map<std::string, std::string> &params,
-                                             const ParameterList &parameters,
-                                             const std::string &suffix,
-                                             bool suffixIsOptional,
-                                             bool verbose,
-                                             int warn){
+                                            double &tolerance,
+                                            unique_ptr<BackupListener> &backupListener,
+                                            std::string &backupFile,
+                                            bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                            std::map<std::string, std::string> &params,
+                                            const ParameterList &parameters,
+                                            const std::string &suffix,
+                                            bool suffixIsOptional,
+                                            bool verbose,
+                                            int warn){
 
         // Number of max likelihood evaluations
         nbEvalMax = ApplicationTools::getParameter<unsigned int>("optimization.max_number_f_eval", params, 1000000, suffix, suffixIsOptional,warn + 1);
@@ -349,7 +382,6 @@ namespace bpp {
         bpp::ApplicationTools::displayResult("Numerical opt. | Tolerance", TextTools::toString(tolerance));
 
         // Backing up or restoring?
-
         backupFile = bpp::ApplicationTools::getAFilePath("optimization.backup.file", params, false, false, suffix, suffixIsOptional, "none",warn + 1);
 
         if (backupFile != "none") {
@@ -466,6 +498,360 @@ namespace bpp {
 
     }
 
+    void Optimizators::performOptimizationTopology(std::string optMethodModel,
+                                                   std::map<std::string, std::string> &params,
+                                                   tshlib::TreeSearch *treesearch,
+                                                   bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                   const std::string &suffix,
+                                                   bool suffixIsOptional,
+                                                   unsigned int optVerbose,
+                                                   bool verbose,
+                                                   int warn){
+
+        std::string PAR_optim_topology_algorithm;
+        std::string optTopology_MethodName;
+        std::string optTopology_StartingNodes_MethodName;
+        std::string PAR_optim_topology_coverage;
+        std::string PAR_optim_topology_branchoptim;
+        std::string PAR_lkmove;
+        std::map<std::string, std::string> optTopology_MethodDetails;
+        std::map<std::string, std::string> optTopology_StartingNodes_MethodDetails;
+        int PAR_optim_topology_startnodes = 1;
+        int PAR_optim_topology_maxcycles = 0;
+        int PAR_optim_topology_threads = 0;
+        double PAR_optim_topology_tolerance;
+        tshlib::StartingNodeHeuristics snh;
+
+        PAR_optim_topology_algorithm = bpp::ApplicationTools::getStringParameter("optimization.topology.algorithm", params, "", suffix,suffixIsOptional, warn + 1);
+
+        // Parse string with tree search algorithm details
+        bpp::KeyvalTools::parseProcedure(PAR_optim_topology_algorithm, optTopology_MethodName, optTopology_MethodDetails);
+
+        // Find parameters for tree search, if not found then set to default
+        PAR_optim_topology_coverage = bpp::ApplicationTools::getStringParameter("coverage", optTopology_MethodDetails, "best-search",suffix, suffixIsOptional, warn + 1);
+
+        PAR_optim_topology_branchoptim = ApplicationTools::getStringParameter("brlen_optimisation", optTopology_MethodDetails,"Brent", suffix, suffixIsOptional, warn + 1);
+
+        PAR_optim_topology_maxcycles = ApplicationTools::getIntParameter("max_cycles", optTopology_MethodDetails, 100, suffix,suffixIsOptional, warn + 1);
+
+        PAR_optim_topology_tolerance = ApplicationTools::getDoubleParameter("tolerance", optTopology_MethodDetails, 0.001, suffix,suffixIsOptional, warn + 1);
+
+        PAR_optim_topology_threads = ApplicationTools::getIntParameter("threads", optTopology_MethodDetails, 1, suffix,suffixIsOptional, warn + 1);
+
+        PAR_lkmove = ApplicationTools::getStringParameter("optimization.topology.likelihood", params, "bothways", "", true, true);
+
+        // Prepare settings for the tree-search object (method + coverage)
+        tshlib::TreeSearchHeuristics tsh = tshlib::TreeSearchHeuristics::nosearch;
+
+        if (optTopology_MethodName == "Swap") {
+            tsh = tshlib::TreeSearchHeuristics::swap;
+        } else if (optTopology_MethodName == "Phyml") {
+            tsh = tshlib::TreeSearchHeuristics::phyml;
+        } else if (optTopology_MethodName == "Mixed") {
+            tsh = tshlib::TreeSearchHeuristics::mixed;
+        }
+
+        // Coverage setting
+        tshlib::TreeRearrangmentOperations tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
+
+        if (PAR_optim_topology_coverage == "nni-search") {
+            tro = tshlib::TreeRearrangmentOperations::classic_NNI;
+        } else if (PAR_optim_topology_coverage == "spr-search") {
+            tro = tshlib::TreeRearrangmentOperations::classic_SPR;
+        } else if (PAR_optim_topology_coverage == "tbr-search") {
+            tro = tshlib::TreeRearrangmentOperations::classic_TBR;
+        } else {
+            tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
+        }
+
+        // if the user requests PhyML-like moves, then the search should cover only spr-like moves
+        if (tsh == tshlib::TreeSearchHeuristics::phyml && tro != tshlib::TreeRearrangmentOperations::classic_SPR) {
+
+            tro = tshlib::TreeRearrangmentOperations::classic_SPR;
+
+            PAR_optim_topology_coverage = "spr-search";
+
+            if (verbose){
+                bpp::ApplicationTools::displayWarning("PhyML-like moves are supported only for SPR-coverage tree-search.\n The execution will continue with the following settings:");
+            }
+        }
+
+        // Print on screen if verbose level is sufficient
+        if (verbose){
+            bpp::ApplicationTools::displayResult("Topology optimization | Algorithm", optTopology_MethodName);
+            bpp::ApplicationTools::displayResult("Topology optimization | Moves class", PAR_optim_topology_coverage);
+        }
+
+        if (optTopology_MethodDetails.find("starting_nodes") != optTopology_MethodDetails.end()) {
+            bpp::KeyvalTools::parseProcedure(optTopology_MethodDetails["starting_nodes"], optTopology_StartingNodes_MethodName,optTopology_StartingNodes_MethodDetails);
+
+            PAR_optim_topology_startnodes = bpp::ApplicationTools::getIntParameter("n", optTopology_StartingNodes_MethodDetails, 0, suffix,suffixIsOptional, warn + 1);
+        }
+
+        if (verbose) {
+            bpp::ApplicationTools::displayResult("Topology optimization | Node seeding",optTopology_StartingNodes_MethodName);
+            bpp::ApplicationTools::displayResult("Topology optimization | # start nodes", PAR_optim_topology_startnodes);
+            bpp::ApplicationTools::displayResult("Topology optimization | BrLen optimisation",PAR_optim_topology_branchoptim);
+            bpp::ApplicationTools::displayResult("Topology optimization | Max # cycles", PAR_optim_topology_maxcycles);
+            bpp::ApplicationTools::displayResult("Topology optimization | Tolerance", PAR_optim_topology_tolerance);
+            bpp::ApplicationTools::displayMessage("");
+        }
+
+        // Instantiate tree-search object
+        treesearch = new tshlib::TreeSearch;
+
+        treesearch->setTreeSearchStrategy(tsh, tro);
+
+        // Set initial score of the reference topology (up to this point in the optimisation process)
+        treesearch->setScoringMethod(PAR_lkmove);
+
+        // Pass the reference of the likelihood function to score the candidate topologies
+        treesearch->setLikelihoodFunc(tl);
+
+        // Set starting node method and number of nodes
+        snh = tshlib::StartingNodeHeuristics::undef;
+
+        if (optTopology_StartingNodes_MethodName == "Greedy") {
+            snh = tshlib::StartingNodeHeuristics::greedy;
+        } else if (optTopology_StartingNodes_MethodName == "Hillclimbing") {
+            snh = tshlib::StartingNodeHeuristics::hillclimbing;
+        }
+
+        treesearch->setStartingNodeHeuristic(snh, PAR_optim_topology_startnodes);
+
+        // Set stop condition and threshold to reach (either no. iterations or tolerance)
+        treesearch->setTolerance(PAR_optim_topology_tolerance);
+        treesearch->setMaxCycles(PAR_optim_topology_maxcycles);
+        treesearch->setMaxNumThreads(PAR_optim_topology_threads);
+
+        // Execute tree-search
+        //treesearch->executeTreeSearch();
+
+        //LOG(INFO) << "[TSH Cycle] Likelihood after tree-search lk=" << std::setprecision(18) << tl->getLogLikelihood();
+
+    }
+
+    void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
+                                                                 std::string optMethodModel,
+                                                                 unique_ptr<BackupListener> &backupListener,
+                                                                 ParameterList &parametersToEstimate,
+                                                                 bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                                 unsigned int nstep,
+                                                                 double tolerance,
+                                                                 unsigned int nbEvalMax,
+                                                                 std::string optName,
+                                                                 std::string optMethodDeriv,
+                                                                 OutputStream *messageHandler,
+                                                                 OutputStream *profiler,
+                                                                 bool reparam,
+                                                                 bool optimizeTopo,
+                                                                 unsigned int optVerbose,
+                                                                 int &n){
+
+        double initScore = 0.0;
+        double cycleScore = 0.0;
+        double diffScore = 0.0;
+        bool interrupt = false;
+
+        diffScore = std::abs(tl->getLogLikelihood());
+
+        while (tolerance < diffScore) {
+
+            if (interrupt == true) {
+                break;
+            }
+
+            initScore = tl->getLogLikelihood();
+
+            bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", TextTools::toString(initScore, 15));
+
+            // Execute num-opt
+            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+
+                n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                        parametersToEstimate,
+                        backupListener.get(),
+                        nstep,
+                        tolerance,
+                        nbEvalMax,
+                        messageHandler,
+                        profiler,
+                        reparam,
+                        optVerbose,
+                        optMethodDeriv,
+                        optMethodModel);
+
+            } else {
+
+                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                        parametersToEstimate,
+                        backupListener.get(),
+                        nstep,
+                        tolerance,
+                        nbEvalMax,
+                        messageHandler,
+                        profiler,
+                        reparam,
+                        optVerbose,
+                        optMethodDeriv,
+                        optMethodModel);
+
+            }
+
+            if (optimizeTopo) {
+                // Execute tree-search
+                treesearch->executeTreeSearch();
+
+                if (treesearch->isTreeSearchSuccessful()) {
+                    // Recompute the difference
+                    cycleScore = tl->getLogLikelihood();
+                    diffScore = std::abs(initScore) - std::abs(cycleScore);
+                } else {
+                    interrupt = true;
+                }
+
+            } else {
+                break;
+            }
+
+        }
+
+    }
+
+    void Optimizators::performOptimizationNumerical(std::string optMethodModel,
+                                                    unique_ptr<BackupListener> &backupListener,
+                                                    unsigned int nstep,
+                                                    double tolerance,
+                                                    unsigned int nbEvalMax,
+                                                    std::string optName,
+                                                    std::string optMethodDeriv,
+                                                    ParameterList &parametersToEstimate,
+                                                    bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                    bool optimizeTopo,
+                                                    tshlib::TreeSearch *treesearch,
+                                                    OutputStream *messageHandler,
+                                                    OutputStream *profiler,
+                                                    std::map<std::string, std::string> &params,
+                                                    const ParameterList &parameters,
+                                                    bool reparam,
+                                                    bool useClock,
+                                                    int &n,
+                                                    const std::string &suffix,
+                                                    bool suffixIsOptional,
+                                                    unsigned int optVerbose,
+                                                    bool verbose,
+                                                    int warn){
+
+        parametersToEstimate.matchParametersValues(tl->getParameters());
+
+        if (optimizeTopo) {
+
+            Optimizators::performOptimizationTopology(optMethodModel,
+                    params,
+                    treesearch,
+                    tl,
+                    suffix,
+                    suffixIsOptional,
+                    optVerbose,
+                    verbose,
+                    warn);
+
+        }
+
+        /*
+        // Execute numopt + treesearch iteratively until convergence is reached.
+        Optimizators::performOptimizationParamsAndTreeIterative(treesearch,
+                                                                optMethodModel,
+                                                                backupListener,
+                                                                parametersToEstimate,
+                                                                tl,
+                                                                nstep,
+                                                                tolerance,
+                                                                nbEvalMax,
+                                                                optName,
+                                                                optMethodDeriv,
+                                                                messageHandler,
+                                                                profiler,
+                                                                reparam,
+                                                                optimizeTopo,
+                                                                optVerbose,
+                                                                n);
+        */
+
+    }
+
+    void Optimizators::performOptimizationFullD(unique_ptr<BackupListener> &backupListener,
+                                                unsigned int nstep,
+                                                double tolerance,
+                                                unsigned int nbEvalMax,
+                                                std::string optName,
+                                                std::string optMethodDeriv,
+                                                ParameterList &parametersToEstimate,
+                                                bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                bool optimizeTopo,
+                                                tshlib::TreeSearch *treesearch,
+                                                OutputStream *messageHandler,
+                                                OutputStream *profiler,
+                                                std::map<std::string, std::string> &params,
+                                                const ParameterList &parameters,
+                                                bool reparam,
+                                                bool useClock,
+                                                int &n,
+                                                const std::string &suffix,
+                                                bool suffixIsOptional,
+                                                unsigned int optVerbose,
+                                                bool verbose,
+                                                int warn){
+
+
+        bool optNumFirst = false;
+        unsigned int topoNbStep = 0;
+        double tolBefore = 0.0;
+        double tolDuring = 0.0;
+
+        // Uses Newton-raphson algorithm with numerical derivatives when required.
+        if (optimizeTopo) {
+
+            optNumFirst = bpp::ApplicationTools::getBooleanParameter("optimization.topology.numfirst", params, true, suffix, suffixIsOptional,warn + 1);
+
+            topoNbStep = bpp::ApplicationTools::getParameter<unsigned int>("optimization.topology.nstep", params, 1, suffix, suffixIsOptional,warn + 1);
+
+            tolBefore = bpp::ApplicationTools::getDoubleParameter("optimization.topology.tolerance.before", params, 100, suffix,suffixIsOptional, warn + 1);
+
+            tolDuring = bpp::ApplicationTools::getDoubleParameter("optimization.topology.tolerance.during", params, 100, suffix,suffixIsOptional, warn + 1);
+
+            tl = OptimizationTools::optimizeTreeNNI2(dynamic_cast<NNIHomogeneousTreeLikelihood *>(tl),
+                    parametersToEstimate,
+                    optNumFirst,
+                    tolBefore,
+                    tolDuring,
+                    nbEvalMax,
+                    topoNbStep,
+                    messageHandler,
+                    profiler,
+                    reparam,
+                    optVerbose,
+                    optMethodDeriv,
+                    NNITopologySearch::PHYML);
+
+        }
+
+        parametersToEstimate.matchParametersValues(tl->getParameters());
+
+        n = OptimizationTools::optimizeNumericalParameters2(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                parametersToEstimate,
+                backupListener.get(),
+                tolerance,
+                nbEvalMax,
+                messageHandler,
+                profiler,
+                reparam,
+                useClock,
+                optVerbose,
+                optMethodDeriv);
+
+    }
+
     void Optimizators::performOptimization(unique_ptr<BackupListener> &backupListener,
                                            unsigned int nstep,
                                            double tolerance,
@@ -482,208 +868,92 @@ namespace bpp {
                                            const ParameterList &parameters,
                                            bool reparam,
                                            bool useClock,
+                                           int &n,
                                            const std::string &suffix,
                                            bool suffixIsOptional,
                                            unsigned int optVerbose,
                                            bool verbose,
                                            int warn){
 
+        std::string optMethodModel;
 
-
-
-        unsigned int n = 0;
         if ((optName == "D-Brent") || (optName == "D-BFGS") || (optName == "ND-Brent") || (optName == "ND-BFGS")) {
+
             // Uses Newton-Brent method or Newton-BFGS method
-            string optMethodModel;
-            if ((optName == "D-Brent") || (optName == "ND-Brent"))
+            if ((optName == "D-Brent") || (optName == "ND-Brent")){
                 optMethodModel = OptimizationTools::OPTIMIZATION_BRENT;
-            else
+            }else{
                 optMethodModel = OptimizationTools::OPTIMIZATION_BFGS;
-
-            parametersToEstimate.matchParametersValues(tl->getParameters());
-
-            if (optimizeTopo) {
-                std::string PAR_optim_topology_algorithm = ApplicationTools::getStringParameter("optimization.topology.algorithm", params, "", suffix,
-                                                                                                suffixIsOptional, warn + 1);
-
-                // Parse string with tree search algorithm details
-                std::string optTopology_MethodName;
-                std::map<std::string, std::string> optTopology_MethodDetails;
-                KeyvalTools::parseProcedure(PAR_optim_topology_algorithm, optTopology_MethodName, optTopology_MethodDetails);
-
-                // Get method to define starting nodes
-                std::string optTopology_StartingNodes_MethodName;
-                std::map<std::string, std::string> optTopology_StartingNodes_MethodDetails;
-
-                // Find parameters for tree search, if not found then set to default
-                std::string PAR_optim_topology_coverage = ApplicationTools::getStringParameter("coverage", optTopology_MethodDetails, "best-search",
-                                                                                               suffix, suffixIsOptional, warn + 1);
-                std::string PAR_optim_topology_branchoptim = ApplicationTools::getStringParameter("brlen_optimisation", optTopology_MethodDetails,
-                                                                                                  "Brent", suffix, suffixIsOptional, warn + 1);
-                int PAR_optim_topology_maxcycles = ApplicationTools::getIntParameter("max_cycles", optTopology_MethodDetails, 100, suffix,
-                                                                                     suffixIsOptional, warn + 1);
-                double PAR_optim_topology_tolerance = ApplicationTools::getDoubleParameter("tolerance", optTopology_MethodDetails, 0.001, suffix,
-                                                                                           suffixIsOptional, warn + 1);
-                int PAR_optim_topology_threads = ApplicationTools::getIntParameter("threads", optTopology_MethodDetails, 1, suffix,
-                                                                                   suffixIsOptional, warn + 1);
-                std::string PAR_lkmove = ApplicationTools::getStringParameter("optimization.topology.likelihood", params, "bothways", "", true, true);
-
-                // Prepare settings for the tree-search object (method + coverage)
-                tshlib::TreeSearchHeuristics tsh = tshlib::TreeSearchHeuristics::nosearch;
-
-                if (optTopology_MethodName == "Swap") {
-                    tsh = tshlib::TreeSearchHeuristics::swap;
-                } else if (optTopology_MethodName == "Phyml") {
-                    tsh = tshlib::TreeSearchHeuristics::phyml;
-                } else if (optTopology_MethodName == "Mixed") {
-                    tsh = tshlib::TreeSearchHeuristics::mixed;
-                }
-                // Coverage setting
-                tshlib::TreeRearrangmentOperations tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
-
-                if (PAR_optim_topology_coverage == "nni-search") {
-                    tro = tshlib::TreeRearrangmentOperations::classic_NNI;
-                } else if (PAR_optim_topology_coverage == "spr-search") {
-                    tro = tshlib::TreeRearrangmentOperations::classic_SPR;
-                } else if (PAR_optim_topology_coverage == "tbr-search") {
-                    tro = tshlib::TreeRearrangmentOperations::classic_TBR;
-                } else {
-                    tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
-                }
-
-                // if the user requests PhyML-like moves, then the search should cover only spr-like moves
-                if (tsh == tshlib::TreeSearchHeuristics::phyml && tro != tshlib::TreeRearrangmentOperations::classic_SPR) {
-                    tro = tshlib::TreeRearrangmentOperations::classic_SPR;
-                    PAR_optim_topology_coverage = "spr-search";
-                    if (verbose)
-                        ApplicationTools::displayWarning("PhyML-like moves are supported only for SPR-coverage tree-search.\n           "
-                                                         "The execution will continue with the following settings:");
-                }
-
-                // Print on screen if verbose level is sufficient
-                if (verbose) ApplicationTools::displayResult("Topology optimization | Algorithm", optTopology_MethodName);
-                if (verbose) ApplicationTools::displayResult("Topology optimization | Moves class", PAR_optim_topology_coverage);
-
-                int PAR_optim_topology_startnodes = 1;
-                if (optTopology_MethodDetails.find("starting_nodes") != optTopology_MethodDetails.end()) {
-                    KeyvalTools::parseProcedure(optTopology_MethodDetails["starting_nodes"], optTopology_StartingNodes_MethodName,
-                                                optTopology_StartingNodes_MethodDetails);
-                    PAR_optim_topology_startnodes = ApplicationTools::getIntParameter("n", optTopology_StartingNodes_MethodDetails, 0, suffix,
-                                                                                      suffixIsOptional, warn + 1);
-                }
-
-                if (verbose) ApplicationTools::displayResult("Topology optimization | Node seeding", optTopology_StartingNodes_MethodName);
-                if (verbose) ApplicationTools::displayResult("Topology optimization | # start nodes", PAR_optim_topology_startnodes);
-                if (verbose) ApplicationTools::displayResult("Topology optimization | BrLen optimisation", PAR_optim_topology_branchoptim);
-                if (verbose) ApplicationTools::displayResult("Topology optimization | Max # cycles", PAR_optim_topology_maxcycles);
-                if (verbose) ApplicationTools::displayResult("Topology optimization | Tolerance", PAR_optim_topology_tolerance);
-                //if (verbose) ApplicationTools::displayResult("Topology optimization | Initial lk ", TextTools::toString(-tl->getValue(), 15));
-
-                ApplicationTools::displayMessage("");
-
-                // Instantiate tree-search object
-                treesearch = new tshlib::TreeSearch;
-
-                treesearch->setTreeSearchStrategy(tsh, tro);
-
-                // Set initial score of the reference topology (up to this point in the optimisation process)
-                treesearch->setScoringMethod(PAR_lkmove);
-
-                // Pass the reference of the likelihood function to score the candidate topologies
-                treesearch->setLikelihoodFunc(tl);
-
-                // Set starting node method and number of nodes
-                tshlib::StartingNodeHeuristics snh = tshlib::StartingNodeHeuristics::undef;
-                if (optTopology_StartingNodes_MethodName == "Greedy") {
-                    snh = tshlib::StartingNodeHeuristics::greedy;
-                } else if (optTopology_StartingNodes_MethodName == "Hillclimbing") {
-                    snh = tshlib::StartingNodeHeuristics::hillclimbing;
-                }
-                treesearch->setStartingNodeHeuristic(snh, PAR_optim_topology_startnodes);
-
-                // Set stop condition and threshold to reach (either no. iterations or tolerance)
-                treesearch->setTolerance(PAR_optim_topology_tolerance);
-                treesearch->setMaxCycles(PAR_optim_topology_maxcycles);
-                treesearch->setMaxNumThreads(PAR_optim_topology_threads);
-
-                // Execute tree-search
-                //treesearch->executeTreeSearch();
-
-                //LOG(INFO) << "[TSH Cycle] Likelihood after tree-search lk=" << std::setprecision(18) << tl->getLogLikelihood();
             }
 
-
-
-
+            Optimizators::performOptimizationNumerical(optMethodModel,
+                                                       backupListener,
+                                                       nstep,
+                                                       tolerance,
+                                                       nbEvalMax,
+                                                       optName,
+                                                       optMethodDeriv,
+                                                       parametersToEstimate,
+                                                       tl,
+                                                       optimizeTopo,
+                                                       treesearch,
+                                                       messageHandler,
+                                                       profiler,
+                                                       params,
+                                                       parameters,
+                                                       reparam,
+                                                       useClock,
+                                                       n,
+                                                       suffix,
+                                                       suffixIsOptional,
+                                                       optVerbose,
+                                                       verbose,
+                                                       warn);
 
             // Execute numopt + treesearch iteratively until convergence is reached.
-            double initScore;
-            double cycleScore;
-            double diffScore = std::abs(tl->getLogLikelihood());
-            bool interrupt = false;
+            Optimizators::performOptimizationParamsAndTreeIterative(treesearch,
+                                                                    optMethodModel,
+                                                                    backupListener,
+                                                                    parametersToEstimate,
+                                                                    tl,
+                                                                    nstep,
+                                                                    tolerance,
+                                                                    nbEvalMax,
+                                                                    optName,
+                                                                    optMethodDeriv,
+                                                                    messageHandler,
+                                                                    profiler,
+                                                                    reparam,
+                                                                    optimizeTopo,
+                                                                    optVerbose,
+                                                                    n);
 
-            while (tolerance < diffScore) {
-
-                if (interrupt == true) { break; }
-
-                initScore = tl->getLogLikelihood();
-                ApplicationTools::displayResult("Numerical opt. cycle LK", TextTools::toString(initScore, 15));
-                // Execute num-opt
-                if ((optName == "D-Brent") || (optName == "D-BFGS")) {
-                    n = OptimizationTools::optimizeNumericalParameters(
-                            dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parametersToEstimate,
-                            backupListener.get(), nstep, tolerance, nbEvalMax, messageHandler, profiler, reparam, optVerbose, optMethodDeriv,
-                            optMethodModel);
-                } else {
-
-                    n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
-                            dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parametersToEstimate,
-                            backupListener.get(), nstep, tolerance, nbEvalMax, messageHandler, profiler, reparam, optVerbose, optMethodDeriv,
-                            optMethodModel);
-                }
-
-                if (optimizeTopo) {
-                    // Execute tree-search
-                    treesearch->executeTreeSearch();
-
-                    if (treesearch->isTreeSearchSuccessful()) {
-                        // Recompute the difference
-                        cycleScore = tl->getLogLikelihood();
-                        diffScore = std::abs(initScore) - std::abs(cycleScore);
-
-                    } else {
-
-                        interrupt = true;
-                    }
-
-                } else {
-
-                    break;
-                }
-
-            }
 
         } else if (optName == "FullD") {
-            // Uses Newton-raphson algorithm with numerical derivatives when required.
-            if (optimizeTopo) {
-                bool optNumFirst = ApplicationTools::getBooleanParameter("optimization.topology.numfirst", params, true, suffix, suffixIsOptional,
-                                                                         warn + 1);
-                auto topoNbStep = ApplicationTools::getParameter<unsigned int>("optimization.topology.nstep", params, 1, suffix, suffixIsOptional,
-                                                                               warn + 1);
-                double tolBefore = ApplicationTools::getDoubleParameter("optimization.topology.tolerance.before", params, 100, suffix,
-                                                                        suffixIsOptional, warn + 1);
-                double tolDuring = ApplicationTools::getDoubleParameter("optimization.topology.tolerance.during", params, 100, suffix,
-                                                                        suffixIsOptional, warn + 1);
-                tl = OptimizationTools::optimizeTreeNNI2(
-                        dynamic_cast<NNIHomogeneousTreeLikelihood *>(tl), parametersToEstimate,
-                        optNumFirst, tolBefore, tolDuring, nbEvalMax, topoNbStep, messageHandler, profiler,
-                        reparam, optVerbose, optMethodDeriv, NNITopologySearch::PHYML);
-            }
 
-            parametersToEstimate.matchParametersValues(tl->getParameters());
-            n = OptimizationTools::optimizeNumericalParameters2(
-                    dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parametersToEstimate,
-                    backupListener.get(), tolerance, nbEvalMax, messageHandler, profiler, reparam, useClock, optVerbose, optMethodDeriv);
+            Optimizators::performOptimizationFullD(backupListener,
+                                                   nstep,
+                                                   tolerance,
+                                                   nbEvalMax,
+                                                   optName,
+                                                   optMethodDeriv,
+                                                   parametersToEstimate,
+                                                   tl,
+                                                   optimizeTopo,
+                                                   treesearch,
+                                                   messageHandler,
+                                                   profiler,
+                                                   params,
+                                                   parameters,
+                                                   reparam,
+                                                   useClock,
+                                                   n,
+                                                   suffix,
+                                                   suffixIsOptional,
+                                                   optVerbose,
+                                                   verbose,
+                                                   warn);
+
         } else{
             throw Exception("Unknown optimization method: " + optName);
         }
@@ -717,6 +987,7 @@ namespace bpp {
             parametersToEstimate.matchParametersValues(tl->getParameters());
 
             if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+
                 n = OptimizationTools::optimizeNumericalParameters(
                         dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
                         parametersToEstimate,
@@ -731,6 +1002,7 @@ namespace bpp {
                         optMethodDeriv,
                         OptimizationTools::OPTIMIZATION_BFGS);
             } else {
+
                 n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
                         dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parametersToEstimate,
                         backupListener.get(),
@@ -938,7 +1210,7 @@ namespace bpp {
         // See if we should use a molecular clock constraint
         // -------------------------------------------------------------------------
         Optimizators::checkMolecularClockConstraints(useClock,
-                                                     optimizeTopo,
+                optimizeTopo,
                 params,
                 parameters,
                 suffix,
@@ -958,6 +1230,14 @@ namespace bpp {
         // -------------------------------------------------------------------------
         // Perform optimisation
         // -------------------------------------------------------------------------
+
+        //==========================================
+        //==========================================
+        //==========================================
+        // @new
+
+
+        /*
         Optimizators::performOptimization(backupListener,
                                           nstep,
                                           tolerance,
@@ -974,11 +1254,288 @@ namespace bpp {
                                           parameters,
                                           reparam,
                                           useClock,
+                                          n,
                                           suffix,
                                           suffixIsOptional,
                                           optVerbose,
                                           verbose,
                                           warn);
+
+        */
+
+        // Execute numopt + treesearch iteratively until convergence is reached.
+        std::string optMethodModel;
+
+        if ((optName == "D-Brent") || (optName == "D-BFGS") || (optName == "ND-Brent") || (optName == "ND-BFGS")) {
+
+            // Uses Newton-Brent method or Newton-BFGS method
+            if ((optName == "D-Brent") || (optName == "ND-Brent")){
+                optMethodModel = OptimizationTools::OPTIMIZATION_BRENT;
+            }else{
+                optMethodModel = OptimizationTools::OPTIMIZATION_BFGS;
+            }
+
+
+            //***************************************
+            //***************************************
+            //***************************************
+            /*
+            Optimizators::performOptimizationNumerical(optMethodModel,
+                                                       backupListener,
+                                                       nstep,
+                                                       tolerance,
+                                                       nbEvalMax,
+                                                       optName,
+                                                       optMethodDeriv,
+                                                       parametersToEstimate,
+                                                       tl,
+                                                       optimizeTopo,
+                                                       treesearch,
+                                                       messageHandler,
+                                                       profiler,
+                                                       params,
+                                                       parameters,
+                                                       reparam,
+                                                       useClock,
+                                                       n,
+                                                       suffix,
+                                                       suffixIsOptional,
+                                                       optVerbose,
+                                                       verbose,
+                                                       warn);
+            */
+
+            parametersToEstimate.matchParametersValues(tl->getParameters());
+
+            if (optimizeTopo) {
+
+
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                /*
+                Optimizators::performOptimizationTopology(optMethodModel,
+                                                          params,
+                                                          treesearch,
+                                                          tl,
+                                                          suffix,
+                                                          suffixIsOptional,
+                                                          optVerbose,
+                                                          verbose,
+                                                          warn);
+                */
+                std::string PAR_optim_topology_algorithm;
+                std::string optTopology_MethodName;
+                std::string optTopology_StartingNodes_MethodName;
+                std::string PAR_optim_topology_coverage;
+                std::string PAR_optim_topology_branchoptim;
+                std::string PAR_lkmove;
+                std::map<std::string, std::string> optTopology_MethodDetails;
+                std::map<std::string, std::string> optTopology_StartingNodes_MethodDetails;
+                int PAR_optim_topology_startnodes = 1;
+                int PAR_optim_topology_maxcycles = 0;
+                int PAR_optim_topology_threads = 0;
+                double PAR_optim_topology_tolerance;
+                tshlib::StartingNodeHeuristics snh;
+
+                PAR_optim_topology_algorithm = bpp::ApplicationTools::getStringParameter("optimization.topology.algorithm", params, "", suffix,suffixIsOptional, warn + 1);
+
+                // Parse string with tree search algorithm details
+                bpp::KeyvalTools::parseProcedure(PAR_optim_topology_algorithm, optTopology_MethodName, optTopology_MethodDetails);
+
+                // Find parameters for tree search, if not found then set to default
+                PAR_optim_topology_coverage = bpp::ApplicationTools::getStringParameter("coverage", optTopology_MethodDetails, "best-search",suffix, suffixIsOptional, warn + 1);
+
+                PAR_optim_topology_branchoptim = ApplicationTools::getStringParameter("brlen_optimisation", optTopology_MethodDetails,"Brent", suffix, suffixIsOptional, warn + 1);
+
+                PAR_optim_topology_maxcycles = ApplicationTools::getIntParameter("max_cycles", optTopology_MethodDetails, 100, suffix,suffixIsOptional, warn + 1);
+
+                PAR_optim_topology_tolerance = ApplicationTools::getDoubleParameter("tolerance", optTopology_MethodDetails, 0.001, suffix,suffixIsOptional, warn + 1);
+
+                PAR_optim_topology_threads = ApplicationTools::getIntParameter("threads", optTopology_MethodDetails, 1, suffix,suffixIsOptional, warn + 1);
+
+                PAR_lkmove = ApplicationTools::getStringParameter("optimization.topology.likelihood", params, "bothways", "", true, true);
+
+                // Prepare settings for the tree-search object (method + coverage)
+                tshlib::TreeSearchHeuristics tsh = tshlib::TreeSearchHeuristics::nosearch;
+
+                if (optTopology_MethodName == "Swap") {
+                    tsh = tshlib::TreeSearchHeuristics::swap;
+                } else if (optTopology_MethodName == "Phyml") {
+                    tsh = tshlib::TreeSearchHeuristics::phyml;
+                } else if (optTopology_MethodName == "Mixed") {
+                    tsh = tshlib::TreeSearchHeuristics::mixed;
+                }
+
+                // Coverage setting
+                tshlib::TreeRearrangmentOperations tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
+
+                if (PAR_optim_topology_coverage == "nni-search") {
+                    tro = tshlib::TreeRearrangmentOperations::classic_NNI;
+                } else if (PAR_optim_topology_coverage == "spr-search") {
+                    tro = tshlib::TreeRearrangmentOperations::classic_SPR;
+                } else if (PAR_optim_topology_coverage == "tbr-search") {
+                    tro = tshlib::TreeRearrangmentOperations::classic_TBR;
+                } else {
+                    tro = tshlib::TreeRearrangmentOperations::classic_Mixed;
+                }
+
+                // if the user requests PhyML-like moves, then the search should cover only spr-like moves
+                if (tsh == tshlib::TreeSearchHeuristics::phyml && tro != tshlib::TreeRearrangmentOperations::classic_SPR) {
+
+                    tro = tshlib::TreeRearrangmentOperations::classic_SPR;
+
+                    PAR_optim_topology_coverage = "spr-search";
+
+                    if (verbose){
+                        bpp::ApplicationTools::displayWarning("PhyML-like moves are supported only for SPR-coverage tree-search.\n The execution will continue with the following settings:");
+                    }
+                }
+
+                // Print on screen if verbose level is sufficient
+                if (verbose){
+                    bpp::ApplicationTools::displayResult("Topology optimization | Algorithm", optTopology_MethodName);
+                    bpp::ApplicationTools::displayResult("Topology optimization | Moves class", PAR_optim_topology_coverage);
+                }
+
+                if (optTopology_MethodDetails.find("starting_nodes") != optTopology_MethodDetails.end()) {
+                    bpp::KeyvalTools::parseProcedure(optTopology_MethodDetails["starting_nodes"], optTopology_StartingNodes_MethodName,optTopology_StartingNodes_MethodDetails);
+
+                    PAR_optim_topology_startnodes = bpp::ApplicationTools::getIntParameter("n", optTopology_StartingNodes_MethodDetails, 0, suffix,suffixIsOptional, warn + 1);
+                }
+
+                if (verbose) {
+                    bpp::ApplicationTools::displayResult("Topology optimization | Node seeding",optTopology_StartingNodes_MethodName);
+                    bpp::ApplicationTools::displayResult("Topology optimization | # start nodes", PAR_optim_topology_startnodes);
+                    bpp::ApplicationTools::displayResult("Topology optimization | BrLen optimisation",PAR_optim_topology_branchoptim);
+                    bpp::ApplicationTools::displayResult("Topology optimization | Max # cycles", PAR_optim_topology_maxcycles);
+                    bpp::ApplicationTools::displayResult("Topology optimization | Tolerance", PAR_optim_topology_tolerance);
+                    bpp::ApplicationTools::displayMessage("");
+                }
+
+                // Instantiate tree-search object
+                treesearch = new tshlib::TreeSearch;
+
+                treesearch->setTreeSearchStrategy(tsh, tro);
+
+                // Set initial score of the reference topology (up to this point in the optimisation process)
+                treesearch->setScoringMethod(PAR_lkmove);
+
+                // Pass the reference of the likelihood function to score the candidate topologies
+                treesearch->setLikelihoodFunc(tl);
+
+                // Set starting node method and number of nodes
+                snh = tshlib::StartingNodeHeuristics::undef;
+
+                if (optTopology_StartingNodes_MethodName == "Greedy") {
+                    snh = tshlib::StartingNodeHeuristics::greedy;
+                } else if (optTopology_StartingNodes_MethodName == "Hillclimbing") {
+                    snh = tshlib::StartingNodeHeuristics::hillclimbing;
+                }
+
+                treesearch->setStartingNodeHeuristic(snh, PAR_optim_topology_startnodes);
+
+                // Set stop condition and threshold to reach (either no. iterations or tolerance)
+                treesearch->setTolerance(PAR_optim_topology_tolerance);
+                treesearch->setMaxCycles(PAR_optim_topology_maxcycles);
+                treesearch->setMaxNumThreads(PAR_optim_topology_threads);
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+            }
+            //***************************************
+            //***************************************
+            //***************************************
+
+            // Execute numopt + treesearch iteratively until convergence is reached.
+            Optimizators::performOptimizationParamsAndTreeIterative(treesearch,
+                                                                    optMethodModel,
+                                                                    backupListener,
+                                                                    parametersToEstimate,
+                                                                    tl,
+                                                                    nstep,
+                                                                    tolerance,
+                                                                    nbEvalMax,
+                                                                    optName,
+                                                                    optMethodDeriv,
+                                                                    messageHandler,
+                                                                    profiler,
+                                                                    reparam,
+                                                                    optimizeTopo,
+                                                                    optVerbose,
+                                                                    n);
+
+
+        } else if (optName == "FullD") {
+
+            Optimizators::performOptimizationFullD(backupListener,
+                                                   nstep,
+                                                   tolerance,
+                                                   nbEvalMax,
+                                                   optName,
+                                                   optMethodDeriv,
+                                                   parametersToEstimate,
+                                                   tl,
+                                                   optimizeTopo,
+                                                   treesearch,
+                                                   messageHandler,
+                                                   profiler,
+                                                   params,
+                                                   parameters,
+                                                   reparam,
+                                                   useClock,
+                                                   n,
+                                                   suffix,
+                                                   suffixIsOptional,
+                                                   optVerbose,
+                                                   verbose,
+                                                   warn);
+
+        } else{
+            throw Exception("Unknown optimization method: " + optName);
+        }
+        //end @new
+        //==========================================
+        //==========================================
+        //==========================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         // -------------------------------------------------------------------------
