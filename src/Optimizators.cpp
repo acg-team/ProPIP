@@ -1429,35 +1429,53 @@ namespace bpp {
                                                                                  unsigned int verbose) {
 
         TreeTemplate<Node> *tree = nullptr;
+        DistanceMatrix *matrix = nullptr;
+        Node *n1 = nullptr;
+        Node *n2 = nullptr;
+        Node *n3 = nullptr;
 
         // Compute matrice:
-        if (verbose > 0)
-            ApplicationTools::displayTask("Importing distance matrix", true);
-        DistanceMatrix *matrix = dmatrix;
-        if (verbose > 0)
-            ApplicationTools::displayTaskDone();
+        if (verbose > 0){
+            bpp::ApplicationTools::displayTask("Importing distance matrix", true);
+        }
+
+        matrix = dmatrix;
+
+        if (verbose > 0){
+            bpp::ApplicationTools::displayTaskDone();
+        }
 
         // Compute tree:
         if (matrix->size() == 2) {
             //Special case, there is only one possible tree:
-            Node *n1 = new Node(0);
-            Node *n2 = new Node(1, matrix->getName(0));
+            n1 = new Node(0);
+            n2 = new Node(1, matrix->getName(0));
+
             n2->setDistanceToFather((*matrix)(0, 0) / 2.);
-            Node *n3 = new Node(2, matrix->getName(1));
+
+            n3 = new Node(2, matrix->getName(1));
+
             n3->setDistanceToFather((*matrix)(0, 0) / 2.);
             n1->addSon(n2);
             n1->addSon(n3);
             tree = new TreeTemplate<Node>(n1);
         }
-        if (verbose > 0)
-            ApplicationTools::displayTask("Building tree");
-        reconstructionMethod.setDistanceMatrix(*matrix);
-        reconstructionMethod.computeTree();
-        delete matrix;
-        tree = dynamic_cast<TreeTemplate<Node> *>(reconstructionMethod.getTree());
-        if (verbose > 0)
-            ApplicationTools::displayTaskDone();
 
+        if (verbose > 0){
+            bpp::ApplicationTools::displayTask("Building tree");
+        }
+
+        reconstructionMethod.setDistanceMatrix(*matrix);
+
+        reconstructionMethod.computeTree();
+
+        tree = dynamic_cast<TreeTemplate<Node> *>(reconstructionMethod.getTree());
+
+        if (verbose > 0){
+            bpp::ApplicationTools::displayTaskDone();
+        }
+
+        delete matrix;
 
         return tree;
     }
@@ -1470,11 +1488,17 @@ namespace bpp {
                                                      unsigned int nstep){
 
         MetaOptimizer *poptimizer = nullptr;
+        ParameterList plsm;
+        ParameterList plrd;
 
-        ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+        plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+
         desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
-        ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+
+        plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+
         desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
+
         poptimizer = new MetaOptimizer(fnum5, desc, nstep);
 
         return poptimizer;
@@ -1488,20 +1512,25 @@ namespace bpp {
                                                     unsigned int nstep){
 
         MetaOptimizer *poptimizer = nullptr;
+        std::vector<std::string> vNameDer;
+        std::vector<std::string> vNameDer2;
+        ParameterList plsm;
+        ParameterList plrd;
 
-        vector<string> vNameDer;
+        plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
 
-        ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
         vNameDer = plsm.getParameterNames();
 
-        ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+        plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
 
-        vector<string> vNameDer2 = plrd.getParameterNames();
+        vNameDer2 = plrd.getParameterNames();
 
         vNameDer.insert(vNameDer.begin(), vNameDer2.begin(), vNameDer2.end());
+
         fnum->setParametersToDerivate(vNameDer);
 
         desc->addOptimizer("Rate & model distribution parameters", new BfgsMultiDimensions(fnum), vNameDer, 1, MetaOptimizerInfos::IT_TYPE_FULL);
+
         poptimizer = new MetaOptimizer(fnum, desc, nstep);
 
         return poptimizer;
@@ -1571,34 +1600,9 @@ namespace bpp {
 
             poptimizer=Optimizators::optimization_BRENT(parameters,tl,desc,fnum5,nstep);
 
-            /*
-            ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
-            desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(fnum5), plsm.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
-            ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
-            desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(fnum5), plrd.getParameterNames(), 0,MetaOptimizerInfos::IT_TYPE_STEP);
-            poptimizer = new MetaOptimizer(fnum5, desc, nstep);
-            */
-
         } else if (optMethodModel == OPTIMIZATION_BFGS) {
 
             poptimizer=Optimizators::optimization_BFGS(parameters,tl,desc,fnum,fnum5,nstep);
-
-            /*
-            vector<string> vNameDer;
-
-            ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
-            vNameDer = plsm.getParameterNames();
-
-            ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
-
-            vector<string> vNameDer2 = plrd.getParameterNames();
-
-            vNameDer.insert(vNameDer.begin(), vNameDer2.begin(), vNameDer2.end());
-            fnum->setParametersToDerivate(vNameDer);
-
-            desc->addOptimizer("Rate & model distribution parameters", new BfgsMultiDimensions(fnum), vNameDer, 1, MetaOptimizerInfos::IT_TYPE_FULL);
-            poptimizer = new MetaOptimizer(fnum, desc, nstep);
-            */
 
         } else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodModel);
