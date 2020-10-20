@@ -138,7 +138,13 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
 
 double tshlib::TreeSearch::executeTreeSearch() {
     double newScore = 0;
-    setTreeSearchStatus(false);
+
+
+    // m@x
+    //setTreeSearchStatus(false);
+    setTreeSearchStatus(true);
+
+
     // Store initial likelihood value
     setInitialLikelihoodValue(likelihoodFunc->getLogLikelihood());
     //tshinitScore =  likelihoodFunc->getLogLikelihood();

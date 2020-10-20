@@ -498,15 +498,15 @@ namespace bpp {
 
     }
 
-    void Optimizators::performOptimizationTopology(std::string optMethodModel,
-                                                   std::map<std::string, std::string> &params,
-                                                   tshlib::TreeSearch *treesearch,
-                                                   bpp::AbstractHomogeneousTreeLikelihood *tl,
-                                                   const std::string &suffix,
-                                                   bool suffixIsOptional,
-                                                   unsigned int optVerbose,
-                                                   bool verbose,
-                                                   int warn){
+    void Optimizators::setTopologyOptimizationParameters(std::string optMethodModel,
+                                                         std::map<std::string, std::string> &params,
+                                                         tshlib::TreeSearch *treesearch,
+                                                         bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                         const std::string &suffix,
+                                                         bool suffixIsOptional,
+                                                         unsigned int optVerbose,
+                                                         bool verbose,
+                                                         int warn){
 
         std::string PAR_optim_topology_algorithm;
         std::string optTopology_MethodName;
@@ -628,6 +628,8 @@ namespace bpp {
 
     }
 
+    /*
+     * // original version
     void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
                                                                  std::string optMethodModel,
                                                                  unique_ptr<BackupListener> &backupListener,
@@ -696,6 +698,7 @@ namespace bpp {
             }
 
             if (optimizeTopo) {
+
                 // Execute tree-search
                 treesearch->executeTreeSearch();
 
@@ -714,66 +717,89 @@ namespace bpp {
         }
 
     }
+    */
 
-    void Optimizators::performOptimizationNumerical(std::string optMethodModel,
-                                                    unique_ptr<BackupListener> &backupListener,
-                                                    unsigned int nstep,
-                                                    double tolerance,
-                                                    unsigned int nbEvalMax,
-                                                    std::string optName,
-                                                    std::string optMethodDeriv,
-                                                    ParameterList &parametersToEstimate,
-                                                    bpp::AbstractHomogeneousTreeLikelihood *tl,
-                                                    bool optimizeTopo,
-                                                    tshlib::TreeSearch *treesearch,
-                                                    OutputStream *messageHandler,
-                                                    OutputStream *profiler,
-                                                    std::map<std::string, std::string> &params,
-                                                    const ParameterList &parameters,
-                                                    bool reparam,
-                                                    bool useClock,
-                                                    int &n,
-                                                    const std::string &suffix,
-                                                    bool suffixIsOptional,
-                                                    unsigned int optVerbose,
-                                                    bool verbose,
-                                                    int warn){
+    // new version
+    void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
+                                                                 std::string optMethodModel,
+                                                                 unique_ptr<BackupListener> &backupListener,
+                                                                 ParameterList &parametersToEstimate,
+                                                                 bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                                 unsigned int nstep,
+                                                                 double tolerance,
+                                                                 unsigned int nbEvalMax,
+                                                                 std::string optName,
+                                                                 std::string optMethodDeriv,
+                                                                 OutputStream *messageHandler,
+                                                                 OutputStream *profiler,
+                                                                 bool reparam,
+                                                                 bool optimizeTopo,
+                                                                 unsigned int optVerbose,
+                                                                 int &n){
 
-        parametersToEstimate.matchParametersValues(tl->getParameters());
+        double initScore = 0.0;
+        double cycleScore = 0.0;
+        double diffScore = 0.0;
+        bool flag_continue = true;
 
-        if (optimizeTopo) {
+        while (flag_continue) {
 
-            Optimizators::performOptimizationTopology(optMethodModel,
-                    params,
-                    treesearch,
-                    tl,
-                    suffix,
-                    suffixIsOptional,
-                    optVerbose,
-                    verbose,
-                    warn);
+            initScore = tl->getLogLikelihood();
+
+            bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
+
+            // Execute num-opt
+            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+
+                n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                   parametersToEstimate,
+                                                                   backupListener.get(),
+                                                                   nstep,
+                                                                   tolerance,
+                                                                   nbEvalMax,
+                                                                   messageHandler,
+                                                                   profiler,
+                                                                   reparam,
+                                                                   optVerbose,
+                                                                   optMethodDeriv,
+                                                                   optMethodModel);
+
+            } else {
+
+                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                                       parametersToEstimate,
+                                                                                       backupListener.get(),
+                                                                                       nstep,
+                                                                                       tolerance,
+                                                                                       nbEvalMax,
+                                                                                       messageHandler,
+                                                                                       profiler,
+                                                                                       reparam,
+                                                                                       optVerbose,
+                                                                                       optMethodDeriv,
+                                                                                       optMethodModel);
+
+            }
+
+            if (optimizeTopo) {
+
+                // Execute tree-search
+                treesearch->executeTreeSearch();
+
+                if (!treesearch->isTreeSearchSuccessful()) {
+                    flag_continue = false;
+                }
+
+            }
+
+            // Recompute the difference
+            cycleScore = tl->getLogLikelihood();
+            diffScore = std::abs(initScore) - std::abs(cycleScore);
+            if(tolerance > diffScore){
+                flag_continue = false;
+            }
 
         }
-
-        /*
-        // Execute numopt + treesearch iteratively until convergence is reached.
-        Optimizators::performOptimizationParamsAndTreeIterative(treesearch,
-                                                                optMethodModel,
-                                                                backupListener,
-                                                                parametersToEstimate,
-                                                                tl,
-                                                                nstep,
-                                                                tolerance,
-                                                                nbEvalMax,
-                                                                optName,
-                                                                optMethodDeriv,
-                                                                messageHandler,
-                                                                profiler,
-                                                                reparam,
-                                                                optimizeTopo,
-                                                                optVerbose,
-                                                                n);
-        */
 
     }
 
@@ -883,29 +909,19 @@ namespace bpp {
                 optMethodModel = OptimizationTools::OPTIMIZATION_BFGS;
             }
 
-            Optimizators::performOptimizationNumerical(optMethodModel,
-                                                       backupListener,
-                                                       nstep,
-                                                       tolerance,
-                                                       nbEvalMax,
-                                                       optName,
-                                                       optMethodDeriv,
-                                                       parametersToEstimate,
-                                                       tl,
-                                                       optimizeTopo,
-                                                       treesearch,
-                                                       messageHandler,
-                                                       profiler,
-                                                       params,
-                                                       parameters,
-                                                       reparam,
-                                                       useClock,
-                                                       n,
-                                                       suffix,
-                                                       suffixIsOptional,
-                                                       optVerbose,
-                                                       verbose,
-                                                       warn);
+            parametersToEstimate.matchParametersValues(tl->getParameters());
+
+            if (optimizeTopo) {
+                Optimizators::setTopologyOptimizationParameters(optMethodModel,
+                                                                params,
+                                                                treesearch,
+                                                                tl,
+                                                                suffix,
+                                                                suffixIsOptional,
+                                                                optVerbose,
+                                                                verbose,
+                                                                warn);
+            }
 
             // Execute numopt + treesearch iteratively until convergence is reached.
             Optimizators::performOptimizationParamsAndTreeIterative(treesearch,
@@ -924,7 +940,6 @@ namespace bpp {
                                                                     optimizeTopo,
                                                                     optVerbose,
                                                                     n);
-
 
         } else if (optName == "FullD") {
 
@@ -1104,7 +1119,7 @@ namespace bpp {
         messageHandler = static_cast<OutputStream *>((mhPath == "none") ? 0 : (mhPath == "std") ? bpp::ApplicationTools::message.get(): new StlOutputStream(new std::ofstream(mhPath.c_str(), std::ios::out)));
 
         if (verbose){
-            ApplicationTools::displayResult("Numerical opt. | Message handler", mhPath);
+            bpp::ApplicationTools::displayResult("Numerical opt. | Message handler", mhPath);
         }
 
         // -------------------------------------------------------------------------

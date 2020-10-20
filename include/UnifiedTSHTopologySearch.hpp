@@ -122,8 +122,8 @@ namespace tshlib {
             return tshStatus;
         }
 
-        void setTreeSearchStatus(bool tshStatus) {
-            TreeSearch::tshStatus = tshStatus;
+        void setTreeSearchStatus(bool status) {
+            TreeSearch::tshStatus = status;
         }
 
 
