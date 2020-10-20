@@ -1291,7 +1291,8 @@ namespace bpp {
         // Rename backup file
         // -------------------------------------------------------------------------
         if (backupFile != "none") {
-            std::string bf = backupFile + ".def";
+            std::string bf;
+            bf = backupFile + ".def";
             rename(backupFile.c_str(), bf.c_str());
         }
 
@@ -1310,117 +1311,156 @@ namespace bpp {
             OutputStream *messenger,
             unsigned int verbose) throw(Exception) {
 
+        bpp::TreeTemplate<bpp::Node> *tree = nullptr;
+        bpp::TreeTemplate<bpp::Node> *previousTree = nullptr;
+        bool test = true;
+        DistanceMatrix *matrix = nullptr;
+        bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
+        tshlib::Utree *utree = nullptr;
+        UtreeBppUtils::treemap tm;
+        ParameterList parameters;
+
         estimationMethod.resetAdditionalParameters();
         estimationMethod.setVerbose(verbose);
 
         if (param == DISTANCEMETHOD_PAIRWISE) {
-
-            ParameterList tmp = estimationMethod.getModel().getIndependentParameters();
+            ParameterList tmp;
+            tmp = estimationMethod.getModel().getIndependentParameters();
             tmp.addParameters(estimationMethod.getRateDistribution().getIndependentParameters());
             tmp.deleteParameters(parametersToIgnore.getParameterNames());
             estimationMethod.setAdditionalParameters(tmp);
         }
 
-        TreeTemplate<Node> *tree = nullptr;
-        TreeTemplate<Node> *previousTree = nullptr;
-
-        bool test = true;
+        test = true;
         while (test) {
+
             // Compute matrice:
-            if (verbose > 0)
-                ApplicationTools::displayTask("Estimating distance matrix", true);
+            if (verbose > 0){
+                bpp::ApplicationTools::displayTask("Estimating distance matrix", true);
+            }
+
             estimationMethod.computeMatrix();
-            DistanceMatrix *matrix = estimationMethod.getMatrix();
-            if (verbose > 0)
-                ApplicationTools::displayTaskDone();
+
+            matrix = estimationMethod.getMatrix();
+
+            if (verbose > 0){
+                bpp::ApplicationTools::displayTaskDone();
+            }
 
             // Compute tree:
             if (matrix->size() == 2) {
                 //Special case, there is only one possible tree:
-                auto *n1 = new Node(0);
-                auto *n2 = new Node(1, matrix->getName(0));
+                bpp::Node *n1 = nullptr;
+                bpp::Node *n2 = nullptr;
+                bpp::Node *n3 = nullptr;
+                n1 = new Node(0);
+                n2 = new Node(1, matrix->getName(0));
                 n2->setDistanceToFather((*matrix)(0, 0) / 2.);
-                auto *n3 = new Node(2, matrix->getName(1));
+                n3 = new Node(2, matrix->getName(1));
                 n3->setDistanceToFather((*matrix)(0, 0) / 2.);
                 n1->addSon(n2);
                 n1->addSon(n3);
                 tree = new TreeTemplate<Node>(n1);
                 break;
             }
-            if (verbose > 0)
-                ApplicationTools::displayTask("Building tree");
+
+            if (verbose > 0){
+                bpp::ApplicationTools::displayTask("Building tree");
+            }
+
             reconstructionMethod.setDistanceMatrix(*matrix);
             reconstructionMethod.computeTree();
             previousTree = tree;
+
             delete matrix;
-            tree = dynamic_cast<TreeTemplate<Node> *>(reconstructionMethod.getTree());
-            if (verbose > 0)
-                ApplicationTools::displayTaskDone();
+
+            tree = dynamic_cast<TreeTemplate<bpp::Node> *>(reconstructionMethod.getTree());
+
+            if (verbose > 0){
+                bpp::ApplicationTools::displayTaskDone();
+            }
+
             if (previousTree && verbose > 0) {
-                int rf = TreeTools::robinsonFouldsDistance(*previousTree, *tree, false);
-                ApplicationTools::displayResult("Topo. distance with previous iteration", TextTools::toString(rf));
+                int rf = 0;
+                rf = TreeTools::robinsonFouldsDistance(*previousTree, *tree, false);
+                bpp::ApplicationTools::displayResult("Topo. distance with previous iteration", bpp::TextTools::toString(rf));
                 test = (rf == 0);
                 delete previousTree;
             }
-            if (param != DISTANCEMETHOD_ITERATIONS)
+            if (param != DISTANCEMETHOD_ITERATIONS){
                 break;  // Ends here.
+            }
 
             // Now, re-estimate parameters:
             unique_ptr<TransitionModel> model(estimationMethod.getModel().clone());
             unique_ptr<DiscreteDistribution> rdist(estimationMethod.getRateDistribution().clone());
 
-            bpp::AbstractHomogeneousTreeLikelihood *tl = nullptr;
-            tshlib::Utree *utree;
-            UtreeBppUtils::treemap tm;
-
             if (estimationMethod.getModel().getName().find("PIP") == string::npos) {
+
                 tl = new RHomogeneousTreeLikelihood_Generic(*tree, *estimationMethod.getData(), model.get(), rdist.get(), true, verbose > 1);
+
             } else {
+
                 std::map<std::string, std::string> default_map;
+
                 tree->setNodeName(tree->getRootId(), "root");
+
                 UtreeBppUtils::renameInternalNodes(tree);
+
                 utree = new tshlib::Utree();
+
                 UtreeBppUtils::convertTree_b2u(tree, utree, tm);
+
                 utree->addVirtualRootNode();
+
                 // Once the tree has the root, then map it as well
                 tm.insert(UtreeBppUtils::nodeassoc(tree->getRootId(), utree->rootnode->getVnode_id()));
 
-                tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *estimationMethod.getData(), model.get(), rdist.get(), utree, &tm, true,
-                                                                     default_map, "", false, false, false);
+                tl = new bpp::UnifiedTSHomogeneousTreeLikelihood_PIP(*tree, *estimationMethod.getData(), model.get(), rdist.get(), utree, &tm, true,default_map, "", false, false, false);
             }
 
             tl->initialize();
-            ParameterList parameters = tl->getParameters();
+            parameters = tl->getParameters();
+
             if (!optimizeBrLen) {
-                vector<string> vs = tl->getBranchLengthsParameters().getParameterNames();
+                std::vector<std::string> vs;
+                vs = tl->getBranchLengthsParameters().getParameterNames();
                 parameters.deleteParameters(vs);
             }
+
             parameters.deleteParameters(parametersToIgnore.getParameterNames());
+
             if (estimationMethod.getModel().getName().find("PIP") == string::npos) {
-                OptimizationTools::optimizeNumericalParameters(tl, parameters, NULL, 0, tolerance, tlEvalMax, messenger, profiler,
-                                                               verbose > 0 ? verbose - 1 : 0);
+
+                OptimizationTools::optimizeNumericalParameters(tl, parameters, NULL, 0, tolerance, tlEvalMax, messenger, profiler,verbose > 0 ? verbose - 1 : 0);
+
             } else {
 
                 Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
                         dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl), parameters, NULL, 0, tolerance, tlEvalMax, messenger, profiler,
                         false, verbose > 0 ? verbose - 1 : 0, OptimizationTools::OPTIMIZATION_BFGS, OptimizationTools::OPTIMIZATION_BFGS);
-
-                //OptimizationTools::optimizeNumericalParameters(tl, parameters, NULL, 0, tolerance, tlEvalMax, messenger, profiler,
-                //                                               verbose > 0 ? verbose - 1 : 0);
             }
+
             if (verbose > 0) {
-                ParameterList tmp = tl->getSubstitutionModelParameters();
+
+                ParameterList tmp;
+
+                tmp = tl->getSubstitutionModelParameters();
+
                 for (unsigned int i = 0; i < tmp.size(); i++) {
-                    ApplicationTools::displayResult(tmp[i].getName(), TextTools::toString(tmp[i].getValue()));
+                    bpp::ApplicationTools::displayResult(tmp[i].getName(), TextTools::toString(tmp[i].getValue()));
                 }
+
                 tmp = tl->getRateDistribution()->getParameters();
+
                 for (unsigned int i = 0; i < tmp.size(); i++) {
-                    ApplicationTools::displayResult(tmp[i].getName(), TextTools::toString(tmp[i].getValue()));
+                    bpp::ApplicationTools::displayResult(tmp[i].getName(), TextTools::toString(tmp[i].getValue()));
                 }
             }
 
             delete utree;
         }
+
         return tree;
     }
 
