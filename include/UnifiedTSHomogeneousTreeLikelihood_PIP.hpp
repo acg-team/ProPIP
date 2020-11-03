@@ -74,10 +74,14 @@ namespace bpp {
 
     protected:
 
+
         mutable tshlib::Utree *utree_;
 
 
     public:
+
+        // m@x
+        //mutable tshlib::Utree *utree_;
 
         UnifiedTSHomogeneousTreeLikelihood_PIP(const Tree &tree,
                                                TransitionModel *model,

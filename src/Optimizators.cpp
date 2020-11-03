@@ -76,13 +76,16 @@
 
 
 #include <TreeRearrangment.hpp>
-
+#include "Move.hpp"
 #include "Optimizators.hpp"
 #include "Utils.hpp"
 #include "UnifiedTSHTopologySearch.hpp"
 #include "UnifiedTSHomogeneousTreeLikelihood_PIP.hpp"
 
 using namespace bpp;
+
+//#define TEST1
+#define TEST2
 
 namespace bpp {
 
@@ -628,8 +631,423 @@ namespace bpp {
 
     }
 
-    /*
-     * // original version
+
+
+
+#ifdef TEST1
+
+    // new version
+    void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
+                                                                 std::string optMethodModel,
+                                                                 unique_ptr<BackupListener> &backupListener,
+                                                                 ParameterList &parametersToEstimate,
+                                                                 bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                                 unsigned int nstep,
+                                                                 double tolerance,
+                                                                 unsigned int nbEvalMax,
+                                                                 std::string optName,
+                                                                 std::string optMethodDeriv,
+                                                                 OutputStream *messageHandler,
+                                                                 OutputStream *profiler,
+                                                                 bool reparam,
+                                                                 bool optimizeTopo,
+                                                                 unsigned int optVerbose,
+                                                                 int &n){
+
+        double initScore = 0.0;
+        double cycleScore = 0.0;
+        double diffScore = 0.0;
+        bool flag_continue = true;
+
+
+
+
+
+
+        // m@x
+        //nbEvalMax = 1;
+        //tolerance = 10.0;
+
+
+
+
+
+        while (flag_continue) {
+
+            initScore = tl->getLogLikelihood();
+
+            bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
+
+            // Execute num-opt
+            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+
+                n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                   parametersToEstimate,
+                                                                   backupListener.get(),
+                                                                   nstep,
+                                                                   tolerance,
+                                                                   nbEvalMax,
+                                                                   messageHandler,
+                                                                   profiler,
+                                                                   reparam,
+                                                                   optVerbose,
+                                                                   optMethodDeriv,
+                                                                   optMethodModel);
+
+            } else {
+
+                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                                       parametersToEstimate,
+                                                                                       backupListener.get(),
+                                                                                       nstep,
+                                                                                       tolerance,
+                                                                                       nbEvalMax,
+                                                                                       messageHandler,
+                                                                                       profiler,
+                                                                                       reparam,
+                                                                                       optVerbose,
+                                                                                       optMethodDeriv,
+                                                                                       optMethodModel);
+
+            }
+
+            if (optimizeTopo) {
+
+                // Execute tree-search
+                treesearch->executeTreeSearch();
+
+                if (!treesearch->isTreeSearchSuccessful()) {
+                    flag_continue = false;
+                }
+
+            }
+
+
+            // Recompute the difference
+            cycleScore = tl->getLogLikelihood();
+            diffScore = std::abs( initScore - cycleScore );
+            if(tolerance > diffScore){
+                flag_continue = false;
+            }
+
+        }
+
+    }
+
+#else
+#ifdef TEST2
+
+
+    // new version
+    void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
+                                                                 std::string optMethodModel,
+                                                                 unique_ptr<BackupListener> &backupListener,
+                                                                 ParameterList &parametersToEstimate,
+                                                                 bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                                 unsigned int nstep,
+                                                                 double tolerance,
+                                                                 unsigned int nbEvalMax,
+                                                                 std::string optName,
+                                                                 std::string optMethodDeriv,
+                                                                 OutputStream *messageHandler,
+                                                                 OutputStream *profiler,
+                                                                 bool reparam,
+                                                                 bool optimizeTopo,
+                                                                 unsigned int optVerbose,
+                                                                 int &n,
+                                                                 UtreeBppUtils::treemap &tm){
+
+        double initScore = 0.0;
+        double cycleScore = 0.0;
+        double diffScore = 0.0;
+        bool flag_continue = true;
+
+
+
+
+
+
+
+        for(int jj=0;jj<4;jj++){ // performs 4 moves
+
+
+
+        //while (flag_continue) {
+
+            initScore = tl->getLogLikelihood();
+
+            bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
+
+
+            tshlib::Move *currentMove = nullptr;
+            tshlib::Move *bestMove = nullptr;
+            UtreeBppUtils::VirtualNode *_node__source_id = nullptr;
+            UtreeBppUtils::VirtualNode *_node__target_id = nullptr;
+
+            if (optimizeTopo) {
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //treesearch->executeTreeSearch();
+                double newScore = 0.0;
+
+                treesearch->setTreeSearchStatus(true);
+                treesearch->setInitialLikelihoodValue(treesearch->likelihoodFunc->getLogLikelihood());
+                treesearch->tshcycleScore = treesearch->tshinitScore;
+                treesearch->utree_->removeVirtualRootNode();
+                //.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
+                //newScore = treesearch->iterate();
+                double c = std::abs(treesearch->tshinitScore);
+                //while (treesearch->toleranceValue < c) {
+                    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+                    tshlib::TreeRearrangment *_move__set = treesearch->defineMoves();
+
+
+
+
+
+                /*
+                for(int jj=0;jj<4;jj++){ // performs 4 moves
+
+                    tshlib::Move *currentMove = nullptr;
+                    tshlib::Move *bestMove = nullptr;
+                    UtreeBppUtils::VirtualNode *_node__source_id = nullptr;
+                    UtreeBppUtils::VirtualNode *_node__target_id = nullptr;
+                treesearch->utree_->removeVirtualRootNode();
+                */
+
+
+
+
+
+                    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+                    //treesearch->testMoves(_move__set);
+                    bool status = false;
+                    treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
+                    std::vector<int> _count__moves_cycle(_move__set->getNumberOfMoves(), 0);
+                    int thread_id=0;
+                    int i=0;
+                    //for (i = 0; i < _move__set->getNumberOfMoves(); i++) {
+                    //for (i = 0; i < 1; i++) {
+
+
+
+
+
+                    // select move
+                    if(jj==0){
+                        i=0;
+                    }else if(jj==1){
+                        i=5;
+                    }else if(jj==2){
+                        i=10;
+                    }else if(jj==3){
+                        i=20;
+                    }else{
+                        i=30;
+                    }
+
+
+
+
+
+                        thread_id = 0;
+                        currentMove = _move__set->getMove(i);
+                        auto _thread__topology = new tshlib::Utree((*treesearch->utree_));
+                        double moveLogLK = 0;
+                        _node__source_id = _thread__topology->getNode(currentMove->getSourceNode());
+
+                        bpp::ApplicationTools::displayResult("source node: ",_node__source_id->vnode_name);
+
+                        _node__target_id = _thread__topology->getNode(currentMove->getTargetNode());
+
+                        bpp::ApplicationTools::displayResult("target node: ",_node__target_id->vnode_name);
+
+                        std::vector<int> listNodesWithinPath = _thread__topology->computePathBetweenNodes(_node__source_id, _node__target_id);
+                        std::vector<int> updatedNodesWithinPath = _move__set->updatePathBetweenNodes(i, listNodesWithinPath);
+                        status = _move__set->applyMove(i, (*_thread__topology));
+                        if (status) {
+                            updatedNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
+                            listNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
+                            if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
+                                moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
+                                        updatedNodesWithinPath, (*_thread__topology), thread_id);
+                            } else {
+                                moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
+                                        updatedNodesWithinPath, (*_thread__topology));
+                            }
+                            _move__set->getMove(i)->setScore(moveLogLK);
+                        }
+                        _count__moves_cycle[i] = 1;
+                        delete _thread__topology;
+                    //} end i
+
+
+
+
+                bpp::ParameterList shortList;
+                shortList.reset();
+                for(int kk=0;kk<listNodesWithinPath.size();kk++){
+                    int id_VN = listNodesWithinPath.at(kk);
+                        if(id_VN!=-1){
+                        int id_Bpp = tm.right.at(id_VN);
+                        std::string par_name;
+                        par_name = "BrLen" + std::to_string(id_Bpp);
+                        shortList.addParameter(parametersToEstimate.getParameter(par_name));
+                    }
+                }
+
+
+
+                    treesearch->performed_moves.push_back(VectorTools::sum(_count__moves_cycle));
+                    treesearch->deallocateTemporaryLikelihoodData(treesearch->threads_num);
+                    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+                    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+                    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                    //tshlib::Move *bestMove = _move__set->selectBestMove(treesearch->tshcycleScore);
+                    bestMove = currentMove;
+                    if (bestMove) {
+                        treesearch->setTreeSearchStatus(true);
+                        std::vector<int> listNodesWithinPath, updatedNodesWithinPath;
+                        listNodesWithinPath = treesearch->utree_->computePathBetweenNodes(treesearch->utree_->getNode(bestMove->getSourceNode()),
+                                                                                          treesearch->utree_->getNode(bestMove->getTargetNode()));
+                        updatedNodesWithinPath = _move__set->updatePathBetweenNodes(bestMove->getUID(), listNodesWithinPath);
+                        updatedNodesWithinPath.push_back(treesearch->utree_->rootnode->getVnode_id());
+                        _move__set->commitMove(bestMove->getUID(), (*treesearch->utree_));
+                        if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
+                            dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
+                        } else {
+                            dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
+                        }
+                        treesearch->tshcycleScore = -treesearch->likelihoodFunc->getValue();
+
+                        // m@x
+                        //c = std::abs(treesearch->tshinitScore) - std::abs(treesearch->tshcycleScore);
+                        c = std::abs(treesearch->tshinitScore - treesearch->tshcycleScore);
+
+                        treesearch->tshinitScore = treesearch->tshcycleScore;
+                        delete _move__set;
+                    } else {
+                        delete _move__set;
+                        //break;
+                    }
+                    treesearch->performed_cycles = treesearch->performed_cycles + 1;
+                    if (treesearch->performed_cycles == treesearch->maxTSCycles) {
+                        DLOG(INFO) << "[TSH Cycle] Reached max number of tree-search cycles after " << treesearch->performed_cycles << " cycles";
+                        //break;
+                    }
+                //}
+                newScore = -treesearch->tshcycleScore;
+                //.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
+                treesearch->utree_->addVirtualRootNode();
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+                //if (!treesearch->isTreeSearchSuccessful()) {
+                //    flag_continue = false;
+                //}
+
+            //}
+
+
+
+
+
+            /*
+            std::vector<std::string> pnames = parametersToEstimate.getParameterNames();
+            bpp::ParameterList shortList;
+            for(int kk=0;kk<5;kk++){
+                shortList.addParameter(&parametersToEstimate.getParameter(pnames.at(kk)));
+            }
+            */
+
+
+
+
+
+
+
+
+
+            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+
+                n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                   shortList,//parametersToEstimate,
+                                                                   backupListener.get(),
+                                                                   nstep,
+                                                                   tolerance,
+                                                                   nbEvalMax,
+                                                                   messageHandler,
+                                                                   profiler,
+                                                                   reparam,
+                                                                   optVerbose,
+                                                                   optMethodDeriv,
+                                                                   optMethodModel);
+
+            } else {
+
+                //dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->utree_->listVNodes = _thread__topology->listVNodes;
+
+                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                                       shortList,//parametersToEstimate,
+                                                                                       backupListener.get(),
+                                                                                       nstep,
+                                                                                       tolerance,
+                                                                                       nbEvalMax,
+                                                                                       messageHandler,
+                                                                                       profiler,
+                                                                                       reparam,
+                                                                                       optVerbose,
+                                                                                       optMethodDeriv,
+                                                                                       optMethodModel);
+
+            }
+
+            /*
+            for(int kk=0;kk<5;kk++){
+                bpp::Parameter *pp = &shortList.getParameter(pnames.at(kk));
+                pp->setValue(0.123);
+            }
+            tl->fireParameterChanged(shortList);
+            */
+            /*
+            for(int kk=0;kk<13;kk++){
+               bpp::Parameter *pp = &parametersToEstimate.getParameter(pnames.at(kk));
+               pp->setValue(0.123);
+            }
+            tl->fireParameterChanged(parametersToEstimate);
+            */
+
+
+
+
+            bpp::Tree *local_tree = nullptr;
+            local_tree = new TreeTemplate<Node>(tl->getTree());
+
+
+
+
+            // Recompute the difference
+            cycleScore = tl->getLogLikelihood();
+            diffScore = std::abs( initScore - cycleScore );
+            if(tolerance > diffScore){
+                flag_continue = false;
+            }
+
+        }
+
+
+
+
+
+        } // end jj
+
+        int stop = 1;
+
+    }
+
+#else
+
+    // original version
     void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
                                                                  std::string optMethodModel,
                                                                  unique_ptr<BackupListener> &backupListener,
@@ -717,91 +1135,16 @@ namespace bpp {
         }
 
     }
-    */
 
-    // new version
-    void Optimizators::performOptimizationParamsAndTreeIterative(tshlib::TreeSearch *treesearch,
-                                                                 std::string optMethodModel,
-                                                                 unique_ptr<BackupListener> &backupListener,
-                                                                 ParameterList &parametersToEstimate,
-                                                                 bpp::AbstractHomogeneousTreeLikelihood *tl,
-                                                                 unsigned int nstep,
-                                                                 double tolerance,
-                                                                 unsigned int nbEvalMax,
-                                                                 std::string optName,
-                                                                 std::string optMethodDeriv,
-                                                                 OutputStream *messageHandler,
-                                                                 OutputStream *profiler,
-                                                                 bool reparam,
-                                                                 bool optimizeTopo,
-                                                                 unsigned int optVerbose,
-                                                                 int &n){
+#endif
+#endif
 
-        double initScore = 0.0;
-        double cycleScore = 0.0;
-        double diffScore = 0.0;
-        bool flag_continue = true;
 
-        while (flag_continue) {
 
-            initScore = tl->getLogLikelihood();
 
-            bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
 
-            // Execute num-opt
-            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
 
-                n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                                                                   parametersToEstimate,
-                                                                   backupListener.get(),
-                                                                   nstep,
-                                                                   tolerance,
-                                                                   nbEvalMax,
-                                                                   messageHandler,
-                                                                   profiler,
-                                                                   reparam,
-                                                                   optVerbose,
-                                                                   optMethodDeriv,
-                                                                   optMethodModel);
 
-            } else {
-
-                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                                                                                       parametersToEstimate,
-                                                                                       backupListener.get(),
-                                                                                       nstep,
-                                                                                       tolerance,
-                                                                                       nbEvalMax,
-                                                                                       messageHandler,
-                                                                                       profiler,
-                                                                                       reparam,
-                                                                                       optVerbose,
-                                                                                       optMethodDeriv,
-                                                                                       optMethodModel);
-
-            }
-
-            if (optimizeTopo) {
-
-                // Execute tree-search
-                treesearch->executeTreeSearch();
-
-                if (!treesearch->isTreeSearchSuccessful()) {
-                    flag_continue = false;
-                }
-
-            }
-
-            // Recompute the difference
-            cycleScore = tl->getLogLikelihood();
-            diffScore = std::abs(initScore) - std::abs(cycleScore);
-            if(tolerance > diffScore){
-                flag_continue = false;
-            }
-
-        }
-
-    }
 
     void Optimizators::performOptimizationFullD(unique_ptr<BackupListener> &backupListener,
                                                 unsigned int nstep,
@@ -896,7 +1239,8 @@ namespace bpp {
                                            bool suffixIsOptional,
                                            unsigned int optVerbose,
                                            bool verbose,
-                                           int warn){
+                                           int warn,
+                                           UtreeBppUtils::treemap &tm){
 
         std::string optMethodModel;
 
@@ -939,7 +1283,8 @@ namespace bpp {
                                                                     reparam,
                                                                     optimizeTopo,
                                                                     optVerbose,
-                                                                    n);
+                                                                    n,
+                                                                    tm);
 
         } else if (optName == "FullD") {
 
@@ -1012,7 +1357,7 @@ namespace bpp {
                         reparam,
                         optVerbose,
                         optMethodDeriv,
-                        OptimizationTools::OPTIMIZATION_BFGS);
+                        OptimizationTools::OPTIMIZATION_BFGS); //OPTIMIZATION_BFGS???????????????????
             } else {
 
                 n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
@@ -1026,7 +1371,7 @@ namespace bpp {
                         reparam,
                         optVerbose,
                         optMethodDeriv,
-                        OptimizationTools::OPTIMIZATION_BFGS);
+                        OptimizationTools::OPTIMIZATION_BFGS); //OPTIMIZATION_BFGS???????????????????
 
 
             }
@@ -1056,6 +1401,7 @@ namespace bpp {
             bpp::AbstractHomogeneousTreeLikelihood *inTL,
             const ParameterList &parameters,
             std::map<std::string, std::string> &params,
+            UtreeBppUtils::treemap &tm,
             const std::string &suffix,
             bool suffixIsOptional,
             bool verbose,
@@ -1264,7 +1610,8 @@ namespace bpp {
                                           suffixIsOptional,
                                           optVerbose,
                                           verbose,
-                                          warn);
+                                          warn,
+                                          tm);
 
         // -------------------------------------------------------------------------
         // Final optimisation
@@ -1593,7 +1940,7 @@ namespace bpp {
 
     unsigned int Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(
             DiscreteRatesAcrossSitesTreeLikelihood *tl,
-            const ParameterList &parameters,
+            ParameterList &parameters,
             OptimizationListener *listener,
             unsigned int nstep,
             double tolerance,

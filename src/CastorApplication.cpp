@@ -511,7 +511,7 @@ void CastorApplication::initLkFun(){
 
 void CastorApplication::optimizeParameters(){
 
-    this->tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(this->tl,this->tl->getParameters(),this->getParams(),"",true,true,0));
+    this->tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(this->tl,this->tl->getParameters(),this->getParams(),this->tm,"",true,true,0));
 
     this->logL = this->tl->getLogLikelihood();
 

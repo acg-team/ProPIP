@@ -126,9 +126,6 @@ namespace bpp {
         bpp::SubstitutionModel *smodel;
         bpp::TransitionModel *model;
 
-        UtreeBppUtils::Utree *utree;
-        UtreeBppUtils::treemap tm;
-
         std::unique_ptr<bpp::GeneticCode> gCode;
 
         pPIP *alignment;
@@ -166,6 +163,9 @@ namespace bpp {
         bpp::Tree *tree;
 
         progressivePIP *proPIP;
+
+        UtreeBppUtils::Utree *utree;
+        UtreeBppUtils::treemap tm;
 
     public:
 

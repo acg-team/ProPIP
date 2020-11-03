@@ -93,6 +93,7 @@ namespace bpp {
                 bpp::AbstractHomogeneousTreeLikelihood *inTL,
                 const ParameterList &parameters,
                 std::map<std::string, std::string> &params,
+                UtreeBppUtils::treemap &tm,
                 const std::string &suffix = "",
                 bool suffixIsOptional = true,
                 bool verbose = true,
@@ -127,7 +128,7 @@ namespace bpp {
        */
         static unsigned int optimizeNumericalParametersUsingNumericalDerivatives(
                 DiscreteRatesAcrossSitesTreeLikelihood *tl,
-                const ParameterList &parameters,
+                ParameterList &parameters,
                 OptimizationListener *listener = 0,
                 unsigned int nstep = 1,
                 double tolerance = 0.000001,
@@ -272,7 +273,8 @@ namespace bpp {
                                                             bool reparam,
                                                             bool optimizeTopo,
                                                             unsigned int optVerbose,
-                                                            int &n);
+                                                            int &n,
+                                                            UtreeBppUtils::treemap &tm);
 
         static void performOptimizationFullD(unique_ptr<BackupListener> &backupListener,
                                              unsigned int nstep,
@@ -318,7 +320,8 @@ namespace bpp {
                                         bool suffixIsOptional,
                                         unsigned int optVerbose,
                                         bool verbose,
-                                        int warn);
+                                        int warn,
+                                        UtreeBppUtils::treemap &tm);
 
         static void finalOptimizationStep(std::string finalMethod,
                                           bpp::AbstractHomogeneousTreeLikelihood *tl,

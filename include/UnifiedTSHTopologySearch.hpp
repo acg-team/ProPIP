@@ -70,6 +70,9 @@ namespace tshlib {
     class TreeSearch {
 
     private:
+
+    // m@x
+    public:
         bpp::AbstractHomogeneousTreeLikelihood *likelihoodFunc;
         double tshinitScore;
         double tshcycleScore;
@@ -277,7 +280,12 @@ namespace tshlib {
 
         double executeTreeSearch();
 
-    protected:
+
+
+    // m@x
+    //protected:
+
+
 
         /*!
          * @brief This method execute the cycle of tree search according to the settings selected by the user
