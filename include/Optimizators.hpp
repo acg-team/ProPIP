@@ -352,6 +352,21 @@ namespace bpp {
                                                 AbstractNumericalDerivative *fnum5,
                                                 unsigned int nstep);
 
+        static void optimizeParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                              bpp::ParameterList &shortList,
+                                              unique_ptr<BackupListener> &backupListener,
+                                              unsigned int nstep,
+                                              double tolerance,
+                                              unsigned int nbEvalMax,
+                                              OutputStream *messageHandler,
+                                              OutputStream *profiler,
+                                              bool reparam,
+                                              unsigned int optVerbose,
+                                              std::string optMethodDeriv,
+                                              std::string optMethodModel,
+                                              std::string optName,
+                                              int &n);
+
     };
 } // end of namespace bpp.
 

@@ -631,7 +631,54 @@ namespace bpp {
 
     }
 
+    void Optimizators::optimizeParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                          bpp::ParameterList &shortList,
+                                          unique_ptr<BackupListener> &backupListener,
+                                          unsigned int nstep,
+                                          double tolerance,
+                                          unsigned int nbEvalMax,
+                                          OutputStream *messageHandler,
+                                          OutputStream *profiler,
+                                          bool reparam,
+                                          unsigned int optVerbose,
+                                          std::string optMethodDeriv,
+                                          std::string optMethodModel,
+                                          std::string optName,
+                                          int &n){
 
+        if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+
+            n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                               shortList,
+                                                               backupListener.get(),
+                                                               nstep,
+                                                               tolerance,
+                                                               nbEvalMax,
+                                                               messageHandler,
+                                                               profiler,
+                                                               reparam,
+                                                               optVerbose,
+                                                               optMethodDeriv,
+                                                               optMethodModel);
+
+        } else {
+
+            n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
+                                                                                   shortList,
+                                                                                   backupListener.get(),
+                                                                                   nstep,
+                                                                                   tolerance,
+                                                                                   nbEvalMax,
+                                                                                   messageHandler,
+                                                                                   profiler,
+                                                                                   reparam,
+                                                                                   optVerbose,
+                                                                                   optMethodDeriv,
+                                                                                   optMethodModel);
+
+        }
+
+    }
 
 
 #ifdef TEST1
@@ -760,268 +807,169 @@ namespace bpp {
         double initScore = 0.0;
         double cycleScore = 0.0;
         double diffScore = 0.0;
-        bool flag_continue = true;
+
+
+
+        tshlib::Move *currentMove = nullptr;
+        tshlib::Move *bestMove = nullptr;
+        UtreeBppUtils::VirtualNode *_node__source_id = nullptr;
+        UtreeBppUtils::VirtualNode *_node__target_id = nullptr;
+        tshlib::TreeRearrangment *_move__set = nullptr;
+        bool status = false;
+        int thread_id=0;
+        double moveLogLK = 0.0;
+        double newScore = 0.0;
+        //double deltaLk = 0.0;
+        std::vector<int> listNodesWithinPath;
+        std::vector<int> updatedNodesWithinPath;
+        bpp::ParameterList shortList;
+        int rootId = 0;
+        int id_VN = 0;
+        int id_Bpp = 0;
+        std::string par_name;
+        int num_moves_per_branch_update = 5;
+
+        initScore = tl->getLogLikelihood();
+
+        bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
+
+        //if (optimizeTopo) {
+
+        treesearch->setTreeSearchStatus(true);
+        treesearch->setInitialLikelihoodValue(treesearch->likelihoodFunc->getLogLikelihood());
+        treesearch->tshcycleScore = treesearch->tshinitScore;
+        treesearch->utree_->removeVirtualRootNode();
+
+        //deltaLk = std::abs(treesearch->tshinitScore);
+        //std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+        _move__set = treesearch->defineMoves();
+
+        for(int move_i=0;move_i<_move__set->getNumberOfMoves();move_i++){
+
+            currentMove = nullptr;
+            bestMove = nullptr;
+            _node__source_id = nullptr;
+            _node__target_id = nullptr;
+            treesearch->utree_->removeVirtualRootNode();
+
+            treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
+
+            currentMove = _move__set->getMove(move_i);
+
+            tshlib::Utree *_thread__topology = new tshlib::Utree((*treesearch->utree_));
+
+            moveLogLK = 0.0;
+
+            _node__source_id = _thread__topology->getNode(currentMove->getSourceNode());
+
+            _node__target_id = _thread__topology->getNode(currentMove->getTargetNode());
+
+
+
+
+            bpp::ApplicationTools::displayResult("source node: ",_node__source_id->vnode_name);
+            bpp::ApplicationTools::displayResult("target node: ",_node__target_id->vnode_name);
 
 
 
 
 
+            listNodesWithinPath.clear();
+            updatedNodesWithinPath.clear();
+
+            listNodesWithinPath = _thread__topology->computePathBetweenNodes(_node__source_id, _node__target_id);
+            updatedNodesWithinPath = _move__set->updatePathBetweenNodes(move_i, listNodesWithinPath);
 
 
-        for(int jj=0;jj<4;jj++){ // performs 4 moves
+            for(int kk=0;kk<listNodesWithinPath.size();kk++){
+                id_VN = listNodesWithinPath.at(kk);
+                id_Bpp = tm.right.at(id_VN);
+                par_name = "BrLen" + std::to_string(id_Bpp);
+                if(!shortList.hasParameter(par_name)){
+                    shortList.addParameter(parametersToEstimate.getParameter(par_name));
+                }
+            }
 
+            status = _move__set->applyMove(move_i, (*_thread__topology));
 
+            if (status) {
 
-        //while (flag_continue) {
+                rootId = _thread__topology->rootnode->getVnode_id();
 
-            initScore = tl->getLogLikelihood();
+                updatedNodesWithinPath.push_back(rootId);
 
-            bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
+                listNodesWithinPath.push_back(rootId);
 
-
-            tshlib::Move *currentMove = nullptr;
-            tshlib::Move *bestMove = nullptr;
-            UtreeBppUtils::VirtualNode *_node__source_id = nullptr;
-            UtreeBppUtils::VirtualNode *_node__target_id = nullptr;
-
-            if (optimizeTopo) {
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //treesearch->executeTreeSearch();
-                double newScore = 0.0;
-
-                treesearch->setTreeSearchStatus(true);
-                treesearch->setInitialLikelihoodValue(treesearch->likelihoodFunc->getLogLikelihood());
-                treesearch->tshcycleScore = treesearch->tshinitScore;
-                treesearch->utree_->removeVirtualRootNode();
-                //.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
-                //newScore = treesearch->iterate();
-                double c = std::abs(treesearch->tshinitScore);
-                //while (treesearch->toleranceValue < c) {
-                    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-                    tshlib::TreeRearrangment *_move__set = treesearch->defineMoves();
-
-
-
-
-
-                /*
-                for(int jj=0;jj<4;jj++){ // performs 4 moves
-
-                    tshlib::Move *currentMove = nullptr;
-                    tshlib::Move *bestMove = nullptr;
-                    UtreeBppUtils::VirtualNode *_node__source_id = nullptr;
-                    UtreeBppUtils::VirtualNode *_node__target_id = nullptr;
-                treesearch->utree_->removeVirtualRootNode();
-                */
-
-
-
-
-
-                    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-                    //treesearch->testMoves(_move__set);
-                    bool status = false;
-                    treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
-                    std::vector<int> _count__moves_cycle(_move__set->getNumberOfMoves(), 0);
-                    int thread_id=0;
-                    int i=0;
-                    //for (i = 0; i < _move__set->getNumberOfMoves(); i++) {
-                    //for (i = 0; i < 1; i++) {
-
-
-
-
-
-                    // select move
-                    if(jj==0){
-                        i=0;
-                    }else if(jj==1){
-                        i=5;
-                    }else if(jj==2){
-                        i=10;
-                    }else if(jj==3){
-                        i=20;
-                    }else{
-                        i=30;
-                    }
-
-
-
-
-
-                        thread_id = 0;
-                        currentMove = _move__set->getMove(i);
-                        auto _thread__topology = new tshlib::Utree((*treesearch->utree_));
-                        double moveLogLK = 0;
-                        _node__source_id = _thread__topology->getNode(currentMove->getSourceNode());
-
-                        bpp::ApplicationTools::displayResult("source node: ",_node__source_id->vnode_name);
-
-                        _node__target_id = _thread__topology->getNode(currentMove->getTargetNode());
-
-                        bpp::ApplicationTools::displayResult("target node: ",_node__target_id->vnode_name);
-
-                        std::vector<int> listNodesWithinPath = _thread__topology->computePathBetweenNodes(_node__source_id, _node__target_id);
-                        std::vector<int> updatedNodesWithinPath = _move__set->updatePathBetweenNodes(i, listNodesWithinPath);
-                        status = _move__set->applyMove(i, (*_thread__topology));
-                        if (status) {
-                            updatedNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
-                            listNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
-                            if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
-                                moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-                                        updatedNodesWithinPath, (*_thread__topology), thread_id);
-                            } else {
-                                moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-                                        updatedNodesWithinPath, (*_thread__topology));
-                            }
-                            _move__set->getMove(i)->setScore(moveLogLK);
-                        }
-                        _count__moves_cycle[i] = 1;
-                        delete _thread__topology;
-                    //} end i
-
-
-
-
-                bpp::ParameterList shortList;
-                shortList.reset();
-                for(int kk=0;kk<listNodesWithinPath.size();kk++){
-                    int id_VN = listNodesWithinPath.at(kk);
-                        if(id_VN!=-1){
-                        int id_Bpp = tm.right.at(id_VN);
-                        std::string par_name;
-                        par_name = "BrLen" + std::to_string(id_Bpp);
-                        shortList.addParameter(parametersToEstimate.getParameter(par_name));
-                    }
+                if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
+                    moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath, (*_thread__topology), thread_id);
+                } else {
+                    moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath, (*_thread__topology));
                 }
 
-
-
-                    treesearch->performed_moves.push_back(VectorTools::sum(_count__moves_cycle));
-                    treesearch->deallocateTemporaryLikelihoodData(treesearch->threads_num);
-                    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-                    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-                    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-                    //tshlib::Move *bestMove = _move__set->selectBestMove(treesearch->tshcycleScore);
-                    bestMove = currentMove;
-                    if (bestMove) {
-                        treesearch->setTreeSearchStatus(true);
-                        std::vector<int> listNodesWithinPath, updatedNodesWithinPath;
-                        listNodesWithinPath = treesearch->utree_->computePathBetweenNodes(treesearch->utree_->getNode(bestMove->getSourceNode()),
-                                                                                          treesearch->utree_->getNode(bestMove->getTargetNode()));
-                        updatedNodesWithinPath = _move__set->updatePathBetweenNodes(bestMove->getUID(), listNodesWithinPath);
-                        updatedNodesWithinPath.push_back(treesearch->utree_->rootnode->getVnode_id());
-                        _move__set->commitMove(bestMove->getUID(), (*treesearch->utree_));
-                        if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
-                            dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
-                        } else {
-                            dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
-                        }
-                        treesearch->tshcycleScore = -treesearch->likelihoodFunc->getValue();
-
-                        // m@x
-                        //c = std::abs(treesearch->tshinitScore) - std::abs(treesearch->tshcycleScore);
-                        c = std::abs(treesearch->tshinitScore - treesearch->tshcycleScore);
-
-                        treesearch->tshinitScore = treesearch->tshcycleScore;
-                        delete _move__set;
-                    } else {
-                        delete _move__set;
-                        //break;
-                    }
-                    treesearch->performed_cycles = treesearch->performed_cycles + 1;
-                    if (treesearch->performed_cycles == treesearch->maxTSCycles) {
-                        DLOG(INFO) << "[TSH Cycle] Reached max number of tree-search cycles after " << treesearch->performed_cycles << " cycles";
-                        //break;
-                    }
-                //}
-                newScore = -treesearch->tshcycleScore;
-                //.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
-                treesearch->utree_->addVirtualRootNode();
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-                //if (!treesearch->isTreeSearchSuccessful()) {
-                //    flag_continue = false;
-                //}
-
-            //}
-
-
-
-
-
-            /*
-            std::vector<std::string> pnames = parametersToEstimate.getParameterNames();
-            bpp::ParameterList shortList;
-            for(int kk=0;kk<5;kk++){
-                shortList.addParameter(&parametersToEstimate.getParameter(pnames.at(kk)));
+                _move__set->getMove(move_i)->setScore(moveLogLK);
             }
-            */
+
+            delete _thread__topology;
+
+            treesearch->deallocateTemporaryLikelihoodData(treesearch->threads_num);
+
+            //std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+
+            //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+
+            bestMove = currentMove;
 
 
+            if (bestMove) {
+                //treesearch->setTreeSearchStatus(true);
 
+                //std::vector<int> listNodesWithinPath;
+                //std::vector<int> updatedNodesWithinPath;
 
+                //listNodesWithinPath = treesearch->utree_->computePathBetweenNodes(treesearch->utree_->getNode(bestMove->getSourceNode()),treesearch->utree_->getNode(bestMove->getTargetNode()));
 
+                //updatedNodesWithinPath = _move__set->updatePathBetweenNodes(bestMove->getUID(), listNodesWithinPath);
 
+                //updatedNodesWithinPath.push_back(treesearch->utree_->rootnode->getVnode_id());
 
+                _move__set->commitMove(bestMove->getUID(), (*treesearch->utree_));
 
+                if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
+                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
+                } else {
+                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
+                }
 
-            if ((optName == "D-Brent") || (optName == "D-BFGS")) {
+                treesearch->tshcycleScore = -treesearch->likelihoodFunc->getValue();
 
-                n = OptimizationTools::optimizeNumericalParameters(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                                                                   shortList,//parametersToEstimate,
-                                                                   backupListener.get(),
-                                                                   nstep,
-                                                                   tolerance,
-                                                                   nbEvalMax,
-                                                                   messageHandler,
-                                                                   profiler,
-                                                                   reparam,
-                                                                   optVerbose,
-                                                                   optMethodDeriv,
-                                                                   optMethodModel);
+                //c = std::abs(treesearch->tshinitScore - treesearch->tshcycleScore);
 
-            } else {
-
-                //dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->utree_->listVNodes = _thread__topology->listVNodes;
-
-                n = Optimizators::optimizeNumericalParametersUsingNumericalDerivatives(dynamic_cast<DiscreteRatesAcrossSitesTreeLikelihood *>(tl),
-                                                                                       shortList,//parametersToEstimate,
-                                                                                       backupListener.get(),
-                                                                                       nstep,
-                                                                                       tolerance,
-                                                                                       nbEvalMax,
-                                                                                       messageHandler,
-                                                                                       profiler,
-                                                                                       reparam,
-                                                                                       optVerbose,
-                                                                                       optMethodDeriv,
-                                                                                       optMethodModel);
+                treesearch->tshinitScore = treesearch->tshcycleScore;
 
             }
 
-            /*
-            for(int kk=0;kk<5;kk++){
-                bpp::Parameter *pp = &shortList.getParameter(pnames.at(kk));
-                pp->setValue(0.123);
+
+            treesearch->performed_cycles = treesearch->performed_cycles + 1;
+
+            newScore = -treesearch->tshcycleScore;
+
+            treesearch->utree_->addVirtualRootNode();
+
+
+
+
+            if((move_i % num_moves_per_branch_update)==(num_moves_per_branch_update-1)){
+                optimizeParameters(tl,shortList,backupListener,nstep,tolerance,nbEvalMax,messageHandler,profiler,reparam,optVerbose,optMethodDeriv,optMethodModel,optName,n);
+                shortList.reset();
             }
-            tl->fireParameterChanged(shortList);
-            */
-            /*
-            for(int kk=0;kk<13;kk++){
-               bpp::Parameter *pp = &parametersToEstimate.getParameter(pnames.at(kk));
-               pp->setValue(0.123);
-            }
-            tl->fireParameterChanged(parametersToEstimate);
-            */
 
 
 
-
-            bpp::Tree *local_tree = nullptr;
-            local_tree = new TreeTemplate<Node>(tl->getTree());
+            //====================================================
+            // for debugging purpose
+            //bpp::Tree *local_tree = nullptr;
+            //local_tree = new TreeTemplate<Node>(tl->getTree());
+            //====================================================
 
 
 
@@ -1029,19 +977,16 @@ namespace bpp {
             // Recompute the difference
             cycleScore = tl->getLogLikelihood();
             diffScore = std::abs( initScore - cycleScore );
-            if(tolerance > diffScore){
-                flag_continue = false;
+            if(diffScore < tolerance){
+                break;
+            }
+
+            if (treesearch->performed_cycles == treesearch->maxTSCycles) {
+                DLOG(INFO) << "[TSH Cycle] Reached max number of tree-search cycles after " << treesearch->performed_cycles << " cycles";
+                break;
             }
 
         }
-
-
-
-
-
-        } // end jj
-
-        int stop = 1;
 
     }
 
