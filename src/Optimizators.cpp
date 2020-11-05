@@ -82,6 +82,9 @@
 #include "UnifiedTSHTopologySearch.hpp"
 #include "UnifiedTSHomogeneousTreeLikelihood_PIP.hpp"
 
+
+#include <Utilities.hpp>
+
 using namespace bpp;
 
 //#define TEST1
@@ -844,12 +847,23 @@ namespace bpp {
         //std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
         _move__set = treesearch->defineMoves();
 
+
+        treesearch->utree_->addVirtualRootNode();
+
         for(int move_i=0;move_i<_move__set->getNumberOfMoves();move_i++){
 
-            currentMove = nullptr;
-            bestMove = nullptr;
-            _node__source_id = nullptr;
-            _node__target_id = nullptr;
+
+
+
+            bpp::ApplicationTools::displayResult("\nmossa:",move_i);
+
+
+
+
+            //currentMove = nullptr;
+            //bestMove = nullptr;
+            //_node__source_id = nullptr;
+            //_node__target_id = nullptr;
             treesearch->utree_->removeVirtualRootNode();
 
             treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
@@ -881,14 +895,26 @@ namespace bpp {
             updatedNodesWithinPath = _move__set->updatePathBetweenNodes(move_i, listNodesWithinPath);
 
 
-            for(int kk=0;kk<listNodesWithinPath.size();kk++){
-                id_VN = listNodesWithinPath.at(kk);
+            for(int node_i=0;node_i<listNodesWithinPath.size();node_i++){
+                id_VN = listNodesWithinPath.at(node_i);
                 id_Bpp = tm.right.at(id_VN);
                 par_name = "BrLen" + std::to_string(id_Bpp);
                 if(!shortList.hasParameter(par_name)){
                     shortList.addParameter(parametersToEstimate.getParameter(par_name));
                 }
             }
+
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if(move_i==19){
+                _move__set->getMove(19)->moveType_=tshlib::MoveType::SPR;
+            }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
             status = _move__set->applyMove(move_i, (*_thread__topology));
 
@@ -911,6 +937,16 @@ namespace bpp {
 
             delete _thread__topology;
 
+
+
+
+            bpp::ApplicationTools::displayMessage("\nStep10");
+
+
+
+
+
+
             treesearch->deallocateTemporaryLikelihoodData(treesearch->threads_num);
 
             //std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -918,6 +954,12 @@ namespace bpp {
             //auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
             bestMove = currentMove;
+
+
+
+            bpp::ApplicationTools::displayMessage("\nStep11");
+
+
 
 
             if (bestMove) {
@@ -932,7 +974,43 @@ namespace bpp {
 
                 //updatedNodesWithinPath.push_back(treesearch->utree_->rootnode->getVnode_id());
 
+
+                bpp::ApplicationTools::displayMessage("\nStep11_a");
+
+
+
                 _move__set->commitMove(bestMove->getUID(), (*treesearch->utree_));
+
+
+
+                bpp::ApplicationTools::displayMessage("\nStep11_b");
+
+
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                if(move_i==22){
+
+
+                    for(int kk=0;kk<treesearch->utree_->listVNodes.size();kk++){
+                        std::cout<<" node: "<<treesearch->utree_->listVNodes.at(kk)->getNodeName()<<" : "<<treesearch->utree_->listVNodes.at(kk)->getVnode_id()<<std::endl;
+                    }
+
+                    updatedNodesWithinPath.erase(updatedNodesWithinPath.begin() + 5);
+
+                    for(int kk=0;kk<updatedNodesWithinPath.size();kk++){
+                        std::cout<<" updatedNodesWithinPath: "<<updatedNodesWithinPath.at(kk)<<std::endl;
+                    }
+
+
+
+                    int stop = 1;
+
+                }
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
                 if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)) {
                     dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
@@ -940,13 +1018,29 @@ namespace bpp {
                     dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->topologyChangeSuccessful(updatedNodesWithinPath);
                 }
 
+
+                bpp::ApplicationTools::displayMessage("\nStep11_c");
+
+
                 treesearch->tshcycleScore = -treesearch->likelihoodFunc->getValue();
 
                 //c = std::abs(treesearch->tshinitScore - treesearch->tshcycleScore);
 
+                bpp::ApplicationTools::displayMessage("\nStep11_d");
+
+
                 treesearch->tshinitScore = treesearch->tshcycleScore;
 
+
+                bpp::ApplicationTools::displayMessage("\nStep11_d");
+
             }
+
+
+
+            bpp::ApplicationTools::displayMessage("\nStep12");
+
+
 
 
             treesearch->performed_cycles = treesearch->performed_cycles + 1;
@@ -958,6 +1052,11 @@ namespace bpp {
 
 
 
+            bpp::ApplicationTools::displayMessage("\nStep13");
+
+
+
+
             if((move_i % num_moves_per_branch_update)==(num_moves_per_branch_update-1)){
                 optimizeParameters(tl,shortList,backupListener,nstep,tolerance,nbEvalMax,messageHandler,profiler,reparam,optVerbose,optMethodDeriv,optMethodModel,optName,n);
                 shortList.reset();
@@ -965,11 +1064,26 @@ namespace bpp {
 
 
 
+
+
+            bpp::ApplicationTools::displayMessage("\nStep14");
+
+
+
+
             //====================================================
             // for debugging purpose
-            //bpp::Tree *local_tree = nullptr;
-            //local_tree = new TreeTemplate<Node>(tl->getTree());
+            bpp::Tree *local_tree = nullptr;
+            local_tree = new TreeTemplate<Node>(tl->getTree());
+            if(move_i==18){
+                bpp::ApplicationTools::displayMessage("\nprossimo passo errore");
+            }
             //====================================================
+
+
+
+
+            bpp::ApplicationTools::displayMessage("\nStep15");
 
 
 
@@ -978,15 +1092,29 @@ namespace bpp {
             cycleScore = tl->getLogLikelihood();
             diffScore = std::abs( initScore - cycleScore );
             if(diffScore < tolerance){
+                bpp::ApplicationTools::displayMessage("\n[Search has come to convergence]");
                 break;
             }
 
             if (treesearch->performed_cycles == treesearch->maxTSCycles) {
-                DLOG(INFO) << "[TSH Cycle] Reached max number of tree-search cycles after " << treesearch->performed_cycles << " cycles";
+                bpp::ApplicationTools::displayMessage("\n[TSH Cycle] Reached max number of tree-search cycles");
                 break;
             }
 
+
+            bpp::ApplicationTools::displayMessage("\nStep16");
+
+
+
         }
+
+
+
+
+        bpp::ApplicationTools::displayMessage("\nI'm done with the optimization");
+
+
+
 
     }
 

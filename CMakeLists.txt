@@ -262,7 +262,7 @@ if (STATIC GREATER 0)
     endif()
 
     set_target_properties(ProPIP PROPERTIES LINK_FLAGS "-static")
-    target_link_libraries(ProPIP tshlib-static)
+    #target_link_libraries(ProPIP tshlib-static)
     target_link_libraries(ProPIP glog::glog)
     target_link_libraries(ProPIP ${INTEL_LIBS_STATIC})
     target_link_libraries(ProPIP ${BPP_LIBS_STATIC})
@@ -277,7 +277,7 @@ if (STATIC GREATER 0)
 
 else ()
 
-    target_link_libraries(ProPIP tshlib)
+    #target_link_libraries(ProPIP tshlib)
     target_link_libraries(ProPIP glog::glog)
     target_link_libraries(ProPIP ${INTEL_LIBS_SHARED})
     target_link_libraries(ProPIP ${BPP_LIBS_SHARED})

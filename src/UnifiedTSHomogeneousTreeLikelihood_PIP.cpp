@@ -189,6 +189,13 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::fireTopologyChange(std::vector<int>
 double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangement(std::vector<int> &nodeList,
                                                                                    tshlib::Utree &_utree__topology,
                                                                                    int idxThread) {
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep1");
+
+
+
     //fetch temporary arrays
     std::map<int, VVVdouble> *ts_lkdata = &testVectorLikelihoodData_[LKDataClass::sub][idxThread];
     std::map<int, VVVdouble> *ts_lkemptydata = &testVectorLikelihoodData_[LKDataClass::empty][idxThread];
@@ -197,19 +204,137 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangeme
     std::map<int, bool> *ts_node__data_origin = &tsTemp_node_data_origin[idxThread];
 
 
+
+    bpp::ApplicationTools::displayMessage("\nStep2");
+
+
+
     // Add root to the utree structure
-    _utree__topology.addVirtualRootNode();
+    //**************************************************************
+    //_utree__topology.addVirtualRootNode();
+    if (_utree__topology.rootnode->getNodeRight() == nullptr && _utree__topology.rootnode->getNodeLeft() == nullptr) {
+        bpp::ApplicationTools::displayMessage("\nStep2a");
+        //----------------------------------------------------------
+        //_utree__topology._updateStartNodes();
+        try {
+            bpp::ApplicationTools::displayMessage("\nStep2a_1");
+            bool fixPseudoRootOnNextSubtree = true;
+            bpp::ApplicationTools::displayMessage("\nStep2a_2");
+            //......................................................
+            //std::vector<tshlib::VirtualNode *> sideA = _utree__topology.findPseudoRoot(_utree__topology.listVNodes.at(0), fixPseudoRootOnNextSubtree);
+            std::vector<tshlib::VirtualNode *> sideA;
+            tshlib::VirtualNode *CurrentNode = _utree__topology.listVNodes.at(0);
+            bpp::ApplicationTools::displayResult("Node:",CurrentNode->getVnode_id());
+            while (CurrentNode != nullptr) {
+                sideA.push_back(CurrentNode);
+                if (CurrentNode == CurrentNode->getNodeUp()->getNodeUp()) {
+                    bpp::ApplicationTools::displayMessage("exiting while loop\n");
+                    break;
+                }
+                if (CurrentNode->getNodeUp() != nullptr) {
+                    CurrentNode = CurrentNode->getNodeUp();
+                    bpp::ApplicationTools::displayResult("Node:",CurrentNode->getVnode_id());
+                } else {
+                    CurrentNode = nullptr;
+                    bpp::ApplicationTools::displayMessage("nullptr\n");
+                }
+            }
+            if (fixPseudoRootOnNextSubtree) {
+
+                bpp::ApplicationTools::displayMessage("fixPseudoRootOnNextSubtree\n");
+                if (CurrentNode->getNodeUp() != nullptr) {
+                    sideA.push_back(CurrentNode->getNodeUp());
+                }
+            }
+            //......................................................
+            bpp::ApplicationTools::displayMessage("\nStep2a_3");
+            tshlib::VirtualNode *sideA_node = sideA.back();
+            bpp::ApplicationTools::displayMessage("\nStep2a_4");
+            fixPseudoRootOnNextSubtree = false;
+            bpp::ApplicationTools::displayMessage("\nStep2a_5");
+            std::vector<tshlib::VirtualNode *> sideB = _utree__topology.findPseudoRoot(_utree__topology.listVNodes.at(0), fixPseudoRootOnNextSubtree);
+            tshlib::VirtualNode *sideB_node = sideB.back();
+            bpp::ApplicationTools::displayMessage("\nStep2a_6");
+            _utree__topology.startVNodes.clear();
+            bpp::ApplicationTools::displayMessage("\nStep2a_7");
+            _utree__topology.startVNodes.push_back(sideA_node);
+            bpp::ApplicationTools::displayMessage("\nStep2a_8");
+            _utree__topology.startVNodes.push_back(sideB_node);
+            bpp::ApplicationTools::displayMessage("\nStep2a_9");
+        } catch (const std::exception &e) {
+            LOG(FATAL) << "[Utree::_updateStartNodes]" << e.what();
+        }
+        //-----------------------------------------------------------
+        bpp::ApplicationTools::displayMessage("\nStep2b");
+        _utree__topology.rootnode->clearChildren();
+        bpp::ApplicationTools::displayMessage("\nStep2c");
+        _utree__topology.startVNodes.at(0)->disconnectNode();
+        bpp::ApplicationTools::displayMessage("\nStep2d");
+        _utree__topology.rootnode->connectNode(_utree__topology.startVNodes.at(0));
+        _utree__topology.rootnode->connectNode(_utree__topology.startVNodes.at(1));
+        bpp::ApplicationTools::displayMessage("\nStep2e");
+    }else{
+        bpp::ApplicationTools::displayMessage("\nStep2z");
+    }
+    //**************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep3");
+
+
+
+
+
 
     // 0. convert the list of tshlib::VirtualNodes into bpp::Node
     std::vector<int> _affected__nodes = remapVirtualNodeLists(nodeList);
 
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep4");
+
+
+
+
     // 1. Flag nodes to read from reference
     //for (std::vector<int>::iterator it = _affected__nodes.begin(); it != _affected__nodes.end(); ++it)
-    for (auto it = _affected__nodes.begin(); it != _affected__nodes.end(); ++it)
+    for (auto it = _affected__nodes.begin(); it != _affected__nodes.end(); ++it){
         (*ts_node__data_origin)[(*it)] = true;
+    }
+
+
+
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep5");
+
+
+
+
 
     // 2. Fire topology change
     fireTopologyChange(_affected__nodes, ts_lkdata, ts_lkemptydata, ts_desccount, ts_setadata, ts_node__data_origin, _utree__topology);
+
+
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep6");
+
+
+
 
     // 3. Compute loglikelihood
     double logLk = getLogLikelihoodOnTreeRearrangement(_affected__nodes,
@@ -220,8 +345,24 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangeme
                                                        ts_node__data_origin,
                                                        _utree__topology);
 
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep7");
+
+
+
+
+
     // 4. Remove root node from the utree structure
     _utree__topology.removeVirtualRootNode();
+
+
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep8");
+
 
 
 
@@ -231,6 +372,14 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangeme
         std::fill((*ts_setadata)[(*it)].begin(), (*ts_setadata)[(*it)].end(), false);
         std::fill((*ts_desccount)[(*it)].begin(), (*ts_desccount)[(*it)].end(), 0);
     }
+
+
+
+
+    bpp::ApplicationTools::displayMessage("\nStep9");
+
+
+
 
     return logLk;
 
@@ -290,23 +439,49 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::getLogLikelihoodOnTreeRearrangeme
 
 void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyChangeSuccessful(std::vector<int> listNodes) {
 
+    std::cout<<"topologyCommitTree"<<std::endl;
+
     // Update BPP tree using the structure in Utree
     topologyCommitTree();
+
+
+    std::cout<<"addVirtualRootNode"<<std::endl;
+
 
     // Add virtual root to compute the likelihood
     utree_->addVirtualRootNode();
 
+
+    std::cout<<"getNodeListPostOrder"<<std::endl;
+
+
     // Fire topology change
     std::vector<int> ponl = getNodeListPostOrder(tree_->getRootNode()->getId());
 
+
+    std::cout<<"setLikelihoodNodes"<<std::endl;
+
+
     setLikelihoodNodes(ponl);
+
+
+    std::cout<<"fireTopologyChange"<<std::endl;
+
 
     fireTopologyChange(ponl);
 
     DVLOG(1) << "loglikelihood after commit" << TextTools::toString(getLogLikelihood(), 15);
 
+
+
+    std::cout<<"fireBranchOptimisation"<<std::endl;
+
+
     // Optimise branches involved in the tree rearrangement
     fireBranchOptimisation(UtreeBppUtils::remapNodeLists(listNodes, tree_, treemap_));
+
+
+    std::cout<<"removeVirtualRootNode"<<std::endl;
 
     // Remove the virtual root to allow for further tree topology improvements
     utree_->removeVirtualRootNode();

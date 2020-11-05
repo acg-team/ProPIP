@@ -273,7 +273,6 @@ UtreeBppUtils::remapNodeLists(std::vector<int> &inputList, bpp::TreeTemplate<bpp
     std::vector<bpp::Node *> newList;
 
     for (auto &vnode:inputList) {
-
         newList.push_back(tree->getNode(tm.right.at(vnode)));
     }
 
