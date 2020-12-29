@@ -518,8 +518,10 @@ namespace tshlib {
 
         std::vector <int> Mat(num_nodes);
         std::vector <int> Dir(num_nodes);
+        std::vector <int> Rev_S_T(num_nodes);
         std::fill(Mat.begin(),Mat.end(),0);
         std::fill(Dir.begin(),Dir.end(),0);
+        std::fill(Rev_S_T.begin(),Rev_S_T.end(),0);
 
         std::vector<std::vector<int>> paths_to_root(num_nodes);
         //std::vector<int> paths_to_root_source;
@@ -555,6 +557,7 @@ namespace tshlib {
         dim1 = v1->size();
         for(int target_id=0; target_id < paths_to_root.size(); target_id++){
             if(source_id!=target_id){
+
                 v2 = &(paths_to_root.at(target_id));
                 dim2 = v2->size();
                 id1 = v1->at(dim1-1);
@@ -613,6 +616,9 @@ namespace tshlib {
                             }
                         }
 
+                        Rev_S_T[target_id] = 1;
+
+
                         if(is_same){
                             Dir[target_id] = up_lr;
                         }else{
@@ -643,9 +649,13 @@ namespace tshlib {
 
                 Move *move = new Move;
                 move->initMove();
-                move->setSourceNode(source_id);
-                //move->setTargetNode(utree->listVNodes.at(target_id)->vnode_id);
-                move->setTargetNode(target_id);
+                if(Rev_S_T[target_id]==0){
+                    move->setSourceNode(source_id);
+                    move->setTargetNode(target_id);
+                }else{
+                    move->setSourceNode(target_id);
+                    move->setTargetNode(source_id);
+                }
                 if(Dir[target_id] == up){
                     move->setDirection(tshlib::MoveDirections::up);
                 }else if(Dir[target_id] == up_lr){
@@ -663,9 +673,13 @@ namespace tshlib {
 
                 Move *move = new Move;
                 move->initMove();
-                move->setSourceNode(source_id);
-                //move->setTargetNode(utree->listVNodes.at(target_id)->vnode_id);
-                move->setTargetNode(target_id);
+                if(Rev_S_T[target_id]==0){
+                    move->setSourceNode(source_id);
+                    move->setTargetNode(target_id);
+                }else{
+                    move->setSourceNode(target_id);
+                    move->setTargetNode(source_id);
+                }
                 if(Dir[target_id] == up){
                     move->setDirection(tshlib::MoveDirections::up);
                 }else if(Dir[target_id] == up_lr){

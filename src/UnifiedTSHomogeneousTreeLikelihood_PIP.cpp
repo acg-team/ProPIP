@@ -445,9 +445,9 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::getLogLikelihoodOnTreeRearrangeme
         //==============================================================================================================
         //=========================
         // m@x
-        if(isinf(lk_sites[i])){
-            int kkk = 1;
-        }
+//        if(isinf(lk_sites[i])){
+//            int kkk = 1;
+//        }
         //=========================
 
         DVLOG(2) << "site log_lk[" << i << "]=" << std::setprecision(18) << lk_sites[i] << std::endl;

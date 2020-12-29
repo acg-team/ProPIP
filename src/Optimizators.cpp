@@ -1331,16 +1331,16 @@ namespace bpp {
 
 
 
-
+        //!!!!!!!!!!!!!!!!!!!!!!!
         for(int node_i=0;node_i<treesearch->utree_->listVNodes.size();node_i++){
             std::cout<<treesearch->utree_->listVNodes.at(node_i)->vnode_name<<":"<<treesearch->utree_->listVNodes.at(node_i)->vnode_id<<std::endl;
         }
+        //!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
 
-
-
+        tshlib::Utree *thread_topology;
 
 
 
@@ -1350,7 +1350,7 @@ namespace bpp {
 
             treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
 
-            tshlib::Utree *thread_topology = new tshlib::Utree((*treesearch->utree_));
+            //thread_topology = new tshlib::Utree((*treesearch->utree_));
 
             node_source = treesearch->utree_->listVNodes.at(node_i);
 
@@ -1376,14 +1376,14 @@ namespace bpp {
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
-            thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
-            thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
-            thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
-            bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
-
-            pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/out/tree" + std::to_string(0) + ".nwk";
-            bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
+//            thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
+//            thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
+//            thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
+//            thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
+//            bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
+//
+//            pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/out/tree" + std::to_string(0) + ".nwk";
+//            bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1400,7 +1400,7 @@ namespace bpp {
 
                 treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
 
-                //tshlib::Utree *thread_topology = new tshlib::Utree((*treesearch->utree_));
+                thread_topology = new tshlib::Utree((*treesearch->utree_));
 
                 thread_topology->myRemoveRoot();
 
@@ -1408,15 +1408,15 @@ namespace bpp {
                 node_target = thread_topology->getNode(currentMove->getTargetNode());
 
                 //!!!!!!!!!!!!!!!!!!
-                move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
-                move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
+                //move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
+                //move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
                 //!!!!!!!!!!!!!!!!!!
 
                 move_set->applyMove(currentMove, (*thread_topology), node_source, node_target);
 
                 //!!!!!!!!!!!!!!!!!!
-                move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
-                move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
+                //move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
+                //move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
                 //!!!!!!!!!!!!!!!!!!
 
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1456,7 +1456,7 @@ namespace bpp {
 
                 bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
 
-                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/out/tree" + std::to_string(1) + ".nwk";
+                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/out/tree" + std::to_string(move_i) + ".nwk";
                 bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
 
                 std::cout<<std::setprecision(18)<<moveLogLK;
