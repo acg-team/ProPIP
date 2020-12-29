@@ -67,18 +67,63 @@
 #include <Bpp/Phyl/Io/Newick.h>
 
 #include "UnifiedTSHTopologySearch.hpp"
-
+#include <algorithm>
+#include <random>
 
 using namespace bpp;
 
+tshlib::TreeRearrangment *tshlib::TreeSearch::mydefineMoves(std::default_random_engine &random_engine,bool shuffle) {
+
+    this->utree_->removeVirtualRootNode();
+
+    int n = this->utree_->mygetMaxNodeDistance();
+    auto _move__set = new tshlib::TreeRearrangment;
+    _move__set->setTreeCoverage(tshRearrangementCoverage);
+    _move__set->setStrategy(tshSearchHeuristic);
+    _move__set->initialize(n);
+
+    this->utree_->addVirtualRootNode();
+
+    _move__set->mydefineMoves(this->utree_,random_engine,shuffle);
+
+    return _move__set;
+}
+
+tshlib::TreeRearrangment *tshlib::TreeSearch::mydefineMoves_new(int source_id) {
+
+    //this->utree_->removeVirtualRootNode();
+
+    //int n = this->utree_->mygetMaxNodeDistance();
+    auto _move__set = new tshlib::TreeRearrangment;
+    //_move__set->setTreeCoverage(tshRearrangementCoverage);
+    //_move__set->setStrategy(tshSearchHeuristic);
+    //_move__set->initialize(n);
+
+    //this->utree_->addVirtualRootNode();
+
+    _move__set->mydefineMoves_new(this->utree_,source_id);
+
+    return _move__set;
+}
+
 tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
+
+    this->utree_->removeVirtualRootNode();
+
+    //int n = this->utree_->getMaxNodeDistance();
+    int n = this->utree_->mygetMaxNodeDistance();
+
+
+    //std::cout<<"n: "<<n<<","<<n1<<std::endl;
+
+
 
     // Initialise a new rearrangement list
     auto _move__set = new tshlib::TreeRearrangment;
-    _move__set->setTree(utree_);
+    //_move__set->setTree(utree_);
     _move__set->setTreeCoverage(tshRearrangementCoverage);
     _move__set->setStrategy(tshSearchHeuristic);
-    _move__set->initialize();
+    _move__set->initialize(n);
 
     std::vector<tshlib::VirtualNode *> _seed__nodes((int) search_startingnodes);
 
@@ -93,12 +138,12 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
                 // Print node description with neighbors
                 //DVLOG(2) << "[utree neighbours] " << vnode->printNeighbours() << std::endl;
 
-                _move__set->setSourceNode(node->getVnode_id());
+                //_move__set->setSourceNode(node->getVnode_id());
 
                 // Get all the target nodes with distance == radius from the source node
                 // excluding the starting node (false)
-                // do not duplicate moves in the list
-                _move__set->defineMoves(false, false);
+                // do not is_duplicate moves in the list
+                _move__set->defineMoves(node,false, false);
 
             }
             break;
@@ -113,12 +158,12 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
                 // Print node description with neighbors
                 //DVLOG(2) << "[utree neighbours] " << vnode->printNeighbours() << std::endl;
 
-                _move__set->setSourceNode(node->getVnode_id());
+                //_move__set->setSourceNode(node->getVnode_id());
 
                 // Get all the target nodes with distance == radius from the source node
                 // excluding the starting node (false)
-                // do not duplicate moves in the list
-                _move__set->defineMoves(false, false);
+                // do not is_duplicate moves in the list
+                _move__set->defineMoves(node,false, false);
 
             }
             break;
@@ -131,6 +176,8 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
 
     // Print the list of moves for the current P node (source node)
     //rearrangmentList.printMoves();
+
+    this->utree_->addVirtualRootNode();
 
     return _move__set;
 }
@@ -171,7 +218,7 @@ double tshlib::TreeSearch::executeTreeSearch() {
 
 void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 
-    bool status = false;
+    //bool status = false;
 
     // Allocate memory
     allocateTemporaryLikelihoodData(threads_num);
@@ -240,16 +287,16 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 
         // ------------------------------------
         // Log move details
-        DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
-                 << "Move [" << _thread__topology->getNode(currentMove->getSourceNode())->getNodeName() << "->"
-                 << _thread__topology->getNode(currentMove->getTargetNode())->getNodeName() << "]\t"
-                 << currentMove->getClass() << "\t(" << currentMove->getRadius() << ")" << "\tdirection: "
-                 << currentMove->getDirection();
+//        DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
+//                 << "Move [" << _thread__topology->getNode(currentMove->getSourceNode())->getNodeName() << "->"
+//                 << _thread__topology->getNode(currentMove->getTargetNode())->getNodeName() << "]\t"
+//                 << currentMove->getClass() << "\t(" << currentMove->getRadius() << ")" << "\tdirection: "
+//                 << currentMove->getDirection();
 
         // ------------------------------------
         // Apply the move
-        status = candidateMoves->applyMove(i, (*_thread__topology));
-
+        //status = candidateMoves->applyMove(i, (*_thread__topology));
+        candidateMoves->applyMove(currentMove, (*_thread__topology),_node__source_id,_node__target_id);
 
 
 
@@ -259,7 +306,7 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 
 
 
-        if (status) {
+        //if (status) {
 
             DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1
                      << " ] [A] MOVE#" << currentMove->getUID() << " | " << _thread__topology->printTreeNewick(true);
@@ -348,7 +395,7 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 
 
 
-        }
+        //}
 
         // ------------------------------------
         // Count moves performed
@@ -453,19 +500,19 @@ double tshlib::TreeSearch::iterate() {
 
             setTreeSearchStatus(true);
 
-            DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
-                     << "Found best move | "
-                     << "lk = " << std::setprecision(12) << bestMove->getScore() << " | "
-                     << bestMove->getClass() << "." << std::setfill('0') << std::setw(3) << bestMove->getUID()
-                     << " [" << utree_->getNode(bestMove->getSourceNode())->getNodeName()
-                     << " -> " << utree_->getNode(bestMove->getTargetNode())->getNodeName() << "]";
+//            DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
+//                     << "Found best move | "
+//                     << "lk = " << std::setprecision(12) << bestMove->getScore() << " | "
+//                     << bestMove->getClass() << "." << std::setfill('0') << std::setw(3) << bestMove->getUID()
+//                     << " [" << utree_->getNode(bestMove->getSourceNode())->getNodeName()
+//                     << " -> " << utree_->getNode(bestMove->getTargetNode())->getNodeName() << "]";
 
 
-            _task.str(std::string());
-            _task << "- Found new ML tree   | ["
-                  << bestMove->getClass() << "." << std::setfill('0') << std::setw(3) << bestMove->getUID()
-                  << "] New likelihood: " << std::setprecision(12) << bestMove->getScore();
-            ApplicationTools::displayMessage(_task.str());
+//            _task.str(std::string());
+//            _task << "- Found new ML tree   | ["
+//                  << bestMove->getClass() << "." << std::setfill('0') << std::setw(3) << bestMove->getUID()
+//                  << "] New likelihood: " << std::setprecision(12) << bestMove->getScore();
+//            ApplicationTools::displayMessage(_task.str());
 
 
             std::vector<int> listNodesWithinPath, updatedNodesWithinPath;
@@ -476,7 +523,10 @@ double tshlib::TreeSearch::iterate() {
 
             // ------------------------------------
             // Commit final move on the topology
-            _move__set->commitMove(bestMove->getUID(), (*utree_));
+            UtreeBppUtils::VirtualNode *_node__source = utree_->getNode(bestMove->getSourceNode());
+            UtreeBppUtils::VirtualNode *_node__target = utree_->getNode(bestMove->getTargetNode());
+            //_move__set->commitMove(bestMove->getUID(), (*utree_));
+            _move__set->commitMove(bestMove,(*utree_),_node__source,_node__target);
 
             DVLOG(1) << "utree after commit " << utree_->printTreeNewick(true);
 
@@ -548,12 +598,12 @@ std::string tshlib::TreeSearch::debugStackTraceMove(Move *move, Utree *_utree,
 
 
     std::ostringstream stm;
-    stm << std::endl << "*** Stack trace [MOVE " << move->getClass() << "."
-        << move->getUID() << "] ("
-        << _utree->getNode(move->getSourceNode())->getNodeName()
-        << " -> " << _utree->getNode(move->getTargetNode())->getNodeName() << ") - "
-        << move->getDirection() << " ***"
-        << std::endl;
+//    stm << std::endl << "*** Stack trace [MOVE " << move->getClass() << "."
+//        << move->getUID() << "] ("
+//        << _utree->getNode(move->getSourceNode())->getNodeName()
+//        << " -> " << _utree->getNode(move->getTargetNode())->getNodeName() << ") - "
+//        << move->getDirection() << " ***"
+//        << std::endl;
 
     stm << "    @        [ReferenNodeList]  " << nodepath_lni.str() << std::endl;
     stm << "    @        [UpdatedNodeList]  " << nodepath_uni.str() << std::endl;

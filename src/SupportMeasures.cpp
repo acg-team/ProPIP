@@ -153,7 +153,7 @@ Bootstrap::Bootstrap(AbstractHomogeneousTreeLikelihood *tl,
                 parametersRep.deleteParameters(paramsToIgnore.getParameterNames());
             }
 
-            tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(tlRep,parametersRep, params,*tm,"", true, false, 0));
+            tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(tlRep,parametersRep, params,*tm,sites,"", true, false, 0));
 
             bsTrees[i] = new TreeTemplate<Node>(tlRep->getTree());
             if (out_trees && i == 0) newick.write(*bsTrees[i], bsTreesPath, true);

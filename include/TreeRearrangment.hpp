@@ -44,13 +44,15 @@
 #include "Utree.hpp"
 #include "Utilities.hpp"
 #include "Move.hpp"
+#include <algorithm>
+#include <random>
 
 namespace tshlib {
 
     class TreeRearrangment {
     protected:
         //VirtualNode *trSourceNode_;              // Starting node from which starting the tree exploration
-        int trSourceNode_;                         // Starting node from which starting the tree exploration
+        //int trSourceNode_;                         // Starting node from which starting the tree exploration
 
         int trSearchRadius_min;                    // Radius of the node search (for NNI must set it to 3)
         int trSearchRadius_max;                    // Radius of the node search (for NNI must set it to 3)
@@ -62,7 +64,7 @@ namespace tshlib {
         /* Strategy used to define the candidate moves -- max coverage of the tree space */
         bool trPreserveBranchLenghts_;             // Switch to preserve branch lentghs in case the move is applied (i.e NNI vs SPR)
 
-        Utree *utree_;
+        //Utree *utree_;
 
 
     private:
@@ -74,15 +76,15 @@ namespace tshlib {
 
         TreeRearrangment();
 
-        void initialize();
+        void initialize(int n);
 
         ~TreeRearrangment();
 
         //VirtualNode *getSourceNode() const { return trSourceNode_ ?: nullptr; }
-        int getSourceNode() const { return trSourceNode_ ?: -2; }
+        //int getSourceNode() const { return trSourceNode_ ?: -2; }
 
         //void setSourceNode(VirtualNode *mset_sourcenode) { TreeRearrangment::trSourceNode_ = mset_sourcenode; }
-        void setSourceNode(int mset_sourcenode) { TreeRearrangment::trSourceNode_ = mset_sourcenode; }
+        //void setSourceNode(int mset_sourcenode) { TreeRearrangment::trSourceNode_ = mset_sourcenode; }
 
         int getMinRadius() const { return trSearchRadius_min; }
 
@@ -92,28 +94,62 @@ namespace tshlib {
 
         void setMaxRadius(int mset_max_radius) { TreeRearrangment::trSearchRadius_max = mset_max_radius; }
 
-        Utree *getTree() const { return utree_; }
+        //Utree *getTree() const { return utree_; }
 
-        void setTree(Utree *inTree);
+        //void setTree(Utree *inTree);
+
 
 
         /*!
          * @brief Perform a complete node search and fill the vector containing the candidate moves.
          * @param includeSelf bool ?
          */
-        void defineMoves(bool includeSelf, bool allowDuplicatedMoves = true);
+        //void defineMoves(bool includeSelf, bool allowDuplicatedMoves = true);
 
         //const std::vector<VirtualNode *> updatePathBetweenNodes(unsigned long moveID, std::vector<VirtualNode *> inPath);
 
         const std::vector<int> updatePathBetweenNodes(unsigned long moveID, std::vector<int> inPath);
 
-        bool applyMove(unsigned long moveID, Utree & _thread__topology);
+        //================================================================================
+        // m@x
+        Move *setMove(tshlib::Move *m,int idx);
+        void sortData(std::vector<int> &array,std::vector<int> &indeces);
+        std::vector<int> sortByDepth(std::vector<int> &path,tshlib::Utree *utree);
+        std::vector<int> myPathBetweenNodes(tshlib::VirtualNode *_node__source,tshlib::VirtualNode *_node__target,tshlib::Utree *utree);
+        void moveTheRootLeaf(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+        std::vector<Move *> getMoves(){ return trMoveSet; };
+        void mydefineMoves(tshlib::Utree *utree,std::default_random_engine &random_engine,bool shuffle);
+        void mydefineMoves_new(tshlib::Utree *utree,int source_id);
+        bool checkVectors(std::vector<int> &v1,std::vector<int> &v2);
+        void myCheckTreeBranchLength(tshlib::Utree *utree);
+        void myPrintTree(VirtualNode *node,std::vector<VirtualNode *> &startnodes);
+        void checkMoveNodeName(Move* move, tshlib::Utree *utree);
+        void myCheckTreeNodeName(tshlib::Utree *utree);
+        void checkMove(Move* move, tshlib::Utree *utree);
+        void myCheckTree_rec(VirtualNode *node);
+        void myCheckTree(VirtualNode *root1,VirtualNode *root2);
+        void applyMove(Move *move, Utree &_utree__topology,VirtualNode *source,VirtualNode *target);
+        void moveTheRoot(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+        void NNImoveUP(tshlib::Move *move,VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+        void NNImoveUP_LR(tshlib::Move *move,VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+        void _applyNNI(tshlib::Move *move,VirtualNode *source, VirtualNode *target, MoveDirections move_direction, std::vector<VirtualNode *> &startVNodes);
+        void _applySPR(tshlib::Move *move,VirtualNode *source,VirtualNode *target,std::vector<VirtualNode *> &startVNodes);
+        void commitMove(Move *move, Utree &_utree__topology,VirtualNode *source,VirtualNode *target);
+        void addMove(VirtualNode *sourceNode,VirtualNode *targetNode, MoveDirections moveDirection,int radius);
+        void defineMoves(VirtualNode *sourceNode,bool includeSelf, bool allowDuplicatedMoves = true);
+        void getNodesInRadiusUp(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, NodePosition traverse_direction,bool allowDuplicatedMoves);
+        void getNodesInRadiusDown(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, bool includeSelf,MoveDirections direction, bool allowDuplicatedMoves);
+        //bool revertMove(Move *move, Utree & _thread__topology);
+        void removeMoveDuplicates(int num_nodes);
+        //================================================================================
 
-        void commitMove(int moveID, Utree & _thread__topology);
+        //bool applyMove(unsigned long moveID, Utree & _thread__topology);
+
+        //void commitMove(int moveID, Utree & _thread__topology);
 
         Move *getMove(unsigned long moveID);
 
-        bool revertMove(unsigned long moveID, Utree & _thread__topology);
+        //bool revertMove(unsigned long moveID, Utree & _thread__topology);
 
         void printMoves();
 
@@ -123,50 +159,15 @@ namespace tshlib {
 
         void storeMove(Move *inMove);
 
-
         void displayRearrangmentStatus(int idMove, Utree & _thread__topology, bool printTree);
 
-        std::string getStrategy() const {
-            std::string rtToken;
-            switch (trStrategy) {
-                case TreeSearchHeuristics::swap:
-                    rtToken = "Swap";
-                    break;
-                case TreeSearchHeuristics::phyml:
-                    rtToken = "phyML";
-                    break;
-                case TreeSearchHeuristics::mixed:
-                    rtToken = "Mixed(Swap+phyML)";
-                    break;
-                case TreeSearchHeuristics::nosearch:
-                    rtToken = "no-search";
-                    break;
-            }
-            return rtToken;
-        }
+        std::string getStrategy() const;
 
         TreeRearrangmentOperations getRearrangmentCoverage() const {
             return trTreeCoverage;
         }
 
-        std::string getRearrangmentCoverageDescription() const {
-            std::string rtToken;
-            switch (trTreeCoverage) {
-                case TreeRearrangmentOperations::classic_NNI:
-                    rtToken = "NNI-like";
-                    break;
-                case TreeRearrangmentOperations::classic_SPR:
-                    rtToken = "SPR-like";
-                    break;
-                case TreeRearrangmentOperations::classic_TBR:
-                    rtToken = "TBR-like";
-                    break;
-                case TreeRearrangmentOperations::classic_Mixed:
-                    rtToken = "Complete";
-                    break;
-            }
-            return rtToken;
-        }
+        std::string getRearrangmentCoverageDescription() const;
 
         void setTreeCoverage(TreeRearrangmentOperations in_trTreeCoverage) {
             TreeRearrangment::trTreeCoverage = in_trTreeCoverage;
@@ -185,9 +186,9 @@ namespace tshlib {
          * @param radius_max    int Radius of the search (NNI = 1, SPR > 1)
          * @param includeSelf bool ?
          */
-        void
-        getNodesInRadiusDown(VirtualNode *node_source, int radius_min, int radius_curr, int radius_max, bool includeSelf, MoveDirections direction,
-                             bool allowDuplicatedMoves);
+//        void
+//        getNodesInRadiusDown(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, bool includeSelf, MoveDirections direction,
+//                             bool allowDuplicatedMoves);
 
 
         /*!
@@ -197,19 +198,19 @@ namespace tshlib {
          * @param radius_max    int Radius of the search (NNI = 1, SPR > 1)
          * @param traverse_direction     NodePosition it indicates the direction of the node wrt parent node
          */
-        void getNodesInRadiusUp(VirtualNode *node_source, int radius_min, int radius_curr, int radius_max, NodePosition traverse_direction,
-                                bool allowDuplicatedMoves);
+//        void getNodesInRadiusUp(VirtualNode *node_source, int radius_min, int radius_curr, int radius_max, NodePosition traverse_direction,
+//                                bool allowDuplicatedMoves);
 
         /*!
          * @brief Append candidate move to the mset_moves vector
          * @param move Move Pointer to the candidate move object
          */
-        void addMove(int radius, VirtualNode *targetNode, MoveDirections moveDirection, bool allowDuplicatedMoves = true);
+        //void addMove(int radius, VirtualNode *targetNode, MoveDirections moveDirection, bool allowDuplicatedMoves = true);
 
 
-        bool _applySPR(Move *move, Utree & _thread__topology);
+        //bool _applySPR(Move *move, Utree & _thread__topology);
 
-        bool _revertSPR(Move *move, Utree & _thread__topology);
+        //bool _revertSPR(Move *move, Utree & _thread__topology);
     };
 
 

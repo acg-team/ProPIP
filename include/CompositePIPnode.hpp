@@ -42,7 +42,7 @@
  * @see For more information visit:
  */
 
-#include <string>
+//#include <string>
 
 #include "PIPnode.hpp"
 

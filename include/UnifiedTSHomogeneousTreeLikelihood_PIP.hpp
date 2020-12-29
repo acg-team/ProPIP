@@ -80,9 +80,6 @@ namespace bpp {
 
     public:
 
-        // m@x
-        //mutable tshlib::Utree *utree_;
-
         UnifiedTSHomogeneousTreeLikelihood_PIP(const Tree &tree,
                                                TransitionModel *model,
                                                DiscreteDistribution *rDist,
@@ -132,6 +129,8 @@ namespace bpp {
                                 tshlib::Utree &_utree__topology);
 
         void fireTopologyChange(std::vector<int> nodeList);
+
+        void sortData(std::vector<int> &array,std::vector<int> &indeces) const;
 
         double updateLikelihoodOnTreeRearrangement(std::vector<int> &nodeList,
                                                    tshlib::Utree &_utree__topology,

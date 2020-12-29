@@ -230,12 +230,23 @@ namespace tshlib {
          */
         NodePosition indexOf();
 
-        /*!
-         * @brief This function swaps the current node and another one passed in the argument. The swap takes in consideration the topology of the tree.
-         * @param targetNode
-         * @return boolean value if the execution was performed correctly.
-         */
-        bool swapNode(VirtualNode *targetNode, MoveDirections move_direction, bool revertRotations);
+
+
+
+//        void moveTheRoot(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+//        void NNImoveUP(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+//        void NNImoveUP_LR(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
+//
+//        /*!
+//         * @brief This function swaps the current node and another one passed in the argument. The swap takes in consideration the topology of the tree.
+//         * @param targetNode
+//         * @return boolean value if the execution was performed correctly.
+//         */
+//        bool swapNode(VirtualNode *targetNode, MoveDirections move_direction, bool revertRotations,std::vector<VirtualNode *> &startVNodes);
+//
+//
+
+
 
         /*!
          * @brief The function checks if the current node is a parent of another node using a recursive structure
@@ -344,6 +355,14 @@ namespace tshlib {
          */
         void addMember(VirtualNode *inVNode, bool isStartNode = false);
 
+
+        //=======================
+        // m@x
+        void myAddRoot();
+        void myRemoveRoot();
+        //=======================
+
+
         /*!
          * @brief
          * @param showInternalNodeNames
@@ -356,6 +375,11 @@ namespace tshlib {
          * @return
          */
         int getMaxNodeDistance();
+
+        //===========================
+        int mygetMaxNodeDistance();
+        //===========================
+
 
         /*!
          * @brief
@@ -383,6 +407,8 @@ namespace tshlib {
         double computeTotalTreeLength();
 
         void _printUtree();
+
+        std::vector<int> computePathBetweenNodes2(VirtualNode *vnode_1, VirtualNode *vnode_2);
 
         //std::vector<VirtualNode *> computePathBetweenNodes(VirtualNode *vnode_1, VirtualNode *vnode_2);
         std::vector<int> computePathBetweenNodes(VirtualNode *vnode_1, VirtualNode *vnode_2);

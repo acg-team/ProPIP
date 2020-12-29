@@ -94,6 +94,7 @@ namespace bpp {
                 const ParameterList &parameters,
                 std::map<std::string, std::string> &params,
                 UtreeBppUtils::treemap &tm,
+                bpp::SiteContainer *sites,
                 const std::string &suffix = "",
                 bool suffixIsOptional = true,
                 bool verbose = true,
@@ -274,7 +275,29 @@ namespace bpp {
                                                             bool optimizeTopo,
                                                             unsigned int optVerbose,
                                                             int &n,
-                                                            UtreeBppUtils::treemap &tm);
+                                                            UtreeBppUtils::treemap &tm,
+                                                            bpp::SiteContainer *sites,
+                                                            std::map<std::string, std::string> &pars);
+
+        static void performOneCycleTopologyOpt(tshlib::TreeSearch *treesearch,
+                                                              std::string optMethodModel,
+                                                              unique_ptr<BackupListener> &backupListener,
+                                                              ParameterList &parametersToEstimate,
+                                                              bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                              unsigned int nstep,
+                                                              double tolerance,
+                                                              unsigned int nbEvalMax,
+                                                              std::string optName,
+                                                              std::string optMethodDeriv,
+                                                              OutputStream *messageHandler,
+                                                              OutputStream *profiler,
+                                                              bool reparam,
+                                                              bool optimizeTopo,
+                                                              unsigned int optVerbose,
+                                                              int &n,
+                                                              UtreeBppUtils::treemap &tm,
+                                                              bpp::SiteContainer *sites,
+                                                              std::map<std::string, std::string> &pars);
 
         static void performOptimizationFullD(unique_ptr<BackupListener> &backupListener,
                                              unsigned int nstep,
@@ -321,7 +344,8 @@ namespace bpp {
                                         unsigned int optVerbose,
                                         bool verbose,
                                         int warn,
-                                        UtreeBppUtils::treemap &tm);
+                                        UtreeBppUtils::treemap &tm,
+                                        bpp::SiteContainer *sites);
 
         static void finalOptimizationStep(std::string finalMethod,
                                           bpp::AbstractHomogeneousTreeLikelihood *tl,
@@ -352,7 +376,7 @@ namespace bpp {
                                                 AbstractNumericalDerivative *fnum5,
                                                 unsigned int nstep);
 
-        static void optimizeParameters(bpp::AbstractHomogeneousTreeLikelihood *tl,
+        static void optimizeBrLen(bpp::AbstractHomogeneousTreeLikelihood *tl,
                                               bpp::ParameterList &shortList,
                                               unique_ptr<BackupListener> &backupListener,
                                               unsigned int nstep,

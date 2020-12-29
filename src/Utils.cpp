@@ -270,6 +270,19 @@ void UtreeBppUtils::renameInternalNodes(bpp::Tree *in_tree, std::string prefix) 
 std::vector<bpp::Node *>
 UtreeBppUtils::remapNodeLists(std::vector<int> &inputList, bpp::TreeTemplate<bpp::Node> *tree, UtreeBppUtils::treemap tm) {
 
+
+
+    //==============================================================
+    /*
+    for (auto &vnode:inputList) {
+        int nodeID = tm.right.at(vnode);
+        std::string tmpNodename = tree->getNodeName(nodeID);
+        std::cout<<"NodeName: "<<tmpNodename<<std::endl;
+    }
+     */
+    //==============================================================
+
+
     std::vector<bpp::Node *> newList;
 
     for (auto &vnode:inputList) {

@@ -69,7 +69,7 @@ namespace bpp {
 
     protected:
 
-        enum class LKDataClass { sub, empty };
+
 
         mutable AbstractHomogeneousTreeLikelihood *lk_;
         mutable AbstractOptimizer *optimiser_;
@@ -80,7 +80,7 @@ namespace bpp {
         // - allocation at the beginning of the tree-search cycle
         // - deallocation at the end of the tree-search cycle
         // - one or more VVVdouble object per each tree-rearrangement (map classVVVdouble (map idxRearrangment, map idxNode, VVVdouble))
-        mutable std::map<LKDataClass,std::map<int,std::map<int, VVVdouble>>> testVectorLikelihoodData_;
+
 
 
 
@@ -90,6 +90,9 @@ namespace bpp {
         std::string OPTIMIZATION_GRADIENT = "gradient";
         std::string OPTIMIZATION_BRENT = "Brent";
         std::string OPTIMIZATION_BFGS = "BFGS";
+
+        enum class LKDataClass { sub, empty };
+        mutable std::map<LKDataClass,std::map<int,std::map<int, VVVdouble>>> testVectorLikelihoodData_;
 
         UnifiedTSHSearchable() : lk_(nullptr), optimiser_(nullptr), optMethodModel_(""), optNumericalDerivatives_(false) {}
 

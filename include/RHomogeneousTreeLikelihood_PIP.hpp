@@ -393,6 +393,8 @@ namespace bpp {
 
         virtual void computeSubtreeLikelihood() const;
 
+        virtual void sortData(std::vector<int> &array,std::vector<int> &indeces);
+
         // this overloaded method is called during the tree-search
         virtual void computeSubtreeLikelihood(std::map<int, VVVdouble> *likelihoods,
                                               std::map<int, VVVdouble> *likelihoods_empty,

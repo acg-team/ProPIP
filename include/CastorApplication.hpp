@@ -55,8 +55,8 @@
 #ifndef CASTOR_CASTORAPPLICATION_HPP
 #define CASTOR_CASTORAPPLICATION_HPP
 // From the STL:
-#include <string>
-#include <map>
+//#include <string>
+//#include <map>
 #include <Bpp/Exceptions.h>
 #include <glog/logging.h>
 #include <iostream>
@@ -210,6 +210,8 @@ namespace bpp {
         void renameTreeNodes();
 
         void initTreeBranchLength();
+
+        void initTreeBranchLengthExponentialDistribution(std::map<std::string, std::string> &cmdArgs);
 
         void initTreeBranchLengthInput(std::map<std::string, std::string> &cmdArgs);
 

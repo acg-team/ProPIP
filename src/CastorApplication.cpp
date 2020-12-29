@@ -96,6 +96,8 @@
 #include "DistanceFactoryAlign.hpp"
 #include "DistanceFactoryPrealigned.hpp"
 
+#include <random>
+
 using namespace bpp;
 
 void CastorApplication::init() {
@@ -511,7 +513,7 @@ void CastorApplication::initLkFun(){
 
 void CastorApplication::optimizeParameters(){
 
-    this->tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(this->tl,this->tl->getParameters(),this->getParams(),this->tm,"",true,true,0));
+    this->tl = dynamic_cast<AbstractHomogeneousTreeLikelihood *>(Optimizators::optimizeParameters(this->tl,this->tl->getParameters(),this->getParams(),this->tm,this->sites,"",true,true,0));
 
     this->logL = this->tl->getLogLikelihood();
 
@@ -965,7 +967,7 @@ void CastorApplication::initTreeMethodRandom(){
 
     this->tree = TreeTemplateTools::getRandomTree(names);
 
-    this->tree->setBranchLengths(1.0);
+    //this->tree->setBranchLengths(1.0);
 
 }
 
@@ -1557,6 +1559,36 @@ void CastorApplication::renameTreeNodes(){
 
 }
 
+void CastorApplication::initTreeBranchLengthExponentialDistribution(std::map<std::string, std::string> &cmdArgs){
+
+    double value = 0.0;
+
+    value = bpp::ApplicationTools::getDoubleParameter("value", cmdArgs, 0.1, "", true, 2);
+
+    if (value <= 0){
+        throw Exception("Value for branch length must be greater than 0");
+    }
+
+    bpp:: ApplicationTools::displayResult("Random branch lengths distributed accordint to exponential distribution with mean ", value);
+
+    double const exp_dist_mean   = value;
+    double const exp_dist_lambda = 1 / exp_dist_mean;
+    std::random_device rd;
+    std::exponential_distribution<> rng (exp_dist_lambda);
+    std::mt19937 rnd_gen (rd ());
+    double r;
+    int rootId = tree->getRootId();
+    std::vector<int> nodeIds = tree->getNodesId();
+    for(int i=0;i<nodeIds.size();i++){
+        r = rng (rnd_gen);
+        if(nodeIds.at(i) != rootId){
+            tree->setDistanceToFather(nodeIds.at(i),r);
+        }
+
+    }
+
+}
+
 void CastorApplication::initTreeBranchLengthInput(std::map<std::string, std::string> &cmdArgs){
 
     bool midPointRootBrLengths = false;
@@ -1648,6 +1680,10 @@ void CastorApplication::initTreeBranchLength(){
     } else if (cmdName == "Grafen") {
 
         this->initTreeBranchLengthGrafen(cmdArgs);
+
+    } else if (cmdName == "exp") {
+
+        this->initTreeBranchLengthExponentialDistribution(cmdArgs);
 
     } else{
 

@@ -65,6 +65,9 @@
 #include "UnifiedTSHomogeneousTreeLikelihood_Generic.hpp"
 #include "UnifiedTSHomogeneousTreeLikelihood_PIP.hpp"
 
+#include <algorithm>
+#include <random>
+
 namespace tshlib {
 
     class TreeSearch {
@@ -298,6 +301,12 @@ namespace tshlib {
          * @return A list of candidate topologies (in the form of rearrangement operations)
          */
         tshlib::TreeRearrangment *defineMoves();
+
+        //===============================================================
+        // m@x
+        tshlib::TreeRearrangment *mydefineMoves(std::default_random_engine &random_engine,bool shuffle);
+        tshlib::TreeRearrangment *mydefineMoves_new(int source_id);
+        //===============================================================
 
         /*!
          * @brief testCandidateMoves method tests all the candidate tree topologies in the rearrangement list (or set), and it saves the score for each of them

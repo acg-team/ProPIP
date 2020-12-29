@@ -56,19 +56,44 @@ namespace tshlib {
 
     Move::Move() = default;
 
-
     void Move::initMove() {
         moveUID_ = 0;
-        moveName_ = "undef";
-        moveType_ = MoveType::undef;
+        //moveName_ = "undef";
+        //moveType_ = MoveType::undef;
         moveClassDescription_ = "undef";
         moveDirection_ = MoveDirections::undef;
 
         moveScore_ = -std::numeric_limits<double>::infinity();
 
-        moveApplied_ = false;
+       // moveApplied_ = false;
     }
 
+    std::string Move::getDirection() const {
+        std::string rtToken;
+        switch (moveDirection_) {
+            case MoveDirections::down_left:
+                rtToken = "left";
+                break;
+            case MoveDirections::up:
+                rtToken = "up";
+                break;
+            case MoveDirections::up_left:
+                rtToken = "up-left";
+                break;
+            case MoveDirections::up_right:
+                rtToken = "up-right";
+                break;
+            case MoveDirections::down_right :
+                rtToken = "right";
+                break;
+            case MoveDirections::undef :
+                rtToken = "undef";
+                break;
+
+        }
+
+        return rtToken;
+    }
 
     void Move::deleteTargetNode() {
 
@@ -76,7 +101,7 @@ namespace tshlib {
 
     }
 
-
+    /*
     void Move::setClass(TreeSearchHeuristics tsStrategy, bool _location__overpseudoroot) {
 
         // Set tree search strategy associated to this move
@@ -140,6 +165,27 @@ namespace tshlib {
 
         moveClassDescription_ = getClass();
     }
+    */
 
+    void Move::setClass(TreeSearchHeuristics tsStrategy, bool _location__overpseudoroot) {
+
+        // Set tree search strategy associated to this move
+        moveStrategy_ = tsStrategy;
+
+        // Get radius of the current move
+        int radius = getRadius();
+
+        if (radius == 3) {
+            //moveType_ = MoveType::NNI;
+            moveClassDescription_ = "NNI";
+        } else if(radius >=4) {
+            //moveType_ = MoveType::SPR;
+            moveClassDescription_ = "SPR";
+        }else{
+            exit(EXIT_FAILURE);
+        }
+
+        //moveClassDescription_ = getClass();
+    }
 
 }
