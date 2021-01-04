@@ -177,18 +177,51 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::fireTopologyChange(std::vector<int>
                                                                 std::map<int, bool> *ts_node__data_origin,
                                                                 tshlib::Utree &_utree__topology) {
 
+
+    //========================================================
+    // m@x
+    //????????????????????????????
+
+    //computeAllTransitionProbabilities();
+    for(int i=0;i<_utree__topology.listVNodes.size();i++){
+        double l = _utree__topology.listVNodes.at(i)->vnode_branchlength;
+        int id = _utree__topology.listVNodes.at(i)->vnode_id;
+        DiscreteDistribution *rDist_ = this->getRateDistribution();
+        // Computes all pxy once for all:
+        for (size_t c = 0; c < nbClasses_; c++){
+            VVdouble* pxy__c = &pxy_[id][c];
+            RowMatrix<double> Q = model_->getPij_t(l * rDist_->getCategory(c));
+            for (size_t x = 0; x < nbStates_; x++){
+                Vdouble* pxy__c_x = &(*pxy__c)[x];
+                for (size_t y = 0; y < nbStates_; y++){
+                    (*pxy__c_x)[y] = Q(x, y);
+                }
+            }
+        }
+    }
+    //========================================================
+
     // Recompute the value of the FV 3D arrays
     //computeSubtreeLikelihood(likelihoodDataTest_, likelihoodEmptyDataTest_);
     computeSubtreeLikelihood(ts_lkdata, ts_lkemptydata, nodeList, ts_node__data_origin, _utree__topology);
     // Compute the insertion histories set (recompute the desc_count and set A)
     setInsertionHistories(*data_, nodeList, ts_desccount, ts_setadata, ts_node__data_origin, _utree__topology);
 
+    //========================================================
+    // m@x
+    this->tau_ = _utree__topology.computeTotalTreeLength();
+    computeNu();
+    setAllIotas(&_utree__topology);
+    setAllBetas(&_utree__topology);
+    //========================================================
+
 }
 
 
 double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangement(std::vector<int> &nodeList,
                                                                                    tshlib::Utree &_utree__topology,
-                                                                                   int idxThread) {
+                                                                                   int idxThread,
+                                                                                   std::vector<int> &nodeInvolved) {
 
     //fetch temporary arrays
     std::map<int, VVVdouble> *ts_lkdata = &testVectorLikelihoodData_[LKDataClass::sub][idxThread];
@@ -294,20 +327,21 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangeme
         }
     }
     this->sortData(dist_to_root,indeces);
-    std::vector<int> full_node_list(_utree__topology.listVNodes.size());
+    std::vector<int> _affected__nodes(_utree__topology.listVNodes.size());
     for(int i=0;i<_utree__topology.listVNodes.size();i++){
-        full_node_list.at(i)=_utree__topology.listVNodes.at(indeces.at(i))->vnode_id;
+        _affected__nodes.at(i)=_utree__topology.listVNodes.at(indeces.at(i))->vnode_id;
     }
     // add root node
-    //full_node_list.push_back(utree_->listVNodes.size());
+    //_affected__nodes.push_back(utree_->listVNodes.size());
     //===============================================================
 
     //================================================================
     // 0. convert the list of tshlib::VirtualNodes into bpp::Node
     //std::vector<int> _affected__nodes = remapVirtualNodeLists(nodeList);
     // m@x
-    std::vector<int> _affected__nodes = remapVirtualNodeLists(full_node_list);
+    //std::vector<int> _affected__nodes = remapVirtualNodeLists(full_node_list);
     //================================================================
+
 
     // 1. Flag nodes to read from reference
     //for (std::vector<int>::iterator it = _affected__nodes.begin(); it != _affected__nodes.end(); ++it)
@@ -315,8 +349,82 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangeme
         (*ts_node__data_origin)[(*it)] = true;
     }
 
+
+
+    //================================================================
+//    for(int i=0;i<nodeInvolved.size();i++) {
+//
+//
+//        VVVdouble *pxy__node1 = &pxy_[nodeInvolved.at(i)];
+//
+//        bpp::Node *node = tree_->getNode(nodeInvolved.at(i), true);
+//        computeTransitionProbabilitiesForNode(node);
+//
+//
+//        VVVdouble *pxy__node2 = &pxy_[nodeInvolved.at(i)];
+//
+//        int kkk=1;
+//    }
+
+//    ParameterList parameters;
+//    // For each node involved in the move, get the corrisponding branch parameter (no root)
+//    for(int i=0;i<nodeInvolved.size();i++) {
+//        bpp::Node *bnode = tree_->getNode(nodeInvolved.at(i), true);
+//        if (bnode->hasFather()) {
+//            Parameter brLen = lk_->getParameter("BrLen" + TextTools::toString(bnode->getId()));
+//            brLen.setName("BrLen" + TextTools::toString(bnode->getId()));
+//            parameters.addParameter(brLen);
+//        }
+//    }
+//
+//    // set parameters on the likelihood function (inherited)
+//    lk_->setParameters(parameters);
+    //================================================================
+
+
+
     // 2. Fire topology change
     fireTopologyChange(_affected__nodes, ts_lkdata, ts_lkemptydata, ts_desccount, ts_setadata, ts_node__data_origin, _utree__topology);
+
+
+
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /*
+    map<int, std::vector<bool>>::iterator itr;
+    std::vector<unsigned long> idx = this->rootPatternLinksInverse_;
+    for(int i=0;i<idx.size();i++){
+        std::cout<<idx.at(i)<<",";
+    }
+    std::cout<<endl;
+    int k=0;
+    for (itr = (*ts_setadata).begin(); itr != (*ts_setadata).end(); ++itr) {
+        int id = itr->first;
+        std::vector<bool> bo = itr->second;
+        if(id==_utree__topology.listVNodes.size()){
+            std::cout<<"root";
+        }else{
+            std::cout<<_utree__topology.getNode(id)->vnode_name;
+        }
+        std::cout<<" : ";
+        for(int j=0;j<bo.size();j++){
+            std::cout<<bo.at(j);
+            std::cout<<",";
+        }
+        std::cout<<endl;
+        k++;
+    }
+     */
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
 
     // 3. Compute loglikelihood
     double logLk = getLogLikelihoodOnTreeRearrangement(_affected__nodes,
@@ -380,6 +488,12 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::getLogLikelihoodOnTreeRearrangeme
 
     // 2. Compute the lk of the empty column
     double lk_site_empty = computeLikelihoodWholeAlignmentEmptyColumn(_ts__likelihoods_empty, _ts__node_data_origin, _utree__topology);
+
+
+
+    //!!!!!!!!!!!!!!!!!!!!
+    //std::cout<<std::setprecision(18)<<"lk[0]:"<<lk_site_empty<<std::endl;
+    //!!!!!!!!!!!!!!!!!!!!
 
     // 3. Compute the likelihood of each site
     const std::vector<unsigned int> *_root__weights = &likelihoodData_->getWeights();
@@ -445,9 +559,9 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::getLogLikelihoodOnTreeRearrangeme
         //==============================================================================================================
         //=========================
         // m@x
-//        if(isinf(lk_sites[i])){
-//            int kkk = 1;
-//        }
+        //!!!!!!!!!!!!!!!!!!!!
+        //std::cout<<std::setprecision(18)<<"lk["<<i+1<<"]:"<<lk_sites[i]<<std::endl;
+        //!!!!!!!!!!!!!!!!!!!!
         //=========================
 
         DVLOG(2) << "site log_lk[" << i << "]=" << std::setprecision(18) << lk_sites[i] << std::endl;

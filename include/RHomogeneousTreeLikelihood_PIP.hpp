@@ -465,6 +465,9 @@ namespace bpp {
          */
         /*virtual void setAllSetAData(const SiteContainer &sites) const;*/
 
+        virtual void setAllIotas(tshlib::Utree *utree);
+        virtual void setAllBetas(tshlib::Utree *utree);
+
         /**
          * @brief This method sets the iota value for all the nodes in the tree
          */

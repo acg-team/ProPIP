@@ -1310,7 +1310,23 @@ namespace bpp {
 
         if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)){
             is_PIP = true;
-            PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc);
+
+
+
+
+
+
+            //PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc);
+            PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl);
+
+
+
+
+
+
+
+
+
         }else{
             is_PIP = false;
             lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc);
@@ -1382,7 +1398,7 @@ namespace bpp {
 //            thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
 //            bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
 //
-//            pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/out/tree" + std::to_string(0) + ".nwk";
+//            pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/tree" + std::to_string(0) + ".nwk";
 //            bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1410,11 +1426,14 @@ namespace bpp {
                 //!!!!!!!!!!!!!!!!!!
                 //move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
                 //move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
+                //double tau_1 = thread_topology->computeTotalTreeLength();
                 //!!!!!!!!!!!!!!!!!!
 
                 move_set->applyMove(currentMove, (*thread_topology), node_source, node_target);
 
                 //!!!!!!!!!!!!!!!!!!
+                //double tau_2 = thread_topology->computeTotalTreeLength();
+
                 //move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
                 //move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
                 //!!!!!!!!!!!!!!!!!!
@@ -1429,9 +1448,24 @@ namespace bpp {
 
                     thread_topology->myAddRoot();
 
+                    //for(int ii=0;ii<thread_topology->listVNodes.size();ii++){
+                    //    thread_topology->listVNodes.at(ii)->vnode_branchlength=0.1;
+                    //}
+                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(thread_topology);
+
+                    thread_topology->rootnode->vnode_id=thread_topology->listVNodes.size();
+
+                    //HomogeneousTreeLikelihood *PIP_lk_fun_tmp = tl->clone();
+
                     moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath,
                                                                                 (*thread_topology),
-                                                                                thread_id);
+                                                                                thread_id,
+                                                                                currentMove->node2Opt);
+
+                    //PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(PIP_lk_fun_tmp);
+
+                    //delete PIP_lk_fun_tmp;
+
                     thread_topology->myRemoveRoot();
 
                 } else {
@@ -1456,7 +1490,7 @@ namespace bpp {
 
                 bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
 
-                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/out/tree" + std::to_string(move_i) + ".nwk";
+                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/tree" + std::to_string(move_i) + ".nwk";
                 bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
 
                 std::cout<<std::setprecision(18)<<moveLogLK;

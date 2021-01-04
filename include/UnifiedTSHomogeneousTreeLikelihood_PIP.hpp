@@ -134,7 +134,8 @@ namespace bpp {
 
         double updateLikelihoodOnTreeRearrangement(std::vector<int> &nodeList,
                                                    tshlib::Utree &_utree__topology,
-                                                   int idxThread = 0);
+                                                   int idxThread,
+                                                   std::vector<int> &nodeInvolved);
 
         double getLogLikelihoodOnTreeRearrangement(const std::vector<int> &_ts__node_list,
                                                    std::map<int, VVVdouble> *_ts__likelihoods,

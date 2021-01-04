@@ -622,7 +622,7 @@ void RHomogeneousTreeLikelihood_PIP::setInsertionHistories(const SiteContainer &
         //============================
         // m@x
         // root node
-        (*setAData)[nodeList.size()][i]=1;
+        (*setAData)[_utree__topology.rootnode->vnode_id][i]=1;
         //============================
 
         for (auto &nodeID:nodeList) {
@@ -669,6 +669,39 @@ int RHomogeneousTreeLikelihood_PIP::countNonGapCharacterInSite(int siteID) const
     return nonGaps_;
 }
 
+void RHomogeneousTreeLikelihood_PIP::setAllIotas(tshlib::Utree *utree) {
+
+    Parameter mu_ = model_->getParameter("mu");
+
+    //double _tree__totalLength = 0;
+    //for(auto &brlen_name:getBranchLengthsParameters().getParameterNames())
+    //    _tree__totalLength += getBranchLengthsParameters().getParameterValue(brlen_name);
+
+    double mu = mu_.getValue();
+    if (fabs(mu) < 1e-8){
+        DLOG(WARNING) << "Constraint match at parameter mu, badValue = " << mu_.getValue() << " [ 1e-08; 10000]";
+    }
+
+    // Compute tau value;
+    double tau = utree->computeTotalTreeLength();
+    double T_ = tau + 1 / mu;
+
+    if (fabs(T_) < 1e-8){
+        DLOG(WARNING) << "Constraint match at parameter T, badValue = " << T_ << " [ 1e-08; 10000]";
+    }
+
+    for (auto &node:utree->listVNodes) {
+
+        if (node->getNodeUp()== nullptr) {
+            iotasData_[node->vnode_id] = (1 / mu) / T_;
+            continue;
+        }
+
+        iotasData_[node->vnode_id] = node->vnode_branchlength / T_;
+
+    }
+
+}
 
 void RHomogeneousTreeLikelihood_PIP::setAllIotas() {
 
@@ -692,18 +725,42 @@ void RHomogeneousTreeLikelihood_PIP::setAllIotas() {
 
     for (auto &nodeID:tree_->getNodesId()) {
 
-        //if (!tree_->hasFather(nodeID)) {
         if (_utree__isRoot(nodeID)) {
             iotasData_[nodeID] = (1 / mu_.getValue()) / T_;
             continue;
         }
-        //} else {
+
         iotasData_[nodeID] = tree_->getDistanceToFather(nodeID) / T_;
 
     }
 
 }
 
+
+void RHomogeneousTreeLikelihood_PIP::setAllBetas(tshlib::Utree *utree) {
+
+    Parameter mu_ = model_->getParameter("mu");
+
+    double mu = mu_.getValue();
+
+    if (fabs(mu) < 1e-8){
+        DLOG(WARNING) << "Constraint match at parameter mu, badValue = " << mu_.getValue() << " [ 1e-08; 10000]";
+    }
+
+    for (auto &node:utree->listVNodes) {
+
+        if (node->getNodeUp()== nullptr) {
+            betasData_[node->vnode_id] = 1.0;
+            continue;
+        }
+
+        double brLen__node = node->vnode_branchlength;
+
+        betasData_[node->vnode_id] = (1.0 - exp(-mu * brLen__node)) / (mu * brLen__node);
+
+    }
+
+}
 
 void RHomogeneousTreeLikelihood_PIP::setAllBetas() {
 
@@ -723,7 +780,6 @@ void RHomogeneousTreeLikelihood_PIP::setAllBetas() {
 
         double brLen__node = tree_->getDistanceToFather(nodeID);
         betasData_[nodeID] = (1.0 - exp(-mu_.getValue() * brLen__node)) / (mu_.getValue() * brLen__node);
-            //node->vnode_beta = (1.0 - exp(-this->mu * vnode->vnode_branchlength)) / (this->mu * vnode->vnode_branchlength);
 
     }
 
@@ -1131,7 +1187,9 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodForASite(size_t i,
         //if (!utree_->getNode(treemap_.left.at(_node__list[idxNode]))->isTerminalNode()) {
         if (!_utree__topology.getNode(treemap_.left.at(_node__list[idxNode]))->isTerminalNode()) {
 
-            (*_sons__ids) = _getMappedNodeChildren(_node__list[idxNode], _utree__topology);
+            int id=_node__list[idxNode];
+
+            (*_sons__ids) = _getMappedNodeChildren(id, _utree__topology);
 
             for (int l = 0; l < 2; l++) {
                 if ((*ts_node__data_origin)[(*_sons__ids)[l]]) {
@@ -1152,6 +1210,18 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodForASite(size_t i,
         delete _sons__ids;
         //==========================================================================
         // m@x
+        /*
+        if(_node__list[idxNode]!=_utree__topology.rootnode->vnode_id){
+            std::cout<<_utree__topology.getNode(_node__list[idxNode])->vnode_name<<":";
+            std::cout<<_utree__topology.getNode(_node__list[idxNode])->vnode_id<<":";
+            std::cout<<std::setprecision(18) <<iotasData_[_node__list[idxNode]]<<":";
+            std::cout<<std::setprecision(18) <<betasData_[_node__list[idxNode]]<<":";
+            std::cout<<std::setprecision(18) <<_utree__topology.getNode(_node__list[idxNode])->vnode_branchlength<<":";
+            std::cout<<std::setprecision(18) <<this->tau_<<":";
+            std::cout<<std::setprecision(18) <<_utree__topology.computeTotalTreeLength();
+            std::cout<<std::endl;
+        }
+        */
         _node__partial_likelihood[idxNode] = _kernel_likelihood_forasite(i, _node__list[idxNode], &lk_sons, &lk_sons_empty, ts_setadata);
         //==========================================================================
 

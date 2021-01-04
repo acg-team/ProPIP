@@ -330,7 +330,7 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
             // Recompute the likelihood
             if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)) {
                 moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-                        updatedNodesWithinPath, (*_thread__topology), thread_id);
+                        updatedNodesWithinPath, (*_thread__topology), thread_id,currentMove->node2Opt);
             } else {
                 moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
                         updatedNodesWithinPath, (*_thread__topology));

@@ -2207,8 +2207,8 @@ namespace tshlib {
         move->node2Opt.push_back(target->vnode_id);
         move->node2Opt.push_back(parentSource->vnode_id);
 
-        //bl = siblingSource->vnode_branchlength + parentSource->vnode_branchlength;
-        bl = parentSource->vnode_branchlength;
+        bl = siblingSource->vnode_branchlength + parentSource->vnode_branchlength;
+        //bl = parentSource->vnode_branchlength;
 
         if(grandparentSource->getNodeLeft()->vnode_id == parentSource->vnode_id){
             grandparentSource->_setNodeLeft(siblingSource);
@@ -2233,8 +2233,8 @@ namespace tshlib {
         }
         siblingSource->vnode_branchlength = bl;
 
-        //bl = target->vnode_branchlength / 2.0;
-        bl = target->vnode_branchlength;
+        bl = target->vnode_branchlength / 2.0;
+        //bl = target->vnode_branchlength;
 
         target->vnode_branchlength = bl;
         parentSource->vnode_branchlength = bl;
