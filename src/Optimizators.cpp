@@ -93,6 +93,7 @@
 
 #include <algorithm>
 #include <random>
+#include <Bpp/Phyl/TreeTools.h>
 
 using namespace bpp;
 
@@ -1184,6 +1185,7 @@ namespace bpp {
         //==============================================================================================================
         while (std::fabs(initScore-currentScore)>tolerance){
 
+
             // optimize Topology (1 cycle)
             Optimizators::performOneCycleTopologyOpt(treesearch,
                                                 optMethodModel,
@@ -1407,7 +1409,7 @@ namespace bpp {
 
 
 
-
+            int ti=0;
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             // all moves with node_i as source
             for(int move_i=0; move_i < move_set->getNumberOfMoves(); move_i++) {
@@ -1453,7 +1455,7 @@ namespace bpp {
                     //}
                     dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(thread_topology);
 
-                    thread_topology->rootnode->vnode_id=thread_topology->listVNodes.size();
+                    //thread_topology->rootnode->vnode_id=thread_topology->listVNodes.size();
 
                     //HomogeneousTreeLikelihood *PIP_lk_fun_tmp = tl->clone();
 
@@ -1490,7 +1492,9 @@ namespace bpp {
 
                 bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
 
-                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/tree" + std::to_string(move_i) + ".nwk";
+                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/tree" + std::to_string(ti) + ".nwk";
+                ti++;
+
                 bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
 
                 std::cout<<std::setprecision(18)<<moveLogLK;
@@ -1534,6 +1538,20 @@ namespace bpp {
 
             }
 
+
+
+
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            for(int move_i=0;move_i<num_moves_to_push;move_i++){
+                std::cout<<"lk-best:"<<N_best_moves.at(move_i)->getScore()<<std::endl;
+            }
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             // optimize the best N moves
             lk_N_best_moves = -std::numeric_limits<double>::infinity();
@@ -1543,6 +1561,8 @@ namespace bpp {
                 bpp::ParameterList shortList;
 
                 for (int node_i = 0; node_i < N_best_moves.at(move_i)->node2Opt.size(); node_i++) {
+                //for (int node_i = 0; node_i < N_best_trees.at(move_i)->listVNodes.size(); node_i++) {
+                    //int id_VN = N_best_trees.at(move_i)->listVNodes.at(node_i)->vnode_id;
                     int id_VN = N_best_moves.at(move_i)->node2Opt.at(node_i);
                     int id_Bpp = tm.right.at(id_VN);
                     std::string par_name = "BrLen" + std::to_string(id_Bpp);
@@ -1551,7 +1571,48 @@ namespace bpp {
                     }
                 }
 
+
+
+
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                thread_topology = N_best_trees.at(move_i);
+                thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
+                thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
+                thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
+                thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
+
+                const bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
+
+                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/best_tree_before" + std::to_string(move_i) + ".nwk";
+                ti++;
+
+                bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
+
+                std::cout<<std::setprecision(18)<<moveLogLK;
+                std::cout<<std::endl;
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
                 dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(N_best_trees.at(move_i));
+
+
+                local_tree = UtreeBppUtils::convertTree_u2b(N_best_trees.at(move_i));
+
+
+
+                bpp::TreeTemplate<Node>* tree_template = new TreeTemplate<Node>(*local_tree);
+                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setTreeTopology(tree_template);
+
+
+
+
                 optimizeBrLen(tl,
                               shortList,
                               backupListener,
@@ -1567,7 +1628,43 @@ namespace bpp {
                               optName,
                               n);
 
+
+                tl->applyParameters();
+
+                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
+
                 N_best_moves.at(move_i)->setScore(tl->getLikelihood());
+
+
+
+
+
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //local_tree = &tl->getTree();
+                local_tree = new TreeTemplate<Node>(tl->getTree());
+//                thread_topology = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->getUtreeTopology();
+//                thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
+//                thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
+//                thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
+//                thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
+
+//                local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
+
+                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/best_tree_after" + std::to_string(move_i) + ".nwk";
+                ti++;
+
+                bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
+
+                std::cout<<std::setprecision(18)<<N_best_moves.at(move_i)->getScore();
+                std::cout<<std::endl;
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
                 if(N_best_moves.at(move_i)->moveScore_ > lk_N_best_moves){
                     lk_N_best_moves = N_best_moves.at(move_i)->moveScore_;
@@ -1576,6 +1673,16 @@ namespace bpp {
 
             }
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            for(int move_i=0;move_i<num_moves_to_push;move_i++){
+                std::cout<<"lk-best:"<<N_best_moves.at(move_i)->getScore()<<std::endl;
+            }
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             // select the best among the N moves

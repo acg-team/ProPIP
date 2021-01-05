@@ -622,7 +622,8 @@ void RHomogeneousTreeLikelihood_PIP::setInsertionHistories(const SiteContainer &
         //============================
         // m@x
         // root node
-        (*setAData)[_utree__topology.rootnode->vnode_id][i]=1;
+        int rootId = _utree__topology.listVNodes.size();
+        (*setAData)[rootId][i]=1;
         //============================
 
         for (auto &nodeID:nodeList) {

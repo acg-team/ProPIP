@@ -217,7 +217,6 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::fireTopologyChange(std::vector<int>
 
 }
 
-
 double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangement(std::vector<int> &nodeList,
                                                                                    tshlib::Utree &_utree__topology,
                                                                                    int idxThread,
@@ -524,8 +523,8 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::getLogLikelihoodOnTreeRearrangeme
     for (unsigned long i = 0; i < nbDistinctSites_; i++) {
 
         // Extend rearranged-node-list including all the nodes in the setA for each site
-        std::vector<int> _node__list;
-        _extendNodeListOnSetA(_ts__node_list.back(), i, _node__list, _ts__setadata, _utree__topology);
+        //std::vector<int> _node__list;
+        //_extendNodeListOnSetA(_ts__node_list.back(), i, _node__list, _ts__setadata, _utree__topology);
 
 
         // call to function which retrieves the lk value for each site
@@ -610,6 +609,15 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyChangeSuccessful(std::vecto
 
 }
 
+void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLengths() {
+
+    for(int i=0;i<this->nodes_.size();i++){
+        int id = this->nodes_.at(i)->getId();
+        double bl = this->nodes_.at(i)->getDistanceToFather();
+        tree_->getNode(id)->setDistanceToFather(bl);
+    }
+
+}
 
 void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyCommitTree() {
 

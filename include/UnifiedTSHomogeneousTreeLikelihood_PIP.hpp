@@ -119,6 +119,8 @@ namespace bpp {
 
         void setUtreeTopology(tshlib::Utree *_in_utree__topology) { utree_ = _in_utree__topology; }
 
+        void setTreeTopology(bpp::TreeTemplate<Node>* tree__topology) { tree_ = tree__topology; }
+
         void init_(bool usePatterns);
 
         void fireTopologyChange(std::vector<int> nodeList, std::map<int, VVVdouble> *ts_lkdata,
@@ -153,6 +155,7 @@ namespace bpp {
 
         void removeTestLikelihoodData(int idxThread) override;
 
+        void commitBranchLengths();
 
 #ifdef INTELTBB
         void recomputeSiteLikelihoodUsingPartitions(const tbb::blocked_range<size_t> &range, std::vector<double> *lk_sites) const;
