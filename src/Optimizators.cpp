@@ -1426,9 +1426,10 @@ namespace bpp {
                 node_target = thread_topology->getNode(currentMove->getTargetNode());
 
                 //!!!!!!!!!!!!!!!!!!
-                //move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
-                //move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
-                //double tau_1 = thread_topology->computeTotalTreeLength();
+                move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
+                move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
+                double tau_1 = thread_topology->computeTotalTreeLength();
+                std::cout<<"tau: "<<tau_1<<std::endl;
                 //!!!!!!!!!!!!!!!!!!
 
                 move_set->applyMove(currentMove, (*thread_topology), node_source, node_target);
@@ -1633,7 +1634,7 @@ namespace bpp {
 
                 dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
 
-                N_best_moves.at(move_i)->setScore(tl->getLikelihood());
+                N_best_moves.at(move_i)->setScore(tl->getLogLikelihood());
 
 
 

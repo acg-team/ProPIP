@@ -1009,13 +1009,13 @@ namespace tshlib {
     void TreeRearrangment::myPrintTree(VirtualNode *node,std::vector<VirtualNode *> &startnodes) {
 
         if(node->isPseudoRootNode()){
-            std::cout<<node->vnode_name<<" ==== "<<node->getNodeUp()->vnode_name<<std::endl;
-            std::cout<<startnodes.at(0)->vnode_name<<" == [0] ==== [1] == "<<startnodes.at(1)->vnode_name<<std::endl;
+            std::cout<<std::setprecision(18)<<node->vnode_name<<" |"<<node->vnode_branchlength<<"| "<<" ==== "<<node->getNodeUp()->vnode_name<<std::endl;
+            std::cout<<std::setprecision(18)<<startnodes.at(0)->vnode_name<<" == [0] ==== [1] == "<<startnodes.at(1)->vnode_name<<std::endl;
         }
         if(node->isTerminalNode()) {
-            std::cout<<node->vnode_name<<" {"<<node->vnode_id<<"} "<<" ["<<node->getNodeUp()->vnode_name<<"] "<<std::endl;
+            std::cout<<std::setprecision(18)<<node->vnode_name<<" {"<<node->vnode_id<<"} "<<" |"<<node->vnode_branchlength<<"| "<<" ["<<node->getNodeUp()->vnode_name<<"] "<<std::endl;
         }else{
-            std::cout<<node->vnode_name<<" {"<<node->vnode_id<<"} "<<" : ("<<node->getNodeLeft()->vnode_name<<","<<node->getNodeRight()->vnode_name<<")"<<"  ["<<node->getNodeUp()->vnode_name<<"]"<<std::endl;
+            std::cout<<std::setprecision(18)<<node->vnode_name<<" {"<<node->vnode_id<<"} "<<" |"<<node->vnode_branchlength<<"| "<<" : ("<<node->getNodeLeft()->vnode_name<<","<<node->getNodeRight()->vnode_name<<")"<<"  ["<<node->getNodeUp()->vnode_name<<"]"<<std::endl;
             myPrintTree(node->getNodeLeft(),startnodes);
             myPrintTree(node->getNodeRight(),startnodes);
         }
