@@ -1185,7 +1185,6 @@ namespace bpp {
         //==============================================================================================================
         while (std::fabs(initScore-currentScore)>tolerance){
 
-
             // optimize Topology (1 cycle)
             Optimizators::performOneCycleTopologyOpt(treesearch,
                                                 optMethodModel,
@@ -1206,6 +1205,7 @@ namespace bpp {
                                                 tm,
                                                 sites,
                                                 pars);
+
 
             // Separate branch lenght params from model params
             ParameterList parametersModel;
@@ -1234,6 +1234,8 @@ namespace bpp {
                       optName,
                       n);
 
+            tl->applyParameters();
+
             // optimize Tree params
             optimizeBrLen(tl,
                       parametersTree,
@@ -1249,6 +1251,10 @@ namespace bpp {
                       optMethodModel,
                       optName,
                       n);
+
+            tl->applyParameters();
+
+            dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
 
             currentScore = tl->getLogLikelihood();
 
@@ -1291,44 +1297,16 @@ namespace bpp {
         UtreeBppUtils::VirtualNode *node_target = nullptr;
         UnifiedTSHomogeneousTreeLikelihood_PIP * PIP_lk_fun = nullptr;
         UnifiedTSHomogeneousTreeLikelihood * lk_fun = nullptr;
+        tshlib::Utree *thread_topology = nullptr;
 
-        //std::random_device myRandomDevice;
-        //unsigned seed = myRandomDevice();
-        //std::default_random_engine random_engine(seed);
-
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // m@x
-        //for parsimony score w/ PIP
-//        std::string fMSA = ApplicationTools::getAFilePath("input.sequence.file", pars,true, true, "", false, "", 1);
-//        bpp::Fasta alnReader(false, false);
-//        unique_ptr<SiteContainer> MSA(alnReader.readAlignment(fMSA, &AlphabetTools::DNA_ALPHABET));
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        treesearch->setTreeSearchStatus(true);
-        double lk = treesearch->likelihoodFunc->getLogLikelihood(); // is it different from initScore ??????
-        treesearch->setInitialLikelihoodValue(lk);
-        treesearch->tshcycleScore = treesearch->tshinitScore;
+        double lk = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->minusLogLik_;
+        treesearch->tshinitScore = lk;
+        treesearch->tshcycleScore = lk;
         treesearch->performed_cycles = 0;
 
         if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)){
             is_PIP = true;
-
-
-
-
-
-
-            //PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc);
             PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl);
-
-
-
-
-
-
-
-
-
         }else{
             is_PIP = false;
             lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc);
@@ -1338,7 +1316,7 @@ namespace bpp {
         int num_moves_to_push_0 = 5;
         int num_moves_to_push = num_moves_to_push_0;
         int index_lk;
-        double lk_N_best_moves = 0.0;
+        double lk_N_best_moves = -treesearch->tshinitScore;
         std::vector<tshlib::Move *> N_best_moves;
         std::vector<tshlib::Utree *> N_best_trees;
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1347,28 +1325,25 @@ namespace bpp {
 
 
 
-
-
-        //!!!!!!!!!!!!!!!!!!!!!!!
-        for(int node_i=0;node_i<treesearch->utree_->listVNodes.size();node_i++){
-            std::cout<<treesearch->utree_->listVNodes.at(node_i)->vnode_name<<":"<<treesearch->utree_->listVNodes.at(node_i)->vnode_id<<std::endl;
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        for (int i = 0; i < treesearch->utree_->listVNodes.size(); i++) {
+            int id_VN = treesearch->utree_->listVNodes.at(i)->vnode_id;
+            int id_Bpp = tm.right.at(id_VN);
+            std::string par_name = "BrLen" + std::to_string(id_Bpp);
+            std::cout<<treesearch->utree_->listVNodes.at(i)->vnode_name;
+            std::cout<<"("<<id_VN<<") : ["<<id_Bpp<<"] : "<<par_name<<std::endl;
         }
-        //!!!!!!!!!!!!!!!!!!!!!!!
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
-
-        tshlib::Utree *thread_topology;
 
 
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // try all nodes as source
+        int counter = 0;
         for(int node_i=0;node_i<treesearch->utree_->listVNodes.size();node_i++){
-
-            treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
-
-            //thread_topology = new tshlib::Utree((*treesearch->utree_));
 
             node_source = treesearch->utree_->listVNodes.at(node_i);
 
@@ -1387,29 +1362,6 @@ namespace bpp {
             }
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//            thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
-//            thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
-//            thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
-//            thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
-//            bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
-//
-//            pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/tree" + std::to_string(0) + ".nwk";
-//            bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-            int ti=0;
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             // all moves with node_i as source
             for(int move_i=0; move_i < move_set->getNumberOfMoves(); move_i++) {
@@ -1425,49 +1377,28 @@ namespace bpp {
                 node_source = thread_topology->getNode(currentMove->getSourceNode());
                 node_target = thread_topology->getNode(currentMove->getTargetNode());
 
-                //!!!!!!!!!!!!!!!!!!
-                move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
-                move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
-                double tau_1 = thread_topology->computeTotalTreeLength();
-                std::cout<<"tau: "<<tau_1<<std::endl;
-                //!!!!!!!!!!!!!!!!!!
-
                 move_set->applyMove(currentMove, (*thread_topology), node_source, node_target);
 
-                //!!!!!!!!!!!!!!!!!!
-                //double tau_2 = thread_topology->computeTotalTreeLength();
+                std::cout << "counter:" << counter << std::endl;
 
-                //move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
-                //move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
-                //!!!!!!!!!!!!!!!!!!
+                counter++;
 
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                std::vector<int> updatedNodesWithinPath = move_set->myPathBetweenNodes(node_source, node_target,thread_topology);
+                std::vector<int> updatedNodesWithinPath = move_set->myPathBetweenNodes(node_source, node_target,
+                                                                                       thread_topology);
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                // ??????????? check why lk is always -inf
                 if (is_PIP) {
 
                     thread_topology->myAddRoot();
 
-                    //for(int ii=0;ii<thread_topology->listVNodes.size();ii++){
-                    //    thread_topology->listVNodes.at(ii)->vnode_branchlength=0.1;
-                    //}
                     dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(thread_topology);
-
-                    //thread_topology->rootnode->vnode_id=thread_topology->listVNodes.size();
-
-                    //HomogeneousTreeLikelihood *PIP_lk_fun_tmp = tl->clone();
 
                     moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath,
                                                                                 (*thread_topology),
                                                                                 thread_id,
                                                                                 currentMove->node2Opt);
-
-                    //PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(PIP_lk_fun_tmp);
-
-                    //delete PIP_lk_fun_tmp;
 
                     thread_topology->myRemoveRoot();
 
@@ -1479,56 +1410,26 @@ namespace bpp {
                 currentMove->setScore(moveLogLK);
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
-                thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
-                thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
-                thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
-
-                bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
-
-                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/tree" + std::to_string(ti) + ".nwk";
-                ti++;
-
-                bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
-
-                std::cout<<std::setprecision(18)<<moveLogLK;
-                std::cout<<std::endl;
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if(N_best_moves.size()<num_moves_to_push){
-                    // fill the array
-                    if(currentMove->getScore() < lk_N_best_moves){
-                        lk_N_best_moves = currentMove->getScore(); // stores the lowest value among the N_best_moves
+                if (currentMove->getScore() > lk_N_best_moves) {
+                    if (N_best_moves.size() < num_moves_to_push) {
+                        // fill the array
+                        lk_N_best_moves = currentMove->getScore(); // stores the highest value among the N_best_moves
                         index_lk = N_best_moves.size();
-                    }
-                    N_best_moves.push_back(currentMove);
-                    N_best_trees.push_back(new tshlib::Utree(*thread_topology));
-                }else{
-                    // keep the best, replace the worst
-                    if(currentMove->getScore() > lk_N_best_moves){
-                        N_best_moves.at(index_lk) = currentMove;
-                        N_best_trees.at(index_lk) = new tshlib::Utree(*thread_topology);
-                        lk_N_best_moves = 0.0;
-                        for(int n_best_move_i=0;n_best_move_i<num_moves_to_push;n_best_move_i++){
-                            if(N_best_moves.at(n_best_move_i)->getScore() < lk_N_best_moves){
-                                lk_N_best_moves = N_best_moves.at(n_best_move_i)->getScore();
-                                index_lk = n_best_move_i;
+                        N_best_moves.push_back(currentMove);
+                        N_best_trees.push_back(new tshlib::Utree(*thread_topology));
+                    } else {
+                        // keep the best, replace the worst
+                        double lk_worse = 0.0;
+                        for (int ik = 0; ik < N_best_moves.size(); ik++) {
+                            // get the worse result
+                            if (N_best_moves.at(ik)->getScore() < lk_worse) {
+                                lk_worse = N_best_moves.at(ik)->getScore();
+                                index_lk = ik;
                             }
                         }
+                        N_best_moves.at(index_lk) = currentMove;
+                        N_best_trees.at(index_lk) = new tshlib::Utree(*thread_topology);
                     }
                 }
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1539,77 +1440,65 @@ namespace bpp {
 
             }
 
-
-
-
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            for(int move_i=0;move_i<num_moves_to_push;move_i++){
-                std::cout<<"lk-best:"<<N_best_moves.at(move_i)->getScore()<<std::endl;
-            }
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             // optimize the best N moves
-            lk_N_best_moves = -std::numeric_limits<double>::infinity();
+            //lk_N_best_moves = lk_N_best_moves;//-std::numeric_limits<double>::infinity();
             index_lk = -1;
-            for(int move_i=0;move_i<num_moves_to_push;move_i++){
+            for(int move_i=0;move_i<N_best_moves.size();move_i++){
+
+                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(N_best_trees.at(move_i));
 
                 bpp::ParameterList shortList;
 
                 for (int node_i = 0; node_i < N_best_moves.at(move_i)->node2Opt.size(); node_i++) {
-                //for (int node_i = 0; node_i < N_best_trees.at(move_i)->listVNodes.size(); node_i++) {
-                    //int id_VN = N_best_trees.at(move_i)->listVNodes.at(node_i)->vnode_id;
                     int id_VN = N_best_moves.at(move_i)->node2Opt.at(node_i);
+                    double bl = N_best_trees.at(move_i)->getNode(id_VN)->vnode_branchlength;
                     int id_Bpp = tm.right.at(id_VN);
                     std::string par_name = "BrLen" + std::to_string(id_Bpp);
-                    if (!shortList.hasParameter(par_name)) {
+                    if(tl->hasParameter(par_name)){
+                    //if (!shortList.hasParameter(par_name)) {
+                        //bpp::Parameter &p = (parametersToEstimate.getParameter(par_name));
+                        //p.setValue(bl);
+                        //shortList.shareParameter(std::shared_ptr<Parameter>(&p));
+
                         shortList.addParameter(parametersToEstimate.getParameter(par_name));
+
+                        //dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->
+
+                        //shortList.getSharedParameter(par_name)->setValue(bl);
+
+
+                        tl->getBranchLengthsParameters().getSharedParameter(par_name)->setValue(bl);
+                        tl->getBranchLengthsParameters().getParameter(par_name).setValue(bl);
+                        tl->getSharedParameter(par_name)->setValue(bl);
+
+
+
+                        PIP_lk_fun->commitBranchLength(id_Bpp,bl);
                     }
                 }
 
+                //tl->applyParameters();
 
-
-
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                thread_topology = N_best_trees.at(move_i);
-                thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
-                thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
-                thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
-                thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
-
-                const bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
-
-                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/best_tree_before" + std::to_string(move_i) + ".nwk";
-                ti++;
-
-                bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
-
-                std::cout<<std::setprecision(18)<<moveLogLK;
-                std::cout<<std::endl;
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(N_best_trees.at(move_i));
-
-
-                local_tree = UtreeBppUtils::convertTree_u2b(N_best_trees.at(move_i));
-
-
+                N_best_trees.at(move_i)->rootnode->_setNodeLeft(N_best_trees.at(move_i)->startVNodes.at(0));
+                N_best_trees.at(move_i)->startVNodes.at(0)->_setNodeUp(N_best_trees.at(move_i)->rootnode);
+                N_best_trees.at(move_i)->rootnode->_setNodeRight(N_best_trees.at(move_i)->startVNodes.at(1));
+                N_best_trees.at(move_i)->startVNodes.at(1)->_setNodeUp(N_best_trees.at(move_i)->rootnode);
+                const bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(N_best_trees.at(move_i));
 
                 bpp::TreeTemplate<Node>* tree_template = new TreeTemplate<Node>(*local_tree);
                 dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setTreeTopology(tree_template);
+
+
+
+
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                std::cout<<"**********"<<std::endl;
+                for(int ii=0;ii<shortList.size();ii++){
+                    std::cout<<shortList.getSharedParameter(ii)->getValue()<<std::endl;
+                }
+                std::cout<<"**********"<<std::endl;
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
@@ -1630,44 +1519,38 @@ namespace bpp {
                               n);
 
 
+
+
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                std::cout<<"**********"<<std::endl;
+                for(int ii=0;ii<shortList.size();ii++){
+                    std::cout<<shortList.getSharedParameter(ii)->getValue()<<std::endl;
+                }
+                std::cout<<"**********"<<std::endl;
+                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                /*
                 tl->applyParameters();
 
                 dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
 
                 N_best_moves.at(move_i)->setScore(tl->getLogLikelihood());
+                */
 
+                PIP_lk_fun->commitBranchLength(N_best_trees.at(move_i));
 
+                treesearch->allocateTemporaryLikelihoodData(1);
 
+                moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(N_best_moves.at(move_i)->node2Opt,
+                                                                            (*N_best_trees.at(move_i)),
+                                                                            thread_id,
+                                                                            N_best_moves.at(move_i)->node2Opt);
 
+                treesearch->deallocateTemporaryLikelihoodData(1);
 
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //local_tree = &tl->getTree();
-                local_tree = new TreeTemplate<Node>(tl->getTree());
-//                thread_topology = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->getUtreeTopology();
-//                thread_topology->rootnode->_setNodeLeft(thread_topology->startVNodes.at(0));
-//                thread_topology->startVNodes.at(0)->_setNodeUp(thread_topology->rootnode);
-//                thread_topology->rootnode->_setNodeRight(thread_topology->startVNodes.at(1));
-//                thread_topology->startVNodes.at(1)->_setNodeUp(thread_topology->rootnode);
+                N_best_moves.at(move_i)->setScore(moveLogLK);
 
-//                local_tree = UtreeBppUtils::convertTree_u2b(thread_topology);
-
-                pars.at("output.tree.file") = "/Users/max/Downloads/CLARA/work/best_tree_after" + std::to_string(move_i) + ".nwk";
-                ti++;
-
-                bpp::PhylogeneticsApplicationTools::writeTree(*local_tree, pars);
-
-                std::cout<<std::setprecision(18)<<N_best_moves.at(move_i)->getScore();
-                std::cout<<std::endl;
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-                if(N_best_moves.at(move_i)->moveScore_ > lk_N_best_moves){
+                if(N_best_moves.at(move_i)->getScore() > lk_N_best_moves){
                     lk_N_best_moves = N_best_moves.at(move_i)->moveScore_;
                     index_lk = move_i;
                 }
@@ -1675,24 +1558,13 @@ namespace bpp {
             }
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            for(int move_i=0;move_i<num_moves_to_push;move_i++){
-                std::cout<<"lk-best:"<<N_best_moves.at(move_i)->getScore()<<std::endl;
-            }
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             // select the best among the N moves
-            if(treesearch->tshcycleScore<lk_N_best_moves){
+            if(index_lk > -1){
                 // if the best move is better then lk0 then update the tree and update the moves
                 bestMove = N_best_moves.at(index_lk);
 
                 treesearch->tshcycleScore = bestMove->getScore();
-                treesearch->tshinitScore = bestMove->getScore();
 
                 treesearch->utree_->myRemoveRoot();
 
@@ -1703,6 +1575,7 @@ namespace bpp {
 
                 N_best_moves.clear();
                 N_best_trees.clear();
+                index_lk = 0;
 
                 treesearch->utree_->myAddRoot();
             }

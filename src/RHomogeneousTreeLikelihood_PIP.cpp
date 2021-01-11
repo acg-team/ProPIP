@@ -1485,6 +1485,7 @@ void RHomogeneousTreeLikelihood_PIP::computeDownSubtreeDLikelihood(const Node *n
 }
 
 double RHomogeneousTreeLikelihood_PIP::getFirstOrderDerivative(const std::string &variable) const throw(Exception) {
+
     if (!hasParameter(variable))
         throw ParameterNotFoundException("RHomogeneousTreeLikelihood::getFirstOrderDerivative().", variable);
     if (getRateDistributionParameters().hasParameter(variable)) {
@@ -1547,6 +1548,7 @@ double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::
 }
 */
 
+
 double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::string &variable) {
 
     size_t brI = TextTools::to<size_t>(variable.substr(5));
@@ -1555,7 +1557,7 @@ double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::
     double lk_1 = 0;
     double lk_2 = 0;
     double result = 0;
-    double h = 0.0001;
+    double h = 0.01*branch->getDistanceToFather();
 
     double BranchLength_1 = branch->getDistanceToFather();
     double BranchLength_2 = (branch->getDistanceToFather() + h);
@@ -1578,7 +1580,7 @@ double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::
 
     double op = 1 - exp(lk_1-lk_2);
 
-    result = op / (h); // scaled derivative to avoid underflow/overflow
+    result = op ;/// h; // scaled derivative to avoid underflow/overflow
 
     // Save the first derivative
     d1bl_ = result;
@@ -1586,6 +1588,73 @@ double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::
     // Return the value to the first derivative
     return (d1bl_);
 }
+
+/*
+double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::string &variable) {
+
+    size_t brI = TextTools::to<size_t>(variable.substr(5));
+    const Node *branch = nodes_[brI];
+
+    double lk_0 = 0;
+    double lk_1 = 0;
+    double lk_2 = 0;
+    double lk_3 = 0;
+    double lk_4 = 0;
+    double result = 0;
+    double bl = branch->getDistanceToFather();
+    double h = 0.01*bl;
+
+    //double BranchLength_1 = branch->getDistanceToFather();
+    double BranchLength_1 = (bl - 2*h);
+    double BranchLength_2 = (bl - h);
+    double BranchLength_3 = (bl + h);
+    double BranchLength_4 = (bl + 2*h);
+
+    if(BranchLength_1<0.0 || BranchLength_2 <0.0 || BranchLength_3<0.0 || BranchLength_4<0.0){
+        LOG(FATAL) << "ERROR: computeN1DerivativeLikelihood";
+        exit(EXIT_FAILURE);
+    }
+
+    // Evaluate the likelihood function under the incoming parameter value
+    lk_0 = -getValue();
+
+    // Evaluate the likelihood function under the perturbed parameter value
+    this->setParameterValue(variable, BranchLength_1);
+
+    fireParameterChanged(getParameters());
+
+    lk_1 = -getValue();
+
+    // Restore previous branch length
+    this->setParameterValue(variable, BranchLength_2);
+
+    fireParameterChanged(getParameters());
+
+    lk_2 = -getValue();
+
+    this->setParameterValue(variable, BranchLength_3);
+
+    fireParameterChanged(getParameters());
+
+    lk_3 = -getValue();
+
+    this->setParameterValue(variable, BranchLength_4);
+
+    fireParameterChanged(getParameters());
+
+    lk_4 = -getValue();
+
+    double op = -exp(lk_4-lk_0) + 8*exp(lk_3-lk_0) - 8*exp(lk_2-lk_0) + exp(lk_1-lk_0);
+
+    result = op / (12*h); // scaled derivative to avoid underflow/overflow
+
+    // Save the first derivative
+    d1bl_ = result;
+
+    // Return the value to the first derivative
+    return (d1bl_);
+}
+*/
 
 double RHomogeneousTreeLikelihood_PIP::evaluateLikelihoodPointForBranchDerivative(const std::string &variable, double new_branchlength) {
 

@@ -609,6 +609,22 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyChangeSuccessful(std::vecto
 
 }
 
+void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLength(int id_Bpp,double bl) {
+
+    this->nodes_.at(id_Bpp)->setDistanceToFather(bl);
+
+}
+
+void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLength(tshlib::Utree *utree) {
+
+    for(int i=0;i<utree->listVNodes.size();i++){
+        int id_Bpp = this->treemap_.right.at(utree->listVNodes.at(i)->vnode_id);
+        double bl = this->nodes_.at(id_Bpp)->getDistanceToFather();
+        utree->listVNodes.at(i)->vnode_branchlength = bl;
+    }
+
+}
+
 void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLengths() {
 
     for(int i=0;i<this->nodes_.size();i++){

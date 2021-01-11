@@ -189,7 +189,7 @@ double tshlib::TreeSearch::executeTreeSearch() {
 
     // m@x
     //setTreeSearchStatus(false);
-    setTreeSearchStatus(true);
+    //setTreeSearchStatus(true);
 
 
     // Store initial likelihood value
@@ -498,7 +498,7 @@ double tshlib::TreeSearch::iterate() {
         // Print winning move
         if (bestMove) {
 
-            setTreeSearchStatus(true);
+//            setTreeSearchStatus(true);
 
 //            DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
 //                     << "Found best move | "

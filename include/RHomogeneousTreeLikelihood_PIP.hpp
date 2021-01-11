@@ -96,12 +96,15 @@ namespace bpp {
 
         mutable tshlib::Utree *utree_;
 
-        double minusLogLik_;        // Log Likelihood values
+
 
         double d1bl_;               // value of the First-Derivative of the likelihood function
         double d2bl_;               // value of the Second-Derivative of the likelihood function
 
     public:
+
+        double minusLogLik_;        // Log Likelihood values
+
         /**
          * @brief Build a new RHomogeneousTreeLikelihood object without data.
          *

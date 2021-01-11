@@ -155,7 +155,14 @@ namespace bpp {
 
         void removeTestLikelihoodData(int idxThread) override;
 
+        //=====================================================
+        // m@x
         void commitBranchLengths();
+
+        void commitBranchLength(int id_Bpp,double bl);
+
+        void commitBranchLength(tshlib::Utree *utree);
+        //=====================================================
 
 #ifdef INTELTBB
         void recomputeSiteLikelihoodUsingPartitions(const tbb::blocked_range<size_t> &range, std::vector<double> *lk_sites) const;
