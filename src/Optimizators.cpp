@@ -1183,7 +1183,8 @@ namespace bpp {
         bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(initScore, 15));
 
         //==============================================================================================================
-        while (std::fabs(initScore-currentScore)>tolerance){
+        int cycle_counter = 0;
+        while ( (std::fabs(initScore-currentScore)>tolerance) && (cycle_counter<nbEvalMax) ){
 
             // optimize Topology (1 cycle)
             Optimizators::performOneCycleTopologyOpt(treesearch,
@@ -1260,6 +1261,7 @@ namespace bpp {
 
             bpp::ApplicationTools::displayResult("Numerical opt. cycle LK", bpp::TextTools::toString(currentScore, 15));
 
+            cycle_counter++;
         }
         //==============================================================================================================
 
@@ -1343,241 +1345,256 @@ namespace bpp {
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // try all nodes as source
         int counter = 0;
-        for(int node_i=0;node_i<treesearch->utree_->listVNodes.size();node_i++){
+        for(int node_i=0;node_i<treesearch->utree_->listVNodes.size();node_i++) {
 
             node_source = treesearch->utree_->listVNodes.at(node_i);
 
             //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             move_set = treesearch->mydefineMoves_new(node_source->vnode_id);
 
-            if(move_set->getNumberOfMoves() == 0){
-                LOG(FATAL) << "ERROR: performOneCycleTopologyOpt";
-                exit(EXIT_FAILURE);
-            }
+            if (move_set->getNumberOfMoves() > 0) {
 
-            if(move_set->getNumberOfMoves() < num_moves_to_push_0){
-                num_moves_to_push = move_set->getNumberOfMoves();
-            }else{
-                num_moves_to_push = num_moves_to_push_0;
-            }
-            //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                if (move_set->getNumberOfMoves() < num_moves_to_push_0) {
+                    num_moves_to_push = move_set->getNumberOfMoves();
+                } else {
+                    num_moves_to_push = num_moves_to_push_0;
+                }
+                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            // all moves with node_i as source
-            for(int move_i=0; move_i < move_set->getNumberOfMoves(); move_i++) {
+                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                // all moves with node_i as source
+                for (int move_i = 0; move_i < move_set->getNumberOfMoves(); move_i++) {
 
-                currentMove = move_set->getMove(move_i);
+                    currentMove = move_set->getMove(move_i);
 
-                treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
+                    treesearch->allocateTemporaryLikelihoodData(treesearch->threads_num);
 
-                thread_topology = new tshlib::Utree((*treesearch->utree_));
-
-                thread_topology->myRemoveRoot();
-
-                node_source = thread_topology->getNode(currentMove->getSourceNode());
-                node_target = thread_topology->getNode(currentMove->getTargetNode());
-
-                move_set->applyMove(currentMove, (*thread_topology), node_source, node_target);
-
-                std::cout << "counter:" << counter << std::endl;
-
-                counter++;
-
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                std::vector<int> updatedNodesWithinPath = move_set->myPathBetweenNodes(node_source, node_target,
-                                                                                       thread_topology);
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if (is_PIP) {
-
-                    thread_topology->myAddRoot();
-
-                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(thread_topology);
-
-                    moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath,
-                                                                                (*thread_topology),
-                                                                                thread_id,
-                                                                                currentMove->node2Opt);
+                    thread_topology = new tshlib::Utree((*treesearch->utree_));
 
                     thread_topology->myRemoveRoot();
 
-                } else {
-                    moveLogLK = lk_fun->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath,
-                                                                            (*thread_topology));
-                }
+                    node_source = thread_topology->getNode(currentMove->getSourceNode());
+                    node_target = thread_topology->getNode(currentMove->getTargetNode());
 
-                currentMove->setScore(moveLogLK);
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    move_set->applyMove(currentMove, (*thread_topology), node_source, node_target);
 
-                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if (currentMove->getScore() > lk_N_best_moves) {
-                    if (N_best_moves.size() < num_moves_to_push) {
-                        // fill the array
-                        lk_N_best_moves = currentMove->getScore(); // stores the highest value among the N_best_moves
-                        index_lk = N_best_moves.size();
-                        N_best_moves.push_back(currentMove);
-                        N_best_trees.push_back(new tshlib::Utree(*thread_topology));
+                    std::cout << "counter:" << counter << std::endl;
+
+                    counter++;
+
+                    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    std::vector<int> updatedNodesWithinPath = move_set->myPathBetweenNodes(node_source, node_target,
+                                                                                           thread_topology);
+                    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    if (is_PIP) {
+
+                        thread_topology->myAddRoot();
+
+                        dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(thread_topology);
+
+                        moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath,
+                                                                                    (*thread_topology),
+                                                                                    thread_id,
+                                                                                    currentMove->node2Opt);
+
+                        thread_topology->myRemoveRoot();
+
                     } else {
-                        // keep the best, replace the worst
-                        double lk_worse = 0.0;
-                        for (int ik = 0; ik < N_best_moves.size(); ik++) {
-                            // get the worse result
-                            if (N_best_moves.at(ik)->getScore() < lk_worse) {
-                                lk_worse = N_best_moves.at(ik)->getScore();
-                                index_lk = ik;
-                            }
-                        }
-                        N_best_moves.at(index_lk) = currentMove;
-                        N_best_trees.at(index_lk) = new tshlib::Utree(*thread_topology);
+                        moveLogLK = lk_fun->updateLikelihoodOnTreeRearrangement(updatedNodesWithinPath,
+                                                                                (*thread_topology));
                     }
+
+                    currentMove->setScore(moveLogLK);
+                    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    if (currentMove->getScore() > lk_N_best_moves) {
+                        if (N_best_moves.size() < num_moves_to_push) {
+                            // fill the array
+                            lk_N_best_moves = currentMove->getScore(); // stores the highest value among the N_best_moves
+                            index_lk = N_best_moves.size();
+                            N_best_moves.push_back(currentMove);
+                            N_best_trees.push_back(new tshlib::Utree(*thread_topology));
+                        } else {
+                            // keep the best, replace the worst
+                            double lk_worse = 0.0;
+                            for (int ik = 0; ik < N_best_moves.size(); ik++) {
+                                // get the worse result
+                                if (N_best_moves.at(ik)->getScore() < lk_worse) {
+                                    lk_worse = N_best_moves.at(ik)->getScore();
+                                    index_lk = ik;
+                                }
+                            }
+                            N_best_moves.at(index_lk) = currentMove;
+                            N_best_trees.at(index_lk) = new tshlib::Utree(*thread_topology);
+                        }
+                    }
+                    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                    delete thread_topology;
+
+                    treesearch->deallocateTemporaryLikelihoodData(treesearch->threads_num);
+
+                }
+
+                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                // optimize the best N moves
+                //lk_N_best_moves = lk_N_best_moves;//-std::numeric_limits<double>::infinity();
+                //index_lk = -1;
+                for (int move_i = 0; move_i < N_best_moves.size(); move_i++) {
+
+                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(N_best_trees.at(move_i));
+
+                    bpp::ParameterList shortList;
+
+                    for (int node_i = 0; node_i < N_best_moves.at(move_i)->node2Opt.size(); node_i++) {
+                        int id_VN = N_best_moves.at(move_i)->node2Opt.at(node_i);
+                        double bl = N_best_trees.at(move_i)->getNode(id_VN)->vnode_branchlength;
+                        int id_Bpp = tm.right.at(id_VN);
+                        std::string par_name = "BrLen" + std::to_string(id_Bpp);
+                        if (tl->hasParameter(par_name)) {
+                            //if (!shortList.hasParameter(par_name)) {
+                            //bpp::Parameter &p = (parametersToEstimate.getParameter(par_name));
+                            //p.setValue(bl);
+                            //shortList.shareParameter(std::shared_ptr<Parameter>(&p));
+
+                            shortList.addParameter(parametersToEstimate.getParameter(par_name));
+
+                            //dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->
+
+                            //shortList.getSharedParameter(par_name)->setValue(bl);
+
+
+                            tl->getBranchLengthsParameters().getSharedParameter(par_name)->setValue(bl);
+                            tl->getBranchLengthsParameters().getParameter(par_name).setValue(bl);
+                            tl->getSharedParameter(par_name)->setValue(bl);
+
+
+                            PIP_lk_fun->commitBranchLength(id_Bpp, bl);
+                        }
+                    }
+
+                    //tl->applyParameters();
+
+                    N_best_trees.at(move_i)->rootnode->_setNodeLeft(N_best_trees.at(move_i)->startVNodes.at(0));
+                    N_best_trees.at(move_i)->startVNodes.at(0)->_setNodeUp(N_best_trees.at(move_i)->rootnode);
+                    N_best_trees.at(move_i)->rootnode->_setNodeRight(N_best_trees.at(move_i)->startVNodes.at(1));
+                    N_best_trees.at(move_i)->startVNodes.at(1)->_setNodeUp(N_best_trees.at(move_i)->rootnode);
+                    const bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(N_best_trees.at(move_i));
+
+                    bpp::TreeTemplate<Node> *tree_template = new TreeTemplate<Node>(*local_tree);
+                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setTreeTopology(tree_template);
+
+
+
+
+                    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    std::cout << "**********" << std::endl;
+                    for (int ii = 0; ii < shortList.size(); ii++) {
+                        std::cout << shortList.getSharedParameter(ii)->getValue() << std::endl;
+                    }
+                    std::cout << "**********" << std::endl;
+                    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+                    optimizeBrLen(tl,
+                                  shortList,
+                                  backupListener,
+                                  nstep,
+                                  tolerance,
+                                  nbEvalMax,
+                                  messageHandler,
+                                  profiler,
+                                  reparam,
+                                  optVerbose,
+                                  optMethodDeriv,
+                                  optMethodModel,
+                                  optName,
+                                  n);
+
+
+
+
+                    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    std::cout << "**********" << std::endl;
+                    for (int ii = 0; ii < shortList.size(); ii++) {
+                        std::cout << shortList.getSharedParameter(ii)->getValue() << std::endl;
+                    }
+                    std::cout << "**********" << std::endl;
+                    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                    /*
+                    tl->applyParameters();
+
+                    dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
+
+                    N_best_moves.at(move_i)->setScore(tl->getLogLikelihood());
+                    */
+
+                    PIP_lk_fun->commitBranchLength(N_best_trees.at(move_i));
+
+                    treesearch->allocateTemporaryLikelihoodData(1);
+
+                    moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(N_best_moves.at(move_i)->node2Opt,
+                                                                                (*N_best_trees.at(move_i)),
+                                                                                thread_id,
+                                                                                N_best_moves.at(move_i)->node2Opt);
+
+                    treesearch->deallocateTemporaryLikelihoodData(1);
+
+
+                    //-------------------
+                    std::cout << setprecision(18) << "lk before br. opt: " << N_best_moves.at(move_i)->getScore()
+                              << std::endl;
+                    //-------------------
+
+
+                    N_best_moves.at(move_i)->setScore(moveLogLK);
+
+                    //-------------------
+                    std::cout << setprecision(18) << "lk after br. opt: " << N_best_moves.at(move_i)->getScore()
+                              << std::endl;
+                    //-------------------
+
                 }
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-                delete thread_topology;
-
-                treesearch->deallocateTemporaryLikelihoodData(treesearch->threads_num);
-
-            }
-
-            //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            // optimize the best N moves
-            //lk_N_best_moves = lk_N_best_moves;//-std::numeric_limits<double>::infinity();
-            index_lk = -1;
-            for(int move_i=0;move_i<N_best_moves.size();move_i++){
-
-                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setUtreeTopology(N_best_trees.at(move_i));
-
-                bpp::ParameterList shortList;
-
-                for (int node_i = 0; node_i < N_best_moves.at(move_i)->node2Opt.size(); node_i++) {
-                    int id_VN = N_best_moves.at(move_i)->node2Opt.at(node_i);
-                    double bl = N_best_trees.at(move_i)->getNode(id_VN)->vnode_branchlength;
-                    int id_Bpp = tm.right.at(id_VN);
-                    std::string par_name = "BrLen" + std::to_string(id_Bpp);
-                    if(tl->hasParameter(par_name)){
-                    //if (!shortList.hasParameter(par_name)) {
-                        //bpp::Parameter &p = (parametersToEstimate.getParameter(par_name));
-                        //p.setValue(bl);
-                        //shortList.shareParameter(std::shared_ptr<Parameter>(&p));
-
-                        shortList.addParameter(parametersToEstimate.getParameter(par_name));
-
-                        //dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->
-
-                        //shortList.getSharedParameter(par_name)->setValue(bl);
-
-
-                        tl->getBranchLengthsParameters().getSharedParameter(par_name)->setValue(bl);
-                        tl->getBranchLengthsParameters().getParameter(par_name).setValue(bl);
-                        tl->getSharedParameter(par_name)->setValue(bl);
-
-
-
-                        PIP_lk_fun->commitBranchLength(id_Bpp,bl);
+                index_lk = -1;
+                lk_N_best_moves = -abs(treesearch->tshcycleScore);
+                for (int ij = 0; ij < N_best_moves.size(); ij++) {
+                    if (N_best_moves.at(ij)->getScore() > lk_N_best_moves) {
+                        lk_N_best_moves = N_best_moves.at(ij)->moveScore_;
+                        index_lk = ij;
                     }
                 }
 
-                //tl->applyParameters();
+                //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                // select the best among the N moves
+                if (index_lk > -1) {
+                    // if the best move is better then lk0 then update the tree and update the moves
+                    bestMove = N_best_moves.at(index_lk);
 
-                N_best_trees.at(move_i)->rootnode->_setNodeLeft(N_best_trees.at(move_i)->startVNodes.at(0));
-                N_best_trees.at(move_i)->startVNodes.at(0)->_setNodeUp(N_best_trees.at(move_i)->rootnode);
-                N_best_trees.at(move_i)->rootnode->_setNodeRight(N_best_trees.at(move_i)->startVNodes.at(1));
-                N_best_trees.at(move_i)->startVNodes.at(1)->_setNodeUp(N_best_trees.at(move_i)->rootnode);
-                const bpp::Tree *local_tree = UtreeBppUtils::convertTree_u2b(N_best_trees.at(move_i));
+                    treesearch->tshcycleScore = -bestMove->getScore();
 
-                bpp::TreeTemplate<Node>* tree_template = new TreeTemplate<Node>(*local_tree);
-                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->setTreeTopology(tree_template);
+                    treesearch->utree_->myRemoveRoot();
 
+                    node_source = treesearch->utree_->getNode(bestMove->getSourceNode());
+                    node_target = treesearch->utree_->getNode(bestMove->getTargetNode());
 
+                    move_set->commitMove(bestMove, (*treesearch->utree_), node_source, node_target);
 
+                    N_best_moves.clear();
+                    N_best_trees.clear();
+                    index_lk = 0;
 
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                std::cout<<"**********"<<std::endl;
-                for(int ii=0;ii<shortList.size();ii++){
-                    std::cout<<shortList.getSharedParameter(ii)->getValue()<<std::endl;
-                }
-                std::cout<<"**********"<<std::endl;
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-                optimizeBrLen(tl,
-                              shortList,
-                              backupListener,
-                              nstep,
-                              tolerance,
-                              nbEvalMax,
-                              messageHandler,
-                              profiler,
-                              reparam,
-                              optVerbose,
-                              optMethodDeriv,
-                              optMethodModel,
-                              optName,
-                              n);
-
-
-
-
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                std::cout<<"**********"<<std::endl;
-                for(int ii=0;ii<shortList.size();ii++){
-                    std::cout<<shortList.getSharedParameter(ii)->getValue()<<std::endl;
-                }
-                std::cout<<"**********"<<std::endl;
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                /*
-                tl->applyParameters();
-
-                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
-
-                N_best_moves.at(move_i)->setScore(tl->getLogLikelihood());
-                */
-
-                PIP_lk_fun->commitBranchLength(N_best_trees.at(move_i));
-
-                treesearch->allocateTemporaryLikelihoodData(1);
-
-                moveLogLK = PIP_lk_fun->updateLikelihoodOnTreeRearrangement(N_best_moves.at(move_i)->node2Opt,
-                                                                            (*N_best_trees.at(move_i)),
-                                                                            thread_id,
-                                                                            N_best_moves.at(move_i)->node2Opt);
-
-                treesearch->deallocateTemporaryLikelihoodData(1);
-
-                N_best_moves.at(move_i)->setScore(moveLogLK);
-
-                if(N_best_moves.at(move_i)->getScore() > lk_N_best_moves){
-                    lk_N_best_moves = N_best_moves.at(move_i)->moveScore_;
-                    index_lk = move_i;
+                    treesearch->utree_->myAddRoot();
                 }
 
-            }
-            //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            // select the best among the N moves
-            if(index_lk > -1){
-                // if the best move is better then lk0 then update the tree and update the moves
-                bestMove = N_best_moves.at(index_lk);
-
-                treesearch->tshcycleScore = bestMove->getScore();
-
-                treesearch->utree_->myRemoveRoot();
-
-                node_source = treesearch->utree_->getNode(bestMove->getSourceNode());
-                node_target = treesearch->utree_->getNode(bestMove->getTargetNode());
-
-                move_set->commitMove(bestMove, (*treesearch->utree_), node_source, node_target);
-
-                N_best_moves.clear();
-                N_best_trees.clear();
-                index_lk = 0;
-
-                treesearch->utree_->myAddRoot();
             }
 
         }

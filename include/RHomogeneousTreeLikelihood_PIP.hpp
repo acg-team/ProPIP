@@ -537,7 +537,7 @@ namespace bpp {
                                                           std::map<int, bool> *ts_node__data_origin,
                                                           tshlib::Utree &_utree__topology) const;
 
-        double _kernel_likelihood_empty_forasite(int nodeID, std::vector<VVVdouble *> *lk_sons_empty) const;
+        double _kernel_likelihood_empty_forasite(int nodeID, std::vector<VVVdouble *> *lk_sons_empty,bool is_root) const;
 
 
         int countNonGapCharacterInSite(int siteID) const;

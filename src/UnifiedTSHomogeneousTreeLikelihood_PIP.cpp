@@ -344,11 +344,15 @@ double UnifiedTSHomogeneousTreeLikelihood_PIP::updateLikelihoodOnTreeRearrangeme
 
     // 1. Flag nodes to read from reference
     //for (std::vector<int>::iterator it = _affected__nodes.begin(); it != _affected__nodes.end(); ++it)
+    /*
     for (auto it = _affected__nodes.begin(); it != _affected__nodes.end(); ++it){
         (*ts_node__data_origin)[(*it)] = true;
     }
+    */
 
-
+    for (auto it = ts_node__data_origin->begin(); it != ts_node__data_origin->end(); ++it){
+        it->second = true;
+    }
 
     //================================================================
 //    for(int i=0;i<nodeInvolved.size();i++) {

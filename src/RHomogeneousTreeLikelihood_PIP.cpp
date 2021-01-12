@@ -702,6 +702,12 @@ void RHomogeneousTreeLikelihood_PIP::setAllIotas(tshlib::Utree *utree) {
 
     }
 
+    //-------------------------------------------
+    // m@x
+    // root node
+    iotasData_[utree->listVNodes.size()] = (1 / mu) / T_;
+    //-------------------------------------------
+
 }
 
 void RHomogeneousTreeLikelihood_PIP::setAllIotas() {
@@ -760,6 +766,12 @@ void RHomogeneousTreeLikelihood_PIP::setAllBetas(tshlib::Utree *utree) {
         betasData_[node->vnode_id] = (1.0 - exp(-mu * brLen__node)) / (mu * brLen__node);
 
     }
+
+    //-------------------------------------------
+    // m@x
+    // root node
+    betasData_[utree->listVNodes.size()] = 1.0;
+    //-------------------------------------------
 
 }
 
@@ -1036,6 +1048,7 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodWholeAlignmentEmptyColum
     //std::vector<int> likelihoodNodes = getNodeListPostOrder(tree_->getRootNode()->getId());
     std::vector<double> _node__partial_likelihood(likelihoodNodes.size());
 
+    bool is_root;
     for (int idxNode = 0; idxNode < likelihoodNodes.size(); idxNode++) {
 
         auto _sons__ids = new std::vector<int>;
@@ -1052,7 +1065,17 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodWholeAlignmentEmptyColum
             }
         }
         delete _sons__ids;
-        _node__partial_likelihood[idxNode] = _kernel_likelihood_empty_forasite(likelihoodNodes[idxNode], &lk_sons_empty);
+
+        //---------------------
+        // m@x
+        if(likelihoodNodes[idxNode]==-1 || likelihoodNodes[idxNode]==utree_->listVNodes.size()){
+            is_root = true;
+        }else{
+            is_root = false;
+        }
+        //---------------------
+
+        _node__partial_likelihood[idxNode] = _kernel_likelihood_empty_forasite(likelihoodNodes[idxNode], &lk_sons_empty,is_root);
     }
 
     // Empty column likelihood
@@ -1072,6 +1095,7 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodWholeAlignmentEmptyColum
     std::vector<int> likelihoodNodes = remapVirtualNodeLists(_nodes__likelihood);
     std::vector<double> _node__partial_likelihood(likelihoodNodes.size());
 
+    bool is_root;
     for (int idxNode = 0; idxNode < likelihoodNodes.size(); idxNode++) {
 
         auto _sons__ids = new std::vector<int>;
@@ -1091,7 +1115,17 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodWholeAlignmentEmptyColum
 
         }
         delete _sons__ids;
-        _node__partial_likelihood[idxNode] = _kernel_likelihood_empty_forasite(likelihoodNodes[idxNode], &lk_sons_empty);
+
+        //---------------------
+        // m@x
+        if(likelihoodNodes[idxNode]==-1 || likelihoodNodes[idxNode]==utree_->listVNodes.size()){
+            is_root = true;
+        }else{
+            is_root = false;
+        }
+        //---------------------
+
+        _node__partial_likelihood[idxNode] = _kernel_likelihood_empty_forasite(likelihoodNodes[idxNode], &lk_sons_empty,is_root);
 
     }
 
@@ -1103,7 +1137,7 @@ double RHomogeneousTreeLikelihood_PIP::computeLikelihoodWholeAlignmentEmptyColum
     return lk_site_empty;
 }
 
-double RHomogeneousTreeLikelihood_PIP::_kernel_likelihood_empty_forasite(int nodeID, std::vector<VVVdouble *> *lk_sons_empty) const {
+double RHomogeneousTreeLikelihood_PIP::_kernel_likelihood_empty_forasite(int nodeID, std::vector<VVVdouble *> *lk_sons_empty,bool is_root) const {
 
     double lk_site_empty = 0;
     std::vector<double> _cat__fvsite(nbClasses_, 0.);
@@ -1580,7 +1614,9 @@ double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::
 
     double op = 1 - exp(lk_1-lk_2);
 
-    result = op ;/// h; // scaled derivative to avoid underflow/overflow
+    // scaled derivative to avoid underflow/overflow
+    // change sign to maximize rather than minimize
+    result = -op ;/// h;
 
     // Save the first derivative
     d1bl_ = result;
