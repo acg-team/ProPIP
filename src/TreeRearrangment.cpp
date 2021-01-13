@@ -1022,6 +1022,32 @@ namespace tshlib {
 
     }
 
+    void TreeRearrangment::myCheckTreeCountLeaves_rec(VirtualNode *node,int &n){
+
+        if(node->isTerminalNode()){
+            n++;
+        }else{
+            myCheckTreeCountLeaves_rec(node->getNodeLeft(),n);
+            myCheckTreeCountLeaves_rec(node->getNodeRight(),n);
+        }
+
+    }
+
+    bool TreeRearrangment::myCheckTreeCountLeaves(tshlib::Utree *utree){
+
+        int tot;
+        int num_leaves_L = 0;
+        int num_leaves_R = 0;
+        myCheckTreeCountLeaves_rec(utree->startVNodes.at(0),num_leaves_L);
+        myCheckTreeCountLeaves_rec(utree->startVNodes.at(1),num_leaves_R);
+        tot=num_leaves_L+num_leaves_R;
+        if( tot*2-2 != utree->listVNodes.size() ){
+            return false;
+        }
+
+        return true;
+    }
+
     void TreeRearrangment::myCheckTree(VirtualNode *root1,VirtualNode *root2) {
 
         // check the roots
@@ -2160,21 +2186,34 @@ namespace tshlib {
 
         tshlib::VirtualNode *new_root = new VirtualNode();
         new_root->setNodeName("new_root");
+        new_root->setVnode_id(-2);
+
         tshlib::VirtualNode *left_node = new VirtualNode();
         left_node->setNodeName("left_node");
+        left_node->setVnode_id(-3);
+
         tshlib::VirtualNode *left_leaf = new VirtualNode();
         left_leaf->setNodeName("left_leaf");
+        left_leaf->setVnode_id(-4);
+
         tshlib::VirtualNode *right_node = new VirtualNode();
         right_node->setNodeName("right_node");
+        right_node->setVnode_id(-5);
+
         tshlib::VirtualNode *right_leaf = new VirtualNode();
         right_leaf->setNodeName("right_leaf");
+        right_leaf->setVnode_id(-6);
+
+        tshlib::VirtualNode *pseudo_root_0 = startVNodes.at(0);
+        tshlib::VirtualNode *pseudo_root_1 = startVNodes.at(1);
 
         new_root->_setNodeUp(nullptr);
         new_root->_setNodeLeft(left_node);
         new_root->_setNodeRight(right_node);
 
         left_node->_setNodeUp(new_root);
-        left_node->_setNodeLeft(startVNodes.at(0));
+        left_node->_setNodeLeft(pseudo_root_0);
+        pseudo_root_0->_setNodeUp(left_node);
         left_node->_setNodeRight(left_leaf);
 
         left_leaf->_setNodeUp(left_node);
@@ -2183,14 +2222,15 @@ namespace tshlib {
 
         right_node->_setNodeUp(new_root);
         right_node->_setNodeLeft(right_leaf);
-        right_node->_setNodeRight(startVNodes.at(1));
+        right_node->_setNodeRight(pseudo_root_1);
+        pseudo_root_1->_setNodeUp(right_node);
 
         right_leaf->_setNodeUp(right_node);
         right_leaf->_setNodeLeft(nullptr);
         right_leaf->_setNodeRight(nullptr);
 
-        startVNodes.at(0)->_setNodeUp(left_node);
-        startVNodes.at(1)->_setNodeUp(right_node);
+        startVNodes.at(0) = nullptr;
+        startVNodes.at(1) = nullptr;
 
         VirtualNode *siblingSource = nullptr;
         VirtualNode *parentSource = nullptr;
@@ -2198,8 +2238,19 @@ namespace tshlib {
         VirtualNode *parentTarget = nullptr;
         double bl = 0.0;
 
-        siblingSource = source->getSiblingNode();
+
         parentSource = source->getNodeUp();
+        if(parentSource->getNodeUp()->vnode_id == source->vnode_id){
+            LOG(FATAL) << "ERROR in _applySPR";
+            exit(EXIT_FAILURE);
+        }
+
+        if(parentSource->getNodeLeft()->vnode_id == source->vnode_id){
+            siblingSource = parentSource->getNodeRight();
+        }else{
+            siblingSource = parentSource->getNodeLeft();
+        }
+
         grandparentSource = parentSource->getNodeUp();
         parentTarget = target->getNodeUp();
 
@@ -2213,24 +2264,41 @@ namespace tshlib {
         if(grandparentSource->getNodeLeft()->vnode_id == parentSource->vnode_id){
             grandparentSource->_setNodeLeft(siblingSource);
             siblingSource->_setNodeUp(grandparentSource);
+            parentSource->_setNodeUp(nullptr);
+            if(parentSource->getNodeLeft()->vnode_id == source->vnode_id){
+                parentSource->_setNodeRight(nullptr);
+            }else{
+                parentSource->_setNodeLeft(nullptr);
+            }
         }else{
             grandparentSource->_setNodeRight(siblingSource);
             siblingSource->_setNodeUp(grandparentSource);
+            parentSource->_setNodeUp(nullptr);
+            if(parentSource->getNodeLeft()->vnode_id == source->vnode_id){
+                parentSource->_setNodeRight(nullptr);
+            }else{
+                parentSource->_setNodeLeft(nullptr);
+            }
         }
+
         if(parentTarget->getNodeLeft()->vnode_id == target->vnode_id){
             parentTarget->_setNodeLeft(parentSource);
             parentSource->_setNodeUp(parentTarget);
+            target->_setNodeUp(nullptr);
         }else{
             parentTarget->_setNodeRight(parentSource);
             parentSource->_setNodeUp(parentTarget);
+            target->_setNodeUp(nullptr);
         }
-        if(parentSource->getNodeLeft()->vnode_id == source->vnode_id){
+
+        if(parentSource->getNodeRight() == nullptr){
             parentSource->_setNodeRight(target);
             target->_setNodeUp(parentSource);
         }else{
             parentSource->_setNodeLeft(target);
             target->_setNodeUp(parentSource);
         }
+
         siblingSource->vnode_branchlength = bl;
 
         bl = target->vnode_branchlength / 2.0;

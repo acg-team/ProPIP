@@ -297,7 +297,8 @@ namespace bpp {
                                                               int &n,
                                                               UtreeBppUtils::treemap &tm,
                                                               bpp::SiteContainer *sites,
-                                                              std::map<std::string, std::string> &pars);
+                                                              std::map<std::string, std::string> &pars,
+                                                              int &contatore);
 
         static void performOptimizationFullD(unique_ptr<BackupListener> &backupListener,
                                              unsigned int nstep,

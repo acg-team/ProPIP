@@ -141,6 +141,8 @@ namespace tshlib {
         void getNodesInRadiusDown(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, bool includeSelf,MoveDirections direction, bool allowDuplicatedMoves);
         //bool revertMove(Move *move, Utree & _thread__topology);
         void removeMoveDuplicates(int num_nodes);
+        void myCheckTreeCountLeaves_rec(VirtualNode *node,int &n);
+        bool myCheckTreeCountLeaves(tshlib::Utree *utree);
         //================================================================================
 
         //bool applyMove(unsigned long moveID, Utree & _thread__topology);
