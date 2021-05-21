@@ -105,5 +105,5 @@ output.estimates.file=../tests/output/test_04/estimates.log
 
 ### Execute the analysis
 ```
-$ ProPIP params=/directory/of/the/indel_aware.txt
+$ ProPIP params=../tests/input/test_01/indel_aware.txt
 ```
