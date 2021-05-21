@@ -30,7 +30,7 @@ output.estimates.format=json
 
 ### Execute the analysis
 ```
-$ ProPIP params=/directory/of/the/indel_aware.txt
+$ ProPIP params=../tests/input/test_01/indel_aware.txt
 ```
 
 ## 2: Inferring an MSA using an indel-aware substitution model from amino-acids input sequences
