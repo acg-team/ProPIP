@@ -1617,6 +1617,7 @@ double RHomogeneousTreeLikelihood_PIP::computeN1DerivativeLikelihood(const std::
     // scaled derivative to avoid underflow/overflow
     // change sign to maximize rather than minimize
     result = -op ;/// h;
+    //result = op ;/// h;
 
     // Save the first derivative
     d1bl_ = result;

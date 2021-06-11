@@ -615,6 +615,10 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyChangeSuccessful(std::vecto
 
 void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLength(int id_Bpp,double bl) {
 
+    if(bl<MIN_BRANCH_LEN){
+        bl=MIN_BRANCH_LEN;
+    }
+
     this->nodes_.at(id_Bpp)->setDistanceToFather(bl);
 
 }
@@ -624,6 +628,11 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLength(tshlib::Utree *u
     for(int i=0;i<utree->listVNodes.size();i++){
         int id_Bpp = this->treemap_.right.at(utree->listVNodes.at(i)->vnode_id);
         double bl = this->nodes_.at(id_Bpp)->getDistanceToFather();
+
+        if(bl<MIN_BRANCH_LEN){
+            bl=MIN_BRANCH_LEN;
+        }
+
         utree->listVNodes.at(i)->vnode_branchlength = bl;
     }
 
@@ -634,6 +643,11 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::commitBranchLengths() {
     for(int i=0;i<this->nodes_.size();i++){
         int id = this->nodes_.at(i)->getId();
         double bl = this->nodes_.at(i)->getDistanceToFather();
+
+        if(bl<MIN_BRANCH_LEN){
+            bl=MIN_BRANCH_LEN;
+        }
+
         tree_->getNode(id)->setDistanceToFather(bl);
     }
 
@@ -646,6 +660,9 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyCommitTree() {
 
     std::map < int, bpp::Node * > tempMap;
     std::map<int, double> tempDistanceToFather;
+
+    double bl;
+
     // reset inBtree
     for (auto &bnode:tree_->getNodes()) {
 
@@ -675,8 +692,17 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyCommitTree() {
             leftBNode->setFather(pNode);
             rightBNode->setFather(pNode);
 
-            leftBNode->setDistanceToFather(tempDistanceToFather[leftBNode->getId()]);
-            rightBNode->setDistanceToFather(tempDistanceToFather[rightBNode->getId()]);
+            bl=tempDistanceToFather[leftBNode->getId()];
+            if(bl<MIN_BRANCH_LEN){
+                bl=MIN_BRANCH_LEN;
+            }
+            leftBNode->setDistanceToFather(bl);
+
+            bl=tempDistanceToFather[rightBNode->getId()];
+            if(bl<MIN_BRANCH_LEN){
+                bl=MIN_BRANCH_LEN;
+            }
+            rightBNode->setDistanceToFather(bl);
 
             //Add new sons
             pNode->setSon(0, leftBNode);
@@ -697,8 +723,17 @@ void UnifiedTSHomogeneousTreeLikelihood_PIP::topologyCommitTree() {
             leftBNode->setFather(tree_->getRootNode());
             rightBNode->setFather(tree_->getRootNode());
 
-            leftBNode->setDistanceToFather(tempDistanceToFather[leftBNode->getId()]);
-            rightBNode->setDistanceToFather(tempDistanceToFather[rightBNode->getId()]);
+            bl=tempDistanceToFather[leftBNode->getId()];
+            if(bl<MIN_BRANCH_LEN){
+                bl=MIN_BRANCH_LEN;
+            }
+            leftBNode->setDistanceToFather(bl);
+
+            bl=tempDistanceToFather[rightBNode->getId()];
+            if(bl<MIN_BRANCH_LEN){
+                bl=MIN_BRANCH_LEN;
+            }
+            rightBNode->setDistanceToFather(bl);
 
             tree_->getRootNode()->setSon(0, leftBNode);
             tree_->getRootNode()->setSon(1, rightBNode);

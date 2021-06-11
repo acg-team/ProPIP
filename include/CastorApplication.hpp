@@ -217,6 +217,8 @@ namespace bpp {
 
         void initTreeBranchLengthEqual(std::map<std::string, std::string> &cmdArgs);
 
+        void fixSmallBranchLength();
+
         void initTreeBranchLengthClock();
 
         void initTreeBranchLengthGrafen(std::map<std::string, std::string> &cmdArgs);

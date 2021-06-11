@@ -258,15 +258,15 @@ namespace bpp {
 
     }
 
-    void Optimizators::setParametersConstaints(ParameterList &parametersToEstimate,
-                                               std::string &paramListDesc,
-                                               std::vector<std::string> &parNames,
-                                               bpp::AbstractHomogeneousTreeLikelihood *tl,
-                                               std::map<std::string, std::string> &params,
-                                               const std::string &suffix,
-                                               bool suffixIsOptional,
-                                               bool verbose,
-                                               int warn){
+    void Optimizators::setParametersConstraints(ParameterList &parametersToEstimate,
+                                                std::string &paramListDesc,
+                                                std::vector<std::string> &parNames,
+                                                bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                                std::map<std::string, std::string> &params,
+                                                const std::string &suffix,
+                                                bool suffixIsOptional,
+                                                bool verbose,
+                                                int warn){
 
         vector<string> parToEstNames;
         std::string constraint;
@@ -1189,8 +1189,10 @@ namespace bpp {
         //!!!!!!!!!!!!!!!!!
         while ( (std::fabs(initScore-currentScore)>tolerance) && (cycle_counter<nbEvalMax) ){
 
+
             // optimize Topology (1 cycle)
-            Optimizators::performOneCycleTopologyOpt(treesearch,
+            if(optimizeTopo){
+                Optimizators::performOneCycleTopologyOpt(treesearch,
                                                 optMethodModel,
                                                 backupListener,
                                                 parametersToEstimate,
@@ -1210,7 +1212,7 @@ namespace bpp {
                                                 sites,
                                                 pars,
                                                 contatore);
-
+            }
 
 //#ifdef FIX
 
@@ -1263,7 +1265,12 @@ namespace bpp {
 
             tl->applyParameters();
 
-            dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // check this for non-PIP model
+            if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)) {
+                dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl)->commitBranchLengths();
+            }
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             currentScore = tl->getLogLikelihood();
 
@@ -1310,18 +1317,21 @@ namespace bpp {
         UnifiedTSHomogeneousTreeLikelihood * lk_fun = nullptr;
         tshlib::Utree *thread_topology = nullptr;
 
-        double lk = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->minusLogLik_;
-        treesearch->tshinitScore = lk;
-        treesearch->tshcycleScore = lk;
-        treesearch->performed_cycles = 0;
+        double lk ;
 
         if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)){
             is_PIP = true;
             PIP_lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(tl);
+            lk = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(treesearch->likelihoodFunc)->minusLogLik_;
         }else{
             is_PIP = false;
             lk_fun = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc);
+            lk = - dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(treesearch->likelihoodFunc)->getLogLikelihood();
         }
+
+        treesearch->tshinitScore = lk;
+        treesearch->tshcycleScore = lk;
+        treesearch->performed_cycles = 0;
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         int num_moves_to_push_0 = 5;
@@ -1337,6 +1347,7 @@ namespace bpp {
 
 
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        /*
         for (int i = 0; i < treesearch->utree_->listVNodes.size(); i++) {
             int id_VN = treesearch->utree_->listVNodes.at(i)->vnode_id;
             int id_Bpp = tm.right.at(id_VN);
@@ -1344,6 +1355,7 @@ namespace bpp {
             std::cout<<treesearch->utree_->listVNodes.at(i)->vnode_name;
             std::cout<<"("<<id_VN<<") : ["<<id_Bpp<<"] : "<<par_name<<std::endl;
         }
+         */
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -1409,6 +1421,7 @@ namespace bpp {
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
+                    /*
                     std::cout<<"vvvvvvvvvvvvvvvvvvvvvvv"<<std::endl;
                     move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
                     move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
@@ -1416,6 +1429,7 @@ namespace bpp {
                     std::cout<<"T:"<<node_target->vnode_name<<"["<<node_target->vnode_id<<"]"<<std::endl;
                     std::cout<<"contatore:"<<contatore<<std::endl;
                     move_set->myCheckTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes.at(1));
+                    */
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
@@ -1425,6 +1439,7 @@ namespace bpp {
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
+                    /*
                     move_set->myPrintTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes);
                     move_set->myPrintTree(thread_topology->startVNodes.at(1),thread_topology->startVNodes);
                     std::cout<<"^^^^^^^^^^^^^^^^^^^^^^^"<<std::endl;
@@ -1443,11 +1458,12 @@ namespace bpp {
                         move_set->myCheckTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes.at(1));
                     }
                     move_set->myCheckTree(thread_topology->startVNodes.at(0),thread_topology->startVNodes.at(1));
+                     */
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
                     //!!!!!!!!!!!!!!!!???????????????????
 
-                    std::cout << "counter:" << counter << std::endl;
+                    //std::cout << "counter:" << counter << std::endl;
 
                     counter++;
 
@@ -2145,15 +2161,15 @@ namespace bpp {
         // -------------------------------------------------------------------------
         // Constrains: should I constrain some parameters?
         // -------------------------------------------------------------------------
-        Optimizators::setParametersConstaints(parametersToEstimate,
-                                              paramListDesc,
-                                              parNames,
-                                              tl,
-                                              params,
-                                              suffix,
-                                              suffixIsOptional,
-                                              verbose,
-                                              warn);
+        Optimizators::setParametersConstraints(parametersToEstimate,
+                                               paramListDesc,
+                                               parNames,
+                                               tl,
+                                               params,
+                                               suffix,
+                                               suffixIsOptional,
+                                               verbose,
+                                               warn);
 
         // -------------------------------------------------------------------------
         // Options for optimization routines
@@ -2627,14 +2643,21 @@ namespace bpp {
             desc->addOptimizer("Branch length parameters", new PseudoNewtonOptimizer(fnum), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
         else if (optMethodDeriv == OPTIMIZATION_BFGS)
             desc->addOptimizer("Branch length parameters", new BfgsMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+            // m@x
+            //desc->addOptimizer("Branch length parameters", new BfgsMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_STEP);
         else if (optMethodDeriv == OPTIMIZATION_BRENT)
             desc->addOptimizer("Branch length parameters", new SimpleMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_FULL);
+            // m@x
+            //desc->addOptimizer("Branch length parameters", new SimpleMultiDimensions(fnum5), tl->getBranchLengthsParameters().getParameterNames(), 2,MetaOptimizerInfos::IT_TYPE_STEP);
         else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodDeriv);
         }
 
         // Other parameters
 
+        //==============================================================================================================
+        // m@x
+        /*
         if (optMethodModel == OPTIMIZATION_BRENT) {
 
             poptimizer=Optimizators::optimization_BRENT(parameters,tl,desc,fnum5,nstep);
@@ -2646,6 +2669,40 @@ namespace bpp {
         } else{
             throw Exception("OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodModel);
         }
+        */
+        if (optMethodModel == OPTIMIZATION_BRENT){
+
+            ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+            desc->addOptimizer("Substitution model parameter", new SimpleMultiDimensions(f), plsm.getParameterNames(), 0, MetaOptimizerInfos::IT_TYPE_STEP);
+
+
+            ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+            desc->addOptimizer("Rate distribution parameter", new SimpleMultiDimensions(f), plrd.getParameterNames(), 0, MetaOptimizerInfos::IT_TYPE_STEP);
+            poptimizer = new MetaOptimizer(f, desc, nstep);
+
+        }else if (optMethodModel == OPTIMIZATION_BFGS){
+
+            vector<string> vNameDer;
+
+            ParameterList plsm = parameters.getCommonParametersWith(tl->getSubstitutionModelParameters());
+            vNameDer = plsm.getParameterNames();
+
+            ParameterList plrd = parameters.getCommonParametersWith(tl->getRateDistributionParameters());
+
+            vector<string> vNameDer2 = plrd.getParameterNames();
+
+            vNameDer.insert(vNameDer.begin(), vNameDer2.begin(), vNameDer2.end());
+            fnum->setParametersToDerivate(vNameDer);
+
+            desc->addOptimizer("Rate & model distribution parameters", new BfgsMultiDimensions(fnum), vNameDer, 1, MetaOptimizerInfos::IT_TYPE_FULL);
+            poptimizer = new MetaOptimizer(fnum, desc, nstep);
+
+        }else {
+            throw Exception(
+                    "OptimizationTools::optimizeNumericalParameters. Unknown optimization method: " + optMethodModel);
+        }
+        //==============================================================================================================
+
 
         poptimizer->setVerbose(verbose);
         poptimizer->setProfiler(profiler);

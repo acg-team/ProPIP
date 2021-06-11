@@ -213,15 +213,15 @@ namespace bpp {
                                                      bool verbose,
                                                      int warn);
 
-        static void setParametersConstaints(ParameterList &parametersToEstimate,
-                                            std::string &paramListDesc,
-                                            std::vector<std::string> &parNames,
-                                            bpp::AbstractHomogeneousTreeLikelihood *tl,
-                                            std::map<std::string, std::string> &params,
-                                            const std::string &suffix,
-                                            bool suffixIsOptional,
-                                            bool verbose,
-                                            int warn);
+        static void setParametersConstraints(ParameterList &parametersToEstimate,
+                                             std::string &paramListDesc,
+                                             std::vector<std::string> &parNames,
+                                             bpp::AbstractHomogeneousTreeLikelihood *tl,
+                                             std::map<std::string, std::string> &params,
+                                             const std::string &suffix,
+                                             bool suffixIsOptional,
+                                             bool verbose,
+                                             int warn);
 
         static void getOptmizatorsOptions(unsigned int &nbEvalMax,
                                             double &tolerance,

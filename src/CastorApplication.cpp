@@ -1589,6 +1589,22 @@ void CastorApplication::initTreeBranchLengthExponentialDistribution(std::map<std
 
 }
 
+void CastorApplication::fixSmallBranchLength(){
+
+    bpp:: ApplicationTools::displayMessage("fixing small branch lengths ");
+
+    double r = MIN_BRANCH_LEN;
+    int rootId = tree->getRootId();
+    std::vector<int> nodeIds = tree->getNodesId();
+    for(int i=0;i<nodeIds.size();i++){
+        if(nodeIds.at(i) != rootId){
+            tree->setDistanceToFather(nodeIds.at(i),r);
+        }
+
+    }
+
+}
+
 void CastorApplication::initTreeBranchLengthInput(std::map<std::string, std::string> &cmdArgs){
 
     bool midPointRootBrLengths = false;
@@ -1730,6 +1746,8 @@ void CastorApplication::getTree(){
     bpp::PhylogeneticsApplicationTools::writeTree(*this->tree, this->getParams());
 
     this->initTreeBranchLength();
+
+    this->fixSmallBranchLength();
 
     DLOG(INFO) << "[Initial Tree Topology] " << OutputUtils::TreeTools::writeTree2String(this->tree);
 

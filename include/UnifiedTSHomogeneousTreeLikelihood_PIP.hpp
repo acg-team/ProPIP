@@ -59,6 +59,8 @@
 #include "Utils.hpp"
 #include "UnifiedTSHSearchable.hpp"
 
+#include "CastorApplication.hpp"
+
 #ifdef INTELTBB
 
 #include <tbb/tbb.h>
