@@ -53,15 +53,12 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <iostream>
-#include <fstream>
 #include <vector>
 
 /*
 * From GSL:
 */
 #include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit_nlinear.h>
 
@@ -79,24 +76,10 @@
 
 #include <Bpp/Phyl/Tree.h>
 #include <Bpp/Phyl/TreeTools.h>
-#include <Bpp/Phyl/Node.h>
-
-#include <Bpp/Phyl/Distance/DistanceEstimation.h>
-#include <Bpp/Phyl/Model/RateDistribution/ConstantRateDistribution.h>
 
 #include <Bpp/Phyl/Model/SubstitutionModel.h>
 
-#include <Bpp/Phyl/App/PhylogeneticsApplicationTools.h>
-
-#include <Bpp/Numeric/Matrix/Matrix.h>
-
 #include <Bpp/Seq/GeneticCode/GeneticCode.h>
-
-#include <Bpp/Phyl/Distance/BioNJ.h>
-
-#include <Bpp/Seq/App/SequenceApplicationTools.h>
-
-#include <glog/logging.h>
 
 #include "inference_indel_rates.hpp"
 
@@ -162,18 +145,6 @@ void inference_indel_rates::solve_system(gsl_vector *x0, gsl_multifit_nlinear_fd
 
     /* store cond(J(x)) */
     gsl_multifit_nlinear_rcond(&rcond, work);
-
-    /*
-    // print summary
-    fprintf(stderr, "NITER         = %zu\n", gsl_multifit_nlinear_niter(work));
-    fprintf(stderr, "NFEV          = %zu\n", fdf->nevalf);
-    fprintf(stderr, "NJEV          = %zu\n", fdf->nevaldf);
-    fprintf(stderr, "NAEV          = %zu\n", fdf->nevalfvv);
-    fprintf(stderr, "initial cost  = %.12e\n", chisq0);
-    fprintf(stderr, "final cost    = %.12e\n", chisq);
-    fprintf(stderr, "final x       = (%.12e, %.12e)\n",gsl_vector_get(x, 0), gsl_vector_get(x, 1));
-    fprintf(stderr, "final cond(J) = %.12e\n", 1.0 / rcond);
-    */
 
     *lambda_0 = gsl_vector_get(x, 0);
     *mu_0 = gsl_vector_get(x, 1);

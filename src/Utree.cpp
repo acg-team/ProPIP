@@ -39,16 +39,12 @@
  */
 
 #include <string>
-#include <random>
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <glog/logging.h>
 #include <map>
-#include "Utree.hpp"
-
-
 #include "Utree.hpp"
 
 using namespace tshlib;
@@ -251,9 +247,6 @@ namespace tshlib {
         std::vector<VirtualNode *> path2root;
 
         VirtualNode *CurrentNode = inVNode;
-
-        // Add the first element of the path to the root
-        //path2root.push_back(inVNode);
 
         // Add all the other nodes traversing the tree in post-order
         while (CurrentNode != nullptr) {
@@ -589,188 +582,6 @@ namespace tshlib {
         return node_position;
     }
 
-//    void VirtualNode::moveTheRoot(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes) {
-//
-//        VirtualNode *new_root  = nullptr;
-//        VirtualNode *tmp = nullptr;
-//
-//        if(pnode->isPseudoRootNode()){
-//            tmp = pnode;
-//            pnode = qnode;
-//            qnode = tmp;
-//        }
-//
-//        tmp = qnode->getNodeUp();
-//
-//        new_root = qnode->getNodeLeft();
-//        new_root->_setNodeUp(qnode);
-//        qnode->_setNodeLeft(tmp);
-//        qnode->_setNodeUp(new_root);
-//
-//        tmp->_setNodeUp(qnode);
-//
-//        startVNodes.at(0)=new_root;
-//        startVNodes.at(1)=new_root->getNodeUp();
-//
-//    }
-//
-//    void VirtualNode::NNImoveUP(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes) {
-//        VirtualNode * n1 = nullptr;
-//        VirtualNode * n2 = nullptr;
-//
-//        n1 = pnode->getNodeUp();
-//        n2 = qnode->getNodeUp();
-//
-//        if(pnode->vnode_id==n1->getNodeLeft()->vnode_id){
-//            n1->_setNodeLeft(nullptr);
-//            pnode->_setNodeUp(nullptr);
-//        }else{
-//            n1->_setNodeRight(nullptr);
-//            pnode->_setNodeUp(nullptr);
-//        }
-//
-//        if(qnode->vnode_id==n2->getNodeLeft()->vnode_id){
-//            n2->_setNodeLeft(nullptr);
-//            qnode->_setNodeUp(nullptr);
-//        }else{
-//            n2->_setNodeRight(nullptr);
-//            qnode->_setNodeUp(nullptr);
-//        }
-//
-//        if(!n2->getNodeLeft()){
-//            n2->_setNodeLeft(pnode);
-//            pnode->_setNodeUp(n2);
-//        }else{
-//            n2->_setNodeRight(pnode);
-//            pnode->_setNodeUp(n2);
-//        }
-//
-//        if(!n1->getNodeLeft()){
-//            n1->_setNodeLeft(qnode);
-//            qnode->_setNodeUp(n1);
-//        }else{
-//            n1->_setNodeRight(qnode);
-//            qnode->_setNodeUp(n1);
-//        }
-//
-//    }
-//
-//    void VirtualNode::NNImoveUP_LR(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes) {
-//        VirtualNode * n1 = nullptr;
-//        VirtualNode * n2 = nullptr;
-//        VirtualNode * tmp1 = nullptr;
-//        VirtualNode * tmp2 = nullptr;
-//        int id;
-//        double bl;
-//        std::string name;
-//
-//        n1 = pnode->getNodeUp();
-//        n2 = n1->getNodeUp();
-//
-//        tmp1 = pnode->getSiblingNode();
-//        tmp2 = n1->getSiblingNode();
-//
-//        if(tmp1->vnode_id==n1->getNodeLeft()->vnode_id){
-//            tmp1->getNodeUp()->_setNodeLeft(nullptr);
-//            tmp1->_setNodeUp(nullptr);
-//        }else{
-//            tmp1->getNodeUp()->_setNodeRight(nullptr);
-//            tmp1->_setNodeUp(nullptr);
-//        }
-//
-//        if(tmp2->vnode_id==n2->getNodeLeft()->vnode_id){
-//            tmp2->getNodeUp()->_setNodeLeft(nullptr);
-//            tmp2->_setNodeUp(nullptr);
-//        }else{
-//            tmp2->getNodeUp()->_setNodeRight(nullptr);
-//            tmp2->_setNodeUp(nullptr);
-//        }
-//
-//        if(!n2->getNodeLeft()){
-//            n2->_setNodeLeft(tmp1);
-//            tmp1->_setNodeUp(n2);
-//        }else{
-//            n2->_setNodeRight(tmp1);
-//            tmp1->_setNodeUp(n2);
-//        }
-//
-//        if(!n1->getNodeLeft()){
-//            n1->_setNodeLeft(tmp2);
-//            tmp2->_setNodeUp(n1);
-//        }else{
-//            n1->_setNodeRight(tmp2);
-//            tmp2->_setNodeUp(n1);
-//        }
-//
-//        id = n1->vnode_id;
-//        bl = n1->vnode_branchlength;
-//        name = n1->vnode_name;
-//        n1->vnode_id = n2->vnode_id;
-//        n1->vnode_branchlength = n2->vnode_branchlength;
-//        n1->vnode_name = n2->vnode_name;
-//        n2->vnode_id = id;
-//        n2->vnode_branchlength = bl;
-//        n2->vnode_name = name;
-//
-//    }
-//
-//    bool VirtualNode::swapNode(VirtualNode *targetNode, MoveDirections move_direction, bool revertRotations,std::vector<VirtualNode *> &startVNodes) {
-//
-//        bool execstatus = false;
-//
-//        if (this == targetNode) {
-//
-//            LOG(FATAL) << "[tshlib::swapNode] The source and the target nodes must be different!";
-//
-//
-//        } else if (targetNode == nullptr) {
-//
-//            LOG(FATAL) << "[tshlib::swapNode] The target node is empty";
-//
-//
-//        } else {
-//
-//            VirtualNode *pnode = this;
-//            VirtualNode *qnode = targetNode;
-//
-//            switch (move_direction) {
-//
-//                case MoveDirections::up:
-//
-//                    if(pnode->isPseudoRootNode() || qnode->isPseudoRootNode()){
-//
-//                        moveTheRoot(pnode,qnode,startVNodes);
-//
-//                        NNImoveUP_LR(pnode,qnode,startVNodes);
-//
-//                    }else{
-//
-//                        NNImoveUP(pnode,qnode,startVNodes);
-//
-//                    }
-//
-//                    break;
-//
-//                case MoveDirections::down_left:
-//                case MoveDirections::down_right:
-//                case MoveDirections::up_left:
-//                case MoveDirections::up_right:
-//
-//                    NNImoveUP_LR(pnode,qnode,startVNodes);
-//
-//                    break;
-//
-//                default:
-//                    std::cout << "I cannot move the node" << std::endl;
-//                    exit(EXIT_FAILURE);
-//            }
-//
-//            execstatus = true;
-//        }
-//
-//        return execstatus;
-//    }
-
 
     void VirtualNode::disconnectNode() {
 
@@ -970,10 +781,7 @@ namespace tshlib {
             }
         }
 
-        //auto newvector = std::vector<VirtualNode *>(tmpMap.size());
         auto newvector = std::vector<int>(tmpMap.size());
-        // Create a map iterator and point to beginning of map
-        //std::map<VirtualNode *,int>::iterator it = tmpMap.begin();
 
         // Iterate over the map using c++11 range based for loop
         for (std::pair<VirtualNode *, int> element : tmpMap) {
@@ -1220,8 +1028,6 @@ namespace tshlib {
 
             } else {
 
-                //std::cout << "This node is the pseudoroot" << std::endl;
-
             }
         }
 
@@ -1292,8 +1098,6 @@ namespace tshlib {
 
             } else {
 
-                //std::cout << "This node is the pseudoroot" << std::endl;
-
             }
 
         }
@@ -1325,7 +1129,6 @@ namespace tshlib {
 
 
     void VirtualNodeUtils::rotateNodeClockwise(VirtualNode *vnode) {
-
 
         VirtualNode *curr_vn_up;
         VirtualNode *curr_vn_left;
@@ -1387,7 +1190,6 @@ namespace tshlib {
         } else if (isTerminalNode()) {
             LOG(WARNING) << "[tshlib::VirtualNode::getSiblingNode] Node " << getNodeName() << " has no siblings since it is a leaf.";
         } else {
-            //siblingNode = getNodeUp();
         }
         return siblingNode;
     }

@@ -42,7 +42,6 @@
  * @see For more information visit:
  */
 
-
 #include "DistanceFactory.hpp"
 #include "DistanceFactoryAlign.hpp"
 

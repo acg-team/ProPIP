@@ -68,7 +68,6 @@
 
 #include "UnifiedTSHTopologySearch.hpp"
 #include <algorithm>
-#include <random>
 
 using namespace bpp;
 
@@ -91,15 +90,7 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::mydefineMoves(std::default_random_
 
 tshlib::TreeRearrangment *tshlib::TreeSearch::mydefineMoves_new(int source_id) {
 
-    //this->utree_->removeVirtualRootNode();
-
-    //int n = this->utree_->mygetMaxNodeDistance();
     auto _move__set = new tshlib::TreeRearrangment;
-    //_move__set->setTreeCoverage(tshRearrangementCoverage);
-    //_move__set->setStrategy(tshSearchHeuristic);
-    //_move__set->initialize(n);
-
-    //this->utree_->addVirtualRootNode();
 
     _move__set->mydefineMoves_new(this->utree_,source_id);
 
@@ -110,17 +101,10 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
 
     this->utree_->removeVirtualRootNode();
 
-    //int n = this->utree_->getMaxNodeDistance();
     int n = this->utree_->mygetMaxNodeDistance();
-
-
-    //std::cout<<"n: "<<n<<","<<n1<<std::endl;
-
-
 
     // Initialise a new rearrangement list
     auto _move__set = new tshlib::TreeRearrangment;
-    //_move__set->setTree(utree_);
     _move__set->setTreeCoverage(tshRearrangementCoverage);
     _move__set->setStrategy(tshSearchHeuristic);
     _move__set->initialize(n);
@@ -134,11 +118,6 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
 
             // Generate candidate list of possible moves given the tree topology and the rearrangement operation type
             for (auto &node:utree_->listVNodes) {
-
-                // Print node description with neighbors
-                //DVLOG(2) << "[utree neighbours] " << vnode->printNeighbours() << std::endl;
-
-                //_move__set->setSourceNode(node->getVnode_id());
 
                 // Get all the target nodes with distance == radius from the source node
                 // excluding the starting node (false)
@@ -155,11 +134,6 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
             // Generate candidate list of possible moves given the node topology and the rearrangement operation type
             for (auto &node:_seed__nodes) {
 
-                // Print node description with neighbors
-                //DVLOG(2) << "[utree neighbours] " << vnode->printNeighbours() << std::endl;
-
-                //_move__set->setSourceNode(node->getVnode_id());
-
                 // Get all the target nodes with distance == radius from the source node
                 // excluding the starting node (false)
                 // do not is_duplicate moves in the list
@@ -175,7 +149,6 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
     }
 
     // Print the list of moves for the current P node (source node)
-    //rearrangmentList.printMoves();
 
     this->utree_->addVirtualRootNode();
 
@@ -186,15 +159,8 @@ tshlib::TreeRearrangment *tshlib::TreeSearch::defineMoves() {
 double tshlib::TreeSearch::executeTreeSearch() {
     double newScore = 0;
 
-
-    // m@x
-    //setTreeSearchStatus(false);
-    //setTreeSearchStatus(true);
-
-
     // Store initial likelihood value
     setInitialLikelihoodValue(likelihoodFunc->getLogLikelihood());
-    //tshinitScore =  likelihoodFunc->getLogLikelihood();
     tshcycleScore = tshinitScore;
 
     // Remove root on the tree topology
@@ -218,8 +184,6 @@ double tshlib::TreeSearch::executeTreeSearch() {
 
 void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 
-    //bool status = false;
-
     // Allocate memory
     allocateTemporaryLikelihoodData(threads_num);
 
@@ -242,19 +206,8 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
 #else
 
 
-
-
-
 	for (i = 0; i < candidateMoves->getNumberOfMoves(); i++) {
 #endif
-
-
-        // @MAX
-        //std::cout<<this->getUtree()->printTreeNewick(false,true);
-        //std::cout<<std::endl;
-
-
-
 
 	    // ------------------------------------
         // Get the number of the thread
@@ -285,117 +238,40 @@ void tshlib::TreeSearch::testMoves(tshlib::TreeRearrangment *candidateMoves) {
         std::vector<int> listNodesWithinPath = _thread__topology->computePathBetweenNodes(_node__source_id, _node__target_id);
         std::vector<int> updatedNodesWithinPath = candidateMoves->updatePathBetweenNodes(i, listNodesWithinPath);
 
-        // ------------------------------------
-        // Log move details
-//        DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
-//                 << "Move [" << _thread__topology->getNode(currentMove->getSourceNode())->getNodeName() << "->"
-//                 << _thread__topology->getNode(currentMove->getTargetNode())->getNodeName() << "]\t"
-//                 << currentMove->getClass() << "\t(" << currentMove->getRadius() << ")" << "\tdirection: "
-//                 << currentMove->getDirection();
-
-        // ------------------------------------
         // Apply the move
-        //status = candidateMoves->applyMove(i, (*_thread__topology));
         candidateMoves->applyMove(currentMove, (*_thread__topology),_node__source_id,_node__target_id);
 
+        DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1
+                 << " ] [A] MOVE#" << currentMove->getUID() << " | " << _thread__topology->printTreeNewick(true);
+        DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1
+                 << " ] [R] MOVE#" << currentMove->getUID() << " | " << utree_->printTreeNewick(true, false);
+
+        // ------------------------------------
+        // Add root node to the list of nodes involved in the tree-rearrangement
+        updatedNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
+        listNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
+
+        // ------------------------------------
+        // Recompute the likelihood
+        if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)) {
+            moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
+                    updatedNodesWithinPath, (*_thread__topology), thread_id,currentMove->node2Opt);
+        } else {
+            moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
+                    updatedNodesWithinPath, (*_thread__topology));
+        }
 
 
-        // @MAX
-        //std::cout<<_thread__topology->printTreeNewick(false,true);
-        //std::cout<<std::endl;
+        LOG_IF(FATAL, std::isinf(moveLogLK)) << "llk[Move] value is -inf for [MOVE " << candidateMoves->getMove(i)->getUID() << "]" <<
+                                             debugStackTraceMove(candidateMoves->getMove(i), _thread__topology,
+                                                                 listNodesWithinPath,
+                                                                 updatedNodesWithinPath,
+                                                                 tshinitScore,
+                                                                 moveLogLK);
 
-
-
-        //if (status) {
-
-            DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1
-                     << " ] [A] MOVE#" << currentMove->getUID() << " | " << _thread__topology->printTreeNewick(true);
-            DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1
-                     << " ] [R] MOVE#" << currentMove->getUID() << " | " << utree_->printTreeNewick(true, false);
-
-            // ------------------------------------
-            // Print root reachability from every node (includes rotations)
-            // inputTree->_testReachingPseudoRoot();
-
-            // ------------------------------------
-            // Print tree on file
-            //inputTree->saveTreeOnFile("../data/test.txt");
-
-            // ------------------------------------
-            // Add root node to the list of nodes involved in the tree-rearrangement
-            updatedNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
-            listNodesWithinPath.push_back(_thread__topology->rootnode->getVnode_id());
-
-            // ------------------------------------
-            // Recompute the likelihood
-            if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)) {
-                moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-                        updatedNodesWithinPath, (*_thread__topology), thread_id,currentMove->node2Opt);
-            } else {
-                moveLogLK = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-                        updatedNodesWithinPath, (*_thread__topology));
-            }
-
-
-            LOG_IF(FATAL, std::isinf(moveLogLK)) << "llk[Move] value is -inf for [MOVE " << candidateMoves->getMove(i)->getUID() << "]" <<
-                                                 debugStackTraceMove(candidateMoves->getMove(i), _thread__topology,
-                                                                     listNodesWithinPath,
-                                                                     updatedNodesWithinPath,
-                                                                     tshinitScore,
-                                                                     moveLogLK);
-
-            // ------------------------------------
-            // Store likelihood of the move
-            candidateMoves->getMove(i)->setScore(moveLogLK);
-
-            // ------------------------------------
-            // Display status of the rearrangement (deprecated)
-            //candidateMoves->displayRearrangmentStatus(i, true);
-
-            // ------------------------------------
-            // Revert the move, and return to the original tree
-            //candidateMoves->revertMove(i);
-            //DVLOG(1) << "[TSH Cycle - Topology] [R] MOVE#" << candidateMoves->getMove(i)->getUID() << " | " << utree_->printTreeNewick(true);
-//
-//                // ------------------------------------
-//                // Recompute the likelihood after reverting the move
-//                double moveLogLK_return = -std::numeric_limits<double>::infinity();
-//
-//                if (dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)) {
-//                    moveLogLK_return = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood_PIP *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-//                            listNodesWithinPath);
-//                } else {
-//                    moveLogLK_return = dynamic_cast<UnifiedTSHomogeneousTreeLikelihood *>(likelihoodFunc)->updateLikelihoodOnTreeRearrangement(
-//                            listNodesWithinPath);
-//                }
-
-            // ------------------------------------
-            // Display status of the rearrangement (deprecated)
-            //candidateMoves->displayRearrangmentStatus(i, true);
-
-//                LOG_IF(FATAL, std::isinf(moveLogLK_return))
-//                << "llk[Return] value is -inf for [MOVE " << candidateMoves->getMove(i)->getUID() << "]" <<
-//                debugStackTraceMove(candidateMoves->getMove(i),
-//                                    utree_,
-//                                    listNodesWithinPath,
-//                                    updatedNodesWithinPath,
-//                                    tshinitScore,
-//                                    moveLogLK,
-//                                    moveLogLK_return);
-//
-//                LOG_IF(FATAL, !ComparisonUtils::areLogicallyEqual(moveLogLK_return, tshinitScore))
-//                << "Error in evaluating likelihood [MOVE " << candidateMoves->getMove(i)->getUID() << "]" <<
-//                debugStackTraceMove(candidateMoves->getMove(i),
-//                                    utree_,
-//                                    listNodesWithinPath,
-//                                    updatedNodesWithinPath,
-//                                    tshinitScore,
-//                                    moveLogLK,
-//                                    moveLogLK_return);
-
-
-
-        //}
+        // ------------------------------------
+        // Store likelihood of the move
+        candidateMoves->getMove(i)->setScore(moveLogLK);
 
         // ------------------------------------
         // Count moves performed
@@ -452,7 +328,6 @@ void tshlib::TreeSearch::deallocateTemporaryLikelihoodData(int numThreads) {
 
 double tshlib::TreeSearch::iterate() {
 
-
     // Condition handler
     double c = std::abs(tshinitScore);
 
@@ -497,23 +372,6 @@ double tshlib::TreeSearch::iterate() {
         // ------------------------------------
         // Print winning move
         if (bestMove) {
-
-//            setTreeSearchStatus(true);
-
-//            DVLOG(1) << "[TSH Cycle " << std::setfill('0') << std::setw(3) << performed_cycles + 1 << " ] "
-//                     << "Found best move | "
-//                     << "lk = " << std::setprecision(12) << bestMove->getScore() << " | "
-//                     << bestMove->getClass() << "." << std::setfill('0') << std::setw(3) << bestMove->getUID()
-//                     << " [" << utree_->getNode(bestMove->getSourceNode())->getNodeName()
-//                     << " -> " << utree_->getNode(bestMove->getTargetNode())->getNodeName() << "]";
-
-
-//            _task.str(std::string());
-//            _task << "- Found new ML tree   | ["
-//                  << bestMove->getClass() << "." << std::setfill('0') << std::setw(3) << bestMove->getUID()
-//                  << "] New likelihood: " << std::setprecision(12) << bestMove->getScore();
-//            ApplicationTools::displayMessage(_task.str());
-
 
             std::vector<int> listNodesWithinPath, updatedNodesWithinPath;
             listNodesWithinPath = utree_->computePathBetweenNodes(utree_->getNode(bestMove->getSourceNode()),
@@ -598,12 +456,6 @@ std::string tshlib::TreeSearch::debugStackTraceMove(Move *move, Utree *_utree,
 
 
     std::ostringstream stm;
-//    stm << std::endl << "*** Stack trace [MOVE " << move->getClass() << "."
-//        << move->getUID() << "] ("
-//        << _utree->getNode(move->getSourceNode())->getNodeName()
-//        << " -> " << _utree->getNode(move->getTargetNode())->getNodeName() << ") - "
-//        << move->getDirection() << " ***"
-//        << std::endl;
 
     stm << "    @        [ReferenNodeList]  " << nodepath_lni.str() << std::endl;
     stm << "    @        [UpdatedNodeList]  " << nodepath_uni.str() << std::endl;

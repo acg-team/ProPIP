@@ -511,12 +511,6 @@ double nodeCPU::computeLK_M_local(double NU,
 
     double log_pr;
 
-  //  bpp::Node *sonLeft = childL->_getBnode();
-//    int sonLeftID = sonLeft->getId();
-
-//    bpp::Node *sonRight = childR->_getBnode();
-  //  int sonRightID = sonRight->getId();
-
     // create left + right column
     MSAcolumn_t s;
     s.append(sL);
@@ -599,13 +593,6 @@ double nodeCPU::computeLK_X_local(double NU,
 
     double log_pr;
 
-
-//    bpp::Node *sonLeft = childL->_getBnode();
-//    int sonLeftID = sonLeft->getId();
-
-  //  bpp::Node *sonRight = childR->_getBnode();
-  //  int sonRightID = sonRight->getId();
-
     // create left + right column
     MSAcolumn_t s;
     bool is_found;
@@ -685,12 +672,6 @@ std::vector<double> nodeCPU::computeLK_GapColumn_local(MSAcolumn_t &sL,
     // array of lk (for each gamma rate) of a single column full of gaps
     std::vector<double> pc0;
     pc0.resize(num_gamma_categories);
-
-    //bpp::Node *sonLeft = childL->_getBnode();
-//    int sonLeftID = sonLeft->getId();
-
-   // bpp::Node *sonRight = childR->_getBnode();
-  //  int sonRightID = sonRight->getId();
 
     for (int catg = 0; catg < num_gamma_categories; catg++) {
 
@@ -773,9 +754,6 @@ std::vector<double> nodeCPU::computeLK_GapColumn_local(int nodeID,
         // lk at the actual node (considered as root node => beta = 1.0)
         p0 = iotasNode_[catg] * fv0;
 
-//sis        pL=childL->log_lk_empty_down_[catg];
-
-//sis        pR=childR->log_lk_empty_down_[catg];
 
         pc0.at(catg) = p0 + pL + pR;
     }
@@ -796,11 +774,6 @@ double nodeCPU::computeLK_Y_local(double NU,
 
     double log_pr;
 
-//    bpp::Node *sonLeft = childL->_getBnode();
-//    int sonLeftID = sonLeft->getId();
-//
-//    bpp::Node *sonRight = childR->_getBnode();
-//    int sonRightID = sonRight->getId();
 
     // create left + right column
     MSAcolumn_t s;
@@ -885,12 +858,6 @@ bpp::ColMatrix<double> nodeCPU::computeFVrec(MSAcolumn_t &s, int &idx, int catg)
 
     } else {
 
-//        bpp::Node *sonLeft = childL->_getBnode();
-//        int sonLeftID = sonLeft->getId();
-//
-//        bpp::Node *sonRight = childR->_getBnode();
-//        int sonRightID = sonRight->getId();
-
         // computes the recursive Felsenstein's peeling weight on the left subtree
         bpp::ColMatrix<double> fvL = dynamic_cast<nodeCPU *>(childL_)->computeFVrec(s, idx, catg);
 
@@ -928,12 +895,6 @@ void nodeCPU::allgaps(std::string &s, int &idx, bool &flag) {
 
     } else {
 
-//        bpp::Node *sonLeft = childL->_getBnode();
-//        int sonLeftID = sonLeft->getId();
-//
-//        bpp::Node *sonRight = childR->_getBnode();
-//        int sonRightID = sonRight->getId();
-
         dynamic_cast<nodeCPU *>(childL_)->allgaps(s, idx, flag);
         dynamic_cast<nodeCPU *>(childR_)->allgaps(s, idx, flag);
     }
@@ -961,12 +922,6 @@ double nodeCPU::compute_lk_gap_down(MSAcolumn_t &s, int catg) {
         return pr;
 
     }
-
-   // bpp::Node *sonLeft = childL->_getBnode();
-  //  int sonLeftID = sonLeft->getId();
-
- //   bpp::Node *sonRight = childR->_getBnode();
-//    int sonRightID = sonRight->getId();
 
     idx = 0;
     bpp::ColMatrix<double> fv = computeFVrec(s, idx, catg);
@@ -1005,60 +960,6 @@ double nodeCPU::compute_lk_gap_down(MSAcolumn_t &s, int catg) {
 
 double nodeCPU::_compute_lk_down_rec(int idx,double lk){
 
-    /*
-
-    int num_gamma_categories = progressivePIP_->rDist_->getNumberOfCategories();
-
-    for (int catg=0; catg<num_gamma_categories; catg++) {
-        lk = lk + progressivePIP_->rDist_->getProbability((size_t)catg) * \
-             iotasNode_.at(catg) * \
-             betasNode_.at(catg) * \
-             fv_sigma_.at(idx).at(catg);
-    }
-
-    if (!bnode_->isLeaf()) {
-
-        int idx_tr = static_cast<PIPmsaSingle *>(MSA_)->pipmsa->rev_map_compressed_seqs_.at(idx);
-
-        int tr = static_cast<PIPmsaSingle *>(MSA_)->pipmsa->traceback_path_.at(idx_tr);
-
-        if(tr == (int)GAP_X_STATE){
-
-            bpp::Node *sonLeft = childL->_getBnode();
-            int sonLeftID = sonLeft->getId();
-
-//            idx = static_cast<PIPmsaSingle *>(MSA_)->pipmsa->traceback_mapL_.at(idx_tr);
-
-            //int sub_i;// = subMSAidx_.at(LEFT).at(position);
-
-            idx = static_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->map_compressed_seqs_.at(idx);
-
-            idx = static_cast<PIPmsaSingle *>(childL->MSA_)->pipmsa->map_compressed_seqs_.at(idx);
-
-            lk = childL->_compute_lk_down_rec(idx,lk);
-
-        }else if(tr == (int)GAP_Y_STATE) {
-
-            bpp::Node *sonRight = childR->_getBnode();
-            int sonRightID = sonRight->getId();
-
-//            idx = static_cast<PIPmsaSingle *>(MSA_)->pipmsa->traceback_mapR_.at(idx_tr);
-
-            //lk = childL->_compute_lk_down_rec(idx,lk);int sub_i;// = subMSAidx_.at(RIGHT).at(position);
-
-            idx = static_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->map_compressed_seqs_.at(idx);
-
-            idx = static_cast<PIPmsaSingle *>(childR->MSA_)->pipmsa->map_compressed_seqs_.at(idx);
-
-            lk = childR->_compute_lk_down_rec(idx,lk);
-
-        }
-
-    }
-
-    return lk;
-
-     */
 }
 
 void nodeCPU::_computeAllFvEmptySigmaRec(){
@@ -1082,12 +983,6 @@ double nodeCPU::_compute_lk_down(MSAcolumn_t &s, int catg) {
         return pr;
 
     }
-
-//    bpp::Node *sonLeft = childL->_getBnode();
-//    int sonLeftID = sonLeft->getId();
-
-  //  bpp::Node *sonRight = childR->_getBnode();
-  //  int sonRightID = sonRight->getId();
 
     idx = 0;
     bpp::ColMatrix<double> fv = computeFVrec(s, idx, catg);
@@ -1154,12 +1049,6 @@ void nodeCPU::DP3D_PIP_node() {
     int h, w;
 
     int tr;
-
-  //  bpp::Node *sonLeft = childL->_getBnode();
-    //int sonLeftID = sonLeft->getId();
-
-//    bpp::Node *sonRight = childR->_getBnode();
-    //int sonRightID = sonRight->getId();
 
     // Compute dimensions of the 3D block at current internal node.
     h = dynamic_cast<PIPmsaSingle *>(childL_->MSA_)->pipmsa->msa_.size() + 1; // dimension of the alignment on the left side
@@ -1241,18 +1130,11 @@ void nodeCPU::DP3D_PIP_node() {
     double PC0 = 0.0;
     double NU = 0.0;
     for (int catg = 0; catg < num_gamma_categories; catg++) {
-        // log( P_gamma(r) * phi(0,pc0(r),r) ): marginal lk for all empty columns of an alignment of size 0
-        //PHI[0][catg] = log(rDist_->getProbability((size_t)catg)) + (nu_.at(catg) * (pc0.at(catg) - 1.0));
         PC0 += progressivePIP_->rDist_->getProbability((size_t) catg) * pc0.at(catg);
-//        NU += progressivePIP_->rDist_->getProbability((size_t) catg) * nu_.at(catg);
     }
 
     // computes the marginal phi marginalized over all the gamma categories
     log_phi_gamma = NU * (PC0 - 1);
-    //log_phi_gamma = PHI[0][0];
-    //for (int catg = 1; catg < num_gamma_categories; catg++) {
-    //    log_phi_gamma=pPIPUtils::add_lns(log_phi_gamma,PHI[0][catg]);
-    //}
     //============================================================
 
     LogM[0][0] = log_phi_gamma;
@@ -1289,7 +1171,6 @@ void nodeCPU::DP3D_PIP_node() {
 
     int depth;
 
-    //int last_d = d - 1;
     int size_tr, tr_up_i, tr_up_j, tr_down_i, tr_down_j;
     std::map<MSAcolumn_t, double> lkM;
     std::map<MSAcolumn_t, double> lkX;
@@ -1317,12 +1198,6 @@ void nodeCPU::DP3D_PIP_node() {
 
         //***************************************************************************************
         //***************************************************************************************
-        for (int catg = 0; catg < num_gamma_categories; catg++) {
-            // computes the marginal phi(m,pc0(r),r) with gamma by multiplying the starting value
-            // phi(0,pco(r),r) = log( P_gamma(r) * exp( nu(r) * (pc0(r)-1) ) ) with
-            // 1/m * nu(r) at each new layer
-//            PHI[m][catg] = PHI[m - 1][catg] - log((long double) m) + log((long double) nu_.at(catg));
-        }
 
         // store old value
         prev_log_phi_gamma = log_phi_gamma;

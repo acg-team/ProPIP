@@ -42,12 +42,10 @@
  * @see For more information visit:
  */
 
-
 #include "DistanceFactory.hpp"
 #include "DistanceFactoryAlign.hpp"
 #include "DistanceFactoryAngle.hpp"
 #include "DistanceFactoryPrealigned.hpp"
-
 
 using namespace DistanceFactoryPrographMSA;
 

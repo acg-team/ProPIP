@@ -42,13 +42,11 @@
  * @see For more information visit:
  */
 
-
 #include "DistanceFactory.hpp"
 #include "DistanceFactoryAngle.hpp"
 
 #include <Bpp/App/ApplicationTools.h>
 #include <Bpp/App/BppApplication.h>
-
 
 using namespace DistanceFactoryPrographMSA;
 

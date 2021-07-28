@@ -63,10 +63,6 @@ namespace MathUtils {
 
   template<unsigned int order>
   class AsymptoticPolynomialB { };
-  //HORNER_COEFF(AsymptoticPolynomialB<0>, 0, 0);
-  //HORNER_COEFF(AsymptoticPolynomialB<0>, 1, -1);
-  //HORNER_COEFF(AsymptoticPolynomialB<1>, 0, 0);
-  //HORNER_COEFF(AsymptoticPolynomialB<1>, 1, 1);
   HORNER_COEFF(AsymptoticPolynomialB<2>, 0, 0);
   HORNER_COEFF(AsymptoticPolynomialB<2>, 1, -1);
   HORNER_COEFF(AsymptoticPolynomialB<2>, 2, 1./2);
@@ -86,9 +82,7 @@ namespace MathUtils {
   HORNER_COEFF(AsymptoticPolynomialB<5>, 4, -25./12);
   HORNER_COEFF(AsymptoticPolynomialB<5>, 5, 1./5);
   class AsymptoticPolynomialA { };
-  //HORNER_COEFF2(AsymptoticPolynomialA, 0, (Horner<Float, AsymptoticPolynomialB<0>, 1>::Eval(y)));
   HORNER_COEFF2(AsymptoticPolynomialA, 0, -y);
-  //HORNER_COEFF2(AsymptoticPolynomialA, 1, (Horner<Float,  AsymptoticPolynomialB<1>, 1>::Eval(y)));
   HORNER_COEFF2(AsymptoticPolynomialA, 1, y);
   HORNER_COEFF2(AsymptoticPolynomialA, 2, (Horner<Float,  AsymptoticPolynomialB<2>, 2>::Eval(y)));
   HORNER_COEFF2(AsymptoticPolynomialA, 3, (Horner<Float,  AsymptoticPolynomialB<3>, 3>::Eval(y)));

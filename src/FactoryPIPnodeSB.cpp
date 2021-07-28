@@ -70,10 +70,6 @@ double sum_3_logs(double l1, double l2, double l3) {
 //==============================================================================
 double stateProbability(double prob, double temperature) {
 
-    //return exp(-(1 - exp(logState - logTotal)) / temperature);
-
-    //return 1.0 / temperature * prob;
-
     return pow(prob, temperature);
 }
 
@@ -111,44 +107,6 @@ void weightProbWithPartFun(double temperature,
     pm = exp(pm);
     px = exp(px);
     py = exp(py);
-
-//    Z = pm + px + py;
-//
-//    pm = pm / Z;
-//    px = px / Z;
-//    py = py / Z;
-
-//    double minval = log_Zm;
-//    if(minval>log_Zx){
-//        minval = log_Zx;
-//    }
-//    if(minval>log_Zy){
-//        minval = log_Zy;
-//    }
-//
-//    pm = log_Zm - minval;
-//    px = log_Zx - minval;
-//    py = log_Zy - minval;
-//
-//    pm = exp(log_Zm);
-//    px = exp(log_Zx);
-//    py = exp(log_Zy);
-////
-////    Z = pm + px + py;
-////
-////    pm = pm / Z;
-////    px = px / Z;
-////    py = py / Z;
-////
-//    pm = stateProbability(pm, temperature);
-//    px = stateProbability(px, temperature);
-//    py = stateProbability(py, temperature);
-//
-//    Z = pm + px + py;
-//
-//    pm = pm / Z;
-//    px = px / Z;
-//    py = py / Z;
 
 }
 
@@ -281,24 +239,6 @@ int nodeSB::_getStartingLevel(LKdata &lkdata,
         }
     }
 
-
-    //********** DEBUG **************************************************************
-//    std::cout<<"M_last\n";
-//    for(int k=0;k<lkdata.d_;k++){
-//        std::cout<<lkdata.Log3DM[k][h - 1][w - 1]<<"\n";
-//    }
-//    std::cout<<"X_last\n";
-//    for(int k=0;k<lkdata.d_;k++){
-//        std::cout<<lkdata.Log3DX[k][h - 1][w - 1]<<"\n";
-//    }
-//    std::cout<<"Y_last\n";
-//    for(int k=0;k<lkdata.d_;k++){
-//        std::cout<<lkdata.Log3DY[k][h - 1][w - 1]<<"\n";
-//    }
-//    std::cout<<"\n";
-    //********** DEBUG **************************************************************
-
-
     //*******************************************************************************
     weightProbWithPartFun(progressivePIP_->temperature_,
                           sumM,
@@ -343,10 +283,6 @@ int nodeSB::_getStartingLevel(LKdata &lkdata,
     //*******************************************************************************
     double cumsum = 0.0;
     for (int level = 0; level < lkdata.d_; level++) {
-
-        //========= DEBUG ==========================================//
-        //std::cout << mat3D->at(level).at(h - 1).at(w - 1) << "\n";
-        //========= DEBUG ==========================================//
 
         if (!std::isinf(mat3D->at(level).at(h - 1).at(w - 1))) {
 
@@ -401,20 +337,6 @@ void nodeSB::_forward(LKdata &lkdata,
     lkdata.Log3DY[0][0][0] = -0.0;
     //***************************************************************************************
 
-
-    //==== DEBUG ===============
-//    std::cout<<"\nmapL:\n";
-//    for(int ii=0;ii<map_compr_L->size();ii++){
-//        std::cout<<map_compr_L->at(ii)<<" ; ";
-//    }
-//    std::cout<<"\nmapR:\n";
-//    for(int ii=0;ii<map_compr_R->size();ii++){
-//        std::cout<<map_compr_R->at(ii)<<" ; ";
-//    }
-//    std::cout<<"\n";
-    //==== DEBUG ===============
-
-
     id1m = map_compr_L->at(0);
     id2m = map_compr_R->at(0);
     lkdata.Log3DM[1][1][1] = lkdata.Log2DM[id1m][id2m];
@@ -433,8 +355,7 @@ void nodeSB::_forward(LKdata &lkdata,
                 lkdata.Log3DX[m][i][j] = min_inf;
             } else {
                 id1x = map_compr_L->at(i - 1);
-//                lkdata.Log3DX[m][i][j] = progressivePIPutils::add_lns(lkdata.Log3DX[m - 1][i - 1][j],
-//                                                                      lkdata.Log2DX[id1x]);
+
                 lkdata.Log3DX[m][i][j] = lkdata.Log3DX[m - 1][i - 1][j] + lkdata.Log2DX[id1x];
             }
 
@@ -451,8 +372,7 @@ void nodeSB::_forward(LKdata &lkdata,
                 lkdata.Log3DY[m][i][j] = min_inf;
             } else {
                 id2y = map_compr_R->at(j - 1);
-//                lkdata.Log3DY[m][i][j] = progressivePIPutils::add_lns(lkdata.Log3DY[m - 1][i][j - 1],
-//                                                                      lkdata.Log2DY[id2y]);
+
                 lkdata.Log3DY[m][i][j] = lkdata.Log3DY[m - 1][i][j - 1] + lkdata.Log2DY[id2y];
             }
 
@@ -472,7 +392,7 @@ void nodeSB::_forward(LKdata &lkdata,
                 } else {
                     id1m = map_compr_L->at(i - 1);
                     id2m = map_compr_R->at(j - 1);
-                    //lkdata.Log3DM[m][i][j] = progressivePIPutils::add_lns(tmp_lk, lkdata.Log2DM[id1m][id2m]);
+
                     lkdata.Log3DM[m][i][j] = tmp_lk + lkdata.Log2DM[id1m][id2m];
                 }
 
@@ -487,7 +407,7 @@ void nodeSB::_forward(LKdata &lkdata,
                     lkdata.Log3DX[m][i][j] = min_inf;
                 } else {
                     id1x = map_compr_L->at(i - 1);
-                    //lkdata.Log3DX[m][i][j] = progressivePIPutils::add_lns(tmp_lk, lkdata.Log2DX[id1x]);
+
                     lkdata.Log3DX[m][i][j] = tmp_lk + lkdata.Log2DX[id1x];
                 }
 
@@ -502,70 +422,13 @@ void nodeSB::_forward(LKdata &lkdata,
                     lkdata.Log3DY[m][i][j] = min_inf;
                 } else {
                     id2y = map_compr_R->at(j - 1);
-                    //lkdata.Log3DY[m][i][j] = progressivePIPutils::add_lns(tmp_lk, lkdata.Log2DY[id2y]);
+
                     lkdata.Log3DY[m][i][j] = tmp_lk + lkdata.Log2DY[id2y];
                 }
                 //***************************************************************************
             }
         }
     }
-
-
-
-
-    //==== DEBUG ===============
-//    std::cout << "\n";
-//    for (int kk = 0; kk < d; kk++) {
-//        std::cout << "M[" << kk << "]\n";
-//        for (int ii = 0; ii < h; ii++) {
-//            for (int jj = 0; jj < w; jj++) {
-//                double lk;
-//                if (std::isinf(lkdata.Log3DM[kk][ii][jj])) {
-//                    lk = -0.0;
-//                } else {
-//                    lk = lkdata.Log3DM[kk][ii][jj];
-//                }
-//                printf("%8.6lf ", lk);
-//            }
-//            std::cout << "\n";
-//        }
-//        std::cout << "\n\n";
-//    }
-//    std::cout << "\n";
-//    for (int kk = 0; kk < d; kk++) {
-//        std::cout << "X[" << kk << "]\n";
-//        for (int ii = 0; ii < h; ii++) {
-//            for (int jj = 0; jj < w; jj++) {
-//                double lk;
-//                if (std::isinf(lkdata.Log3DX[kk][ii][jj])) {
-//                    lk = -0.0;
-//                } else {
-//                    lk = lkdata.Log3DX[kk][ii][jj];
-//                }
-//                printf("%8.6lf ", lk);
-//            }
-//            std::cout << "\n";
-//        }
-//        std::cout << "\n\n";
-//    }
-//    std::cout << "\n";
-//    for (int kk = 0; kk < d; kk++) {
-//        std::cout << "Y[" << kk << "]\n";
-//        for (int ii = 0; ii < h; ii++) {
-//            for (int jj = 0; jj < w; jj++) {
-//                double lk;
-//                if (std::isinf(lkdata.Log3DY[kk][ii][jj])) {
-//                    lk = -0.0;
-//                } else {
-//                    lk = lkdata.Log3DY[kk][ii][jj];
-//                }
-//                printf("%8.6lf ", lk);
-//            }
-//            std::cout << "\n";
-//        }
-//        std::cout << "\n\n";
-//    }
-    //==== DEBUG ===============
 
 }
 
@@ -984,7 +847,6 @@ void nodeSB::DP3D_PIP() {
 
         for (int i = 0; i < totalSubMSAs; i++) {
             // create a new PIPmsa
-            //SBnode->MSA_->getMSA(i) = new PIPmsa();
             static_cast<PIPmsaComp *>(SBnode->MSA_)->pipmsa.at(i) = new PIPmsa();
         }
 

@@ -170,10 +170,7 @@ void PIP_Nuc::updateMatrices() {
         exchangeability_(i, cols - 1) = mu_;
     }
 
-    // Normalization:
     setDiagonal();
-    //normalize();
-
 
     // Compute eigen values and vectors:
     if (enableEigenDecomposition()) {
@@ -198,8 +195,6 @@ void PIP_Nuc::updateMatrices() {
             MatrixTools::Taylor(generator_, 30, vPowGen_);
         }
     }
-
-    //freq_[alphabet_->getGapCharacterCode()] = 0;
 
 }
 
@@ -237,14 +232,6 @@ void PIP_Nuc::setFreqFromData(const SequenceContainer &data, double pseudoCount)
         }
     }
     //-----------------------------------------------------
-    /*
-    int gapkey = data.getAlphabet()->getGapCharacterCode();
-    std::map<int, int>::iterator iter = counts.find(gapkey);
-    if (iter != counts.end())
-        counts.erase(iter);
-    else puts("not found");
-    */
-    //-----------------------------------------------------
 
     std::vector<int> retval;
     for (auto const &element : counts) {
@@ -257,7 +244,6 @@ void PIP_Nuc::setFreqFromData(const SequenceContainer &data, double pseudoCount)
 
     t += pseudoCount * (double) counts.size();
 
-    //for (int i = 0; i < static_cast<int>(size_)-1; i++)
     for (auto &key:retval) {
         freqs[key] = (static_cast<double>(counts[key]) + pseudoCount) / t;
     }
@@ -296,11 +282,6 @@ PIP_AA::PIP_AA(const ProteicAlphabet *alpha, SubstitutionModel *basemodel, const
     if (initFreqFromData) {
         setFreqFromData(data, 0);
     }
-    //else{
-    // Add fixed frequency for gap character
-    //     freq_ = freqSet_->getFrequencies();
-    //}
-
 
     freqSet_->setNamespace(namespaceModel);
 
@@ -318,8 +299,6 @@ PIP_AA::PIP_AA(const ProteicAlphabet *alpha, SubstitutionModel *basemodel, const
     // Add PIP parameters
     addParameter_(new Parameter("PIP.lambda", lambda, &Parameter::R_PLUS_STAR));
     addParameter_(new Parameter("PIP.mu", mu, &Parameter::R_PLUS_STAR));
-
-
 
     //Update parameters and re-compute generator and eigen values:
     updateMatrices();
@@ -344,7 +323,6 @@ void PIP_AA::updateMatrices() {
     unsigned long eraseCharNum = 4; // substring="PIP."
 
     for (int i = 0; i < getParameters().size(); i++) {
-        //test[i].getName();
         std::string parName = getParameters()[i].getName();
         if (parName.find(modelname_) != std::string::npos) {
             parName.erase(parName.begin(), parName.begin() + eraseCharNum + submodel_->getName().size() + 1);
@@ -556,10 +534,7 @@ void PIP_Codon::updateMatrices() {
         exchangeability_(i, cols - 1) = mu_;
     }
 
-    // Normalization:
     setDiagonal();
-    //normalize();
-
 
     // Compute eigen values and vectors:
     if (enableEigenDecomposition()) {
@@ -649,49 +624,6 @@ double bpp::estimateMuFromData(Tree *tree, double proportion) {
 
     return mu;
 }
-
-/*
-double bpp::estimateLambdaFromData(Tree *tree, SiteContainer *alignment) {
-    double N = 0;
-    double M = 0;
-
-    // Alignment length with gaps
-    M = alignment->getNumberOfSites();
-
-    // Compute average sequence length without gaps
-    for (auto &seqName : alignment->getSequencesNames()) {
-        for (int i = 0; i < alignment->getNumberOfSites(); i++) {
-            if (alignment->getSequence(seqName)[i] != alignment->getAlphabet()->getGapCharacterCode()) {
-                N++;
-            }
-        }
-    }
-    N = N / alignment->getNumberOfSequences();
-
-    return (M - N) / tree->getTotalLength();
-}
-
-double bpp::estimateMuFromData(Tree *tree, SiteContainer *alignment) {
-    double N = 0;
-    double M = 0;
-
-    // Alignment length with gaps
-    M = alignment->getNumberOfSites();
-
-    // Compute average sequence length without gaps
-    for (auto &seqName : alignment->getSequencesNames()) {
-        for (int i = 0; i < alignment->getNumberOfSites(); i++) {
-            if (alignment->getSequence(seqName)[i] != alignment->getAlphabet()->getGapCharacterCode()) {
-                N++;
-            }
-        }
-    }
-    N = N / alignment->getNumberOfSequences();
-
-    return (M - N) / (tree->getTotalLength() * N);
-}
-
-*/
 
 double bpp::computeNH(SiteContainer *alignment){
     double nH = 0;

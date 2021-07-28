@@ -62,29 +62,20 @@
 #include <Bpp/Numeric/Random/RandomTools.h>
 #include <Bpp/Text/KeyvalTools.h>
 #include <Bpp/Seq/Alphabet/AlphabetTools.h>
-#include <Bpp/Seq/AlphabetIndex/DefaultNucleotideScore.h>
 #include <Bpp/Seq/App/SequenceApplicationTools.h>
 #include <Bpp/Seq/Alphabet/DNA.h>
 #include <Bpp/Seq/Container/SiteContainerTools.h>
 #include <Bpp/Seq/Io/Fasta.h>
 #include <Bpp/Phyl/App/PhylogeneticsApplicationTools.h>
-#include <Bpp/Phyl/Model/Nucleotide/JCnuc.h>
-#include <Bpp/Phyl/Model/Nucleotide/K80.h>
-#include <Bpp/Phyl/Model/Nucleotide/GTR.h>
 #include <Bpp/Phyl/Distance/DistanceMethod.h>
-#include <Bpp/Phyl/Distance/DistanceEstimation.h>
 #include <Bpp/Phyl/Model/RateDistribution/ConstantRateDistribution.h>
 #include <Bpp/Phyl/Distance/BioNJ.h>
-#include <Bpp/Phyl/Io/Newick.h>
 #include <Bpp/Phyl/Distance/PGMA.h>
-#include <Bpp/Phyl/OptimizationTools.h>
 
 #include "ExtendedAlphabet.hpp"
 #include "Utils.hpp"
 #include "UnifiedTSHTopologySearch.hpp"
 #include "PIP.hpp"
-#include "ExtendedAlphabet.hpp"
-#include "RHomogeneousTreeLikelihood_PIP.hpp"
 #include "RHomogeneousTreeLikelihood_Generic.hpp"
 #include "Optimizators.hpp"
 #include "SupportMeasures.hpp"
@@ -93,8 +84,6 @@
 
 #include "DistanceFactory.hpp"
 #include "DistanceFactoryAngle.hpp"
-#include "DistanceFactoryAlign.hpp"
-#include "DistanceFactoryPrealigned.hpp"
 
 #include <random>
 
@@ -967,8 +956,6 @@ void CastorApplication::initTreeMethodRandom(){
 
     this->tree = TreeTemplateTools::getRandomTree(names);
 
-    //this->tree->setBranchLengths(1.0);
-
 }
 
 void CastorApplication::initTreeMethodDistanceWPGMA(){
@@ -1224,8 +1211,6 @@ void CastorApplication::infereDistanceTree(){
     bpp::TransitionModel *local_dmodel = nullptr;
     DiscreteDistribution *local_rDist = nullptr;
 
-    //----------------------------------------------------------------
-    //m@x
     if (true) {
 
         if (this->PAR_model_indels) {
@@ -1239,15 +1224,7 @@ void CastorApplication::infereDistanceTree(){
         local_allSites = SequenceApplicationTools::getSiteContainer(local_alphabetDistMethod, this->getParams());
         local_sitesDistMethod = SequenceApplicationTools::getSitesToAnalyse(*local_allSites, this->getParams());
 
-
-
-
-
-
-
         if (this->PAR_model_indels) {
-
-
 
             // Instantiation of the canonical substitution model
             if (this->PAR_Alphabet.find("Codon") != std::string::npos ||
@@ -1264,11 +1241,8 @@ void CastorApplication::infereDistanceTree(){
                                                                                   false, 0);
             }
 
-
-
             if(this->modelMap.find("lambda") == this->modelMap.end() || this->modelMap.find("mu") == this->modelMap.end()){
 
-                // m@x:: new code
                 if(!this->tree){
 
                     bpp::SubstitutionModel *smodel_tmp = nullptr;
@@ -1306,8 +1280,6 @@ void CastorApplication::infereDistanceTree(){
                         DLOG(WARNING) << "CODONS activated but the program is not fully tested under these settings!";
                     }
 
-
-
                     // Get transition model from substitution model
                     if (!this->PAR_model_indels) {
                         dmodel_tmp = PhylogeneticsApplicationTools::getTransitionModel(alphabetDistMethod_tmp,
@@ -1319,21 +1291,6 @@ void CastorApplication::infereDistanceTree(){
                         test.reset(smodel_tmp);
                         dmodel_tmp = test.release();
                     }
-
-                    /*
-                                       // Get transition model from substitution model
-                                       dmodel_tmp=getTransitionModelFromSubsModel(this->PAR_model_indels,
-                                                                                  alphabetDistMethod_tmp,
-                                                                                   this->gCode.get(),
-                                                                                  sitesDistMethod_tmp,
-                                                                                  local_parmap,
-                                                                                   "",
-                                                                                   true,
-                                                                                   true,
-                                                                                   1);
-
-
-                   */
 
                     // Add a ASRV distribution
                     if (dmodel_tmp->getNumberOfStates() > dmodel_tmp->getAlphabet()->getSize()) {
@@ -1406,13 +1363,6 @@ void CastorApplication::infereDistanceTree(){
 
         }
 
-
-
-
-
-
-
-
         // Get transition model from substitution model
         if (!this->PAR_model_indels) {
             local_dmodel = PhylogeneticsApplicationTools::getTransitionModel(local_alphabetDistMethod,
@@ -1425,23 +1375,6 @@ void CastorApplication::infereDistanceTree(){
             local_dmodel = test.release();
         }
 
-        /*
-        // Get transition model from substitution model
-        local_dmodel=getTransitionModelFromSubsModel(this->PAR_model_indels,
-                                                     local_alphabetDistMethod,
-                                                     this->gCode.get(),
-                                                     local_sitesDistMethod,
-                                                     local_parmap,
-                                                     "",
-                                                     true,
-                                                     true,
-                                                     1);
-
-            */
-
-
-
-
         // Add a ASRV distribution
         if (local_dmodel->getNumberOfStates() > local_dmodel->getAlphabet()->getSize()) {
             //Markov-modulated Markov model!
@@ -1449,14 +1382,6 @@ void CastorApplication::infereDistanceTree(){
         } else {
             local_rDist = PhylogeneticsApplicationTools::getRateDistribution(this->getParams());
         }
-
-
-
-
-
-
-
-
 
         this->removeGaps(local_sitesDistMethod);
 
@@ -1478,8 +1403,7 @@ void CastorApplication::infereDistanceTree(){
         delete distMethod;
         delete local_allSites;
 
-    } //m@x
-    //----------------------------------------------------------------
+    }
 
 }
 

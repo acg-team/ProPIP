@@ -270,19 +270,6 @@ void UtreeBppUtils::renameInternalNodes(bpp::Tree *in_tree, std::string prefix) 
 std::vector<bpp::Node *>
 UtreeBppUtils::remapNodeLists(std::vector<int> &inputList, bpp::TreeTemplate<bpp::Node> *tree, UtreeBppUtils::treemap tm) {
 
-
-
-    //==============================================================
-    /*
-    for (auto &vnode:inputList) {
-        int nodeID = tm.right.at(vnode);
-        std::string tmpNodename = tree->getNodeName(nodeID);
-        std::cout<<"NodeName: "<<tmpNodename<<std::endl;
-    }
-     */
-    //==============================================================
-
-
     std::vector<bpp::Node *> newList;
 
     for (auto &vnode:inputList) {
@@ -486,7 +473,6 @@ bpp::DistanceMatrix *InputUtils::parseDistanceMatrix(std::string filepath) {
                 }
 
             }
-            //(*outmatrix)(x,y) = std::stod(token);
             y++;
 
 
@@ -625,7 +611,6 @@ void OutputUtils::writeTreeAnnotations2TSV(bpp::Tree *tree, std::string outputfi
 
     std::ofstream outfile;
     outfile.open(outputfile);
-    //lkFile << score;
 
     // Write header
     outfile << "Taxa\t";
@@ -853,13 +838,6 @@ std::string OutputUtils::TreeTools::nodeToParenthesis(const Tree &tree, int node
         if (internalNodesNames && !tree.getNodeName(nodeId).empty()) {
             s << tree.getNodeName(nodeId);
         }
-        //if (bootstrap)
-        //{
-        //if (tree.hasBranchProperty(nodeId, BOOTSTRAP))
-        //    s << (dynamic_cast<const Number<double>*>(tree.getBranchProperty(nodeId, BOOTSTRAP))->getValue());
-        //}
-        //else
-        //{
 
     }
 
@@ -906,13 +884,6 @@ std::string OutputUtils::TreeTools::treeToParenthesis(const Tree &tree, bool int
         }
     }
     s << ")";
-    //if (bootstrap)
-    //{
-    //if (tree.hasBranchProperty(rootId, BOOTSTRAP))
-    //    s << (dynamic_cast<const Number<double>*>(tree.getBranchProperty(rootId, BOOTSTRAP))->getValue());
-    //}
-    //else
-    //{
 
     if (attributeNames.empty()) {
         attributeNames = tree.getBranchPropertyNames(rootId);
@@ -1027,19 +998,15 @@ void AlignmentUtils::checkAlignmentConsistency(bpp::SiteContainer &sites) {
 
 
 bool ComparisonUtils::areLogicallyEqual(double a, double b) {
-    //return std::abs(a - b) < std::numeric_limits<double>::epsilon();
-    //return a == b || std::abs(a - b) < std::abs(std::min(a, b)) * std::numeric_limits<double>::epsilon();
+
     return std::abs(a - b) < 0.00001 * std::max(std::abs(a), std::abs(b));
 
 }
 
 double MathUtils::add_lns(double a_ln,double b_ln){
-    //ln(a + b) = ln{exp[ln(a) - ln(b)] + 1} + ln(b)
 
     double R;
     const double exp_precision =  log(pow(2,(double)DBL_MANT_DIG-1)-1);
-
-    //ApplicationTools::displayResult("Mantissa precision", TextTools::toString(exp_precision, 50));
 
     if (std::isinf(a_ln) && std::isinf(b_ln)) {
         R = -std::numeric_limits<double>::infinity();

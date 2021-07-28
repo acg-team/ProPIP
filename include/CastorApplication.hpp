@@ -54,9 +54,6 @@
  */
 #ifndef CASTOR_CASTORAPPLICATION_HPP
 #define CASTOR_CASTORAPPLICATION_HPP
-// From the STL:
-//#include <string>
-//#include <map>
 #include <Bpp/Exceptions.h>
 #include <glog/logging.h>
 #include <iostream>
@@ -319,7 +316,5 @@ namespace bpp {
 
 
 } //end of namespace bpp;
-
-
 
 #endif //CASTOR_JATIAPPLICATION_HPP

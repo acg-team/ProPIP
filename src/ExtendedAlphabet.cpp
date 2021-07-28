@@ -64,7 +64,6 @@ using namespace std;
 
 #include "ExtendedAlphabet.hpp"
 
-
 DNA_EXTENDED::DNA_EXTENDED(bool exclamationMarkCountsAsGap) {
     // Alphabet content definition
     // all unresolved bases use n°15

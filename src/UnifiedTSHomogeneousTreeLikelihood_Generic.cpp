@@ -126,11 +126,7 @@ double UnifiedTSHomogeneousTreeLikelihood::updateLikelihoodOnTreeRearrangement(s
     // Add root to the utree structure
     _utree__topology.addVirtualRootNode();
 
-    // 0. convert the list of tshlib::VirtualNodes into bpp::Node
-    //std::vector<int> rearrangedNodes = remapVirtualNodeLists(nodeList);
-
     // 1. Fire topology change
-    //fireTopologyChange(rearrangedNodes);
     fireTopologyChange(remapVirtualNodeLists(nodeList),_utree__topology);
 
     // 2. Compute loglikelihood
@@ -172,7 +168,6 @@ void UnifiedTSHomogeneousTreeLikelihood::topologyCommitTree() {
 
     for (auto &vnode:nodelist) {
 
-        //std::cerr << "vnode " << vnode->getNodeName();
         if (!vnode->isTerminalNode()) {
 
             // get corrisponding sons in inBTree
@@ -185,27 +180,20 @@ void UnifiedTSHomogeneousTreeLikelihood::topologyCommitTree() {
             leftBNode->setFather(pNode);
             rightBNode->setFather(pNode);
 
-            //leftBNode->setDistanceToFather(tree_->getDistanceToFather(leftBNode->getId()));
-            //rightBNode->setDistanceToFather(tree_->getDistanceToFather(rightBNode->getId()));
-
             leftBNode->setDistanceToFather(tempDistanceToFather[leftBNode->getId()]);
             rightBNode->setDistanceToFather(tempDistanceToFather[rightBNode->getId()]);
 
             //Add new sons
             pNode->setSon(0, leftBNode);
             pNode->setSon(1, rightBNode);
-            //pNode->setDistanceToFather(tree_->getDistanceToFather(pNode->getId()));
+
             pNode->setDistanceToFather(tempDistanceToFather[pNode->getId()]);
-            //std::cerr << "\t internal";
 
         } else {
-
-            //std::cerr << "\t leaf";
 
         }
         // in case the current vnode is also the pseudo-root
         if (vnode == vnode->getNodeUp()->getNodeUp()) {
-            //std::cerr << "\tvnode pseudoroot";
 
             bpp::Node *leftBNode = tempMap[treemap_.right.at(vnode->getVnode_id())];
             bpp::Node *rightBNode = tempMap[treemap_.right.at(vnode->getNodeUp()->getVnode_id())];
@@ -215,9 +203,6 @@ void UnifiedTSHomogeneousTreeLikelihood::topologyCommitTree() {
             leftBNode->setFather(tree_->getRootNode());
             rightBNode->setFather(tree_->getRootNode());
 
-            //leftBNode->setDistanceToFather(tree_->getDistanceToFather(leftBNode->getId()));
-            //rightBNode->setDistanceToFather(tree_->getDistanceToFather(rightBNode->getId()));
-
             leftBNode->setDistanceToFather(tempDistanceToFather[leftBNode->getId()]);
             rightBNode->setDistanceToFather(tempDistanceToFather[rightBNode->getId()]);
 
@@ -225,8 +210,6 @@ void UnifiedTSHomogeneousTreeLikelihood::topologyCommitTree() {
             tree_->getRootNode()->setSon(1, rightBNode);
 
         }
-
-        //std::cerr << "\t done\n";
 
     }
 
@@ -249,7 +232,6 @@ void UnifiedTSHomogeneousTreeLikelihood::topologyChangeSuccessful(std::vector<in
     //std::vector<Node *> extractionNodes = UtreeBppUtils::remapNodeLists(listNodes, tree_, treemap_);
 
     // Optimise branches involved in the tree rearrangement
-    //fireBranchOptimisation(extractionNodes);
     fireBranchOptimisation(UtreeBppUtils::remapNodeLists(listNodes, tree_, treemap_));
 
     // Remove the virtual root to allow for further tree topology improvements
@@ -299,11 +281,6 @@ void UnifiedTSHomogeneousTreeLikelihood::updateLikelihoodArrays(Node *node, tshl
     // Get mapped node on Utree
     std::vector<int> sonsIDs(2);
 
-    //tshlib::VirtualNode *vnode_left = treemap_.left.at(node->getId())->getNodeLeft();
-    //tshlib::VirtualNode *vnode_right = treemap_.left.at(node->getId())->getNodeRight();
-    //sonsIDs.push_back(treemap_.right.at(vnode_left));
-    //sonsIDs.push_back(treemap_.right.at(vnode_right));
-
     sonsIDs[0] = treemap_.right.at(_utree__topology.getNodeIdsMap().at(treemap_.left.at(node->getId()))->getNodeLeft()->getVnode_id());
     sonsIDs[1] = treemap_.right.at(_utree__topology.getNodeIdsMap().at(treemap_.left.at(node->getId()))->getNodeRight()->getVnode_id());
 
@@ -343,8 +320,6 @@ void UnifiedTSHomogeneousTreeLikelihood::updateLikelihoodArrays(Node *node, tshl
                 }
             }
         }
-
-        //&getLikelihoodData()->getNodeData(&son).reInit();
 
     }
 

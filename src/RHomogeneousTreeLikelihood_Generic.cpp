@@ -65,8 +65,6 @@ using namespace bpp;
 
 using namespace std;
 
-
-
 RHomogeneousTreeLikelihood_Generic::RHomogeneousTreeLikelihood_Generic(
         const Tree& tree,
         TransitionModel* model,
@@ -224,7 +222,6 @@ double RHomogeneousTreeLikelihood_Generic::getLikelihoodForASiteForARateClass(si
     Vdouble* la = &likelihoodData_->getLikelihoodArray(tree_->getRootNode()->getId())[likelihoodData_->getRootArrayPosition(site)][rateClass];
     for (size_t i = 0; i < nbStates_; i++)
     {
-        //cout << (*la)[i] << "\t" << rootFreqs_[i] << endl;
         double li = (*la)[i] * rootFreqs_[i];
         if (li > 0) l+= li; //Corrects for numerical instabilities leading to slightly negative likelihoods
     }
@@ -241,7 +238,7 @@ double RHomogeneousTreeLikelihood_Generic::getLogLikelihoodForASiteForARateClass
     {
         l += (*la)[i] * rootFreqs_[i];
     }
-    //if(l <= 0.) cerr << "WARNING!!! Negative likelihood." << endl;
+
     return log(l);
 }
 

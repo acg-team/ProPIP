@@ -45,6 +45,9 @@
 #include <Bpp/Numeric/Matrix/MatrixTools.h>
 #include <glog/logging.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "progressivePIP.hpp"
 #include "FactoryPIPnode.hpp"
 #include "CompositePIPmsa.hpp"
@@ -175,19 +178,6 @@ void nodeRAM::DP3D_PIP_leaf() {
                                     progressivePIP_->alphabet_);
 
     // set fv_sigma_empty = fv_empty dot pi
-    /*
-    MSA_->getMSA()->_setFVsigmaEmptyLeaf(progressivePIP_->numCatg_);
-    */
-
-    // computes the indicator values (fv values) at the leaves
-    /*
-    MSA_->getMSA()->_setFVleaf(progressivePIP_->numCatg_,
-                               progressivePIP_->alphabet_);
-
-    MSA_->getMSA()->_setFVsigmaLeaf(progressivePIP_->numCatg_,
-                                    progressivePIP_->pi_);
-    */
-
     MSA_->getMSA()->_setFVleaf(progressivePIP_->numCatg_,
                                progressivePIP_->alphabet_,
                                progressivePIP_->pi_);
@@ -270,38 +260,55 @@ void nodeRAM::DP3D(LKdata &lkdata,
     //***************************************************************************
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    /*
-    FILE *fidM;
-    FILE *fidX;
-    FILE *fidY;
-    if(this->_isRootNode()){
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààä
+    if(this->bnode_->getId()==572) {
 
-        char strM[5];
-        sprintf(strM, "%04d", this->progressivePIP_->getSeed());
-        char* txtM="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/M_";
-        char* sM=(char *)malloc(strlen(txtM)+1+4);
-        strcpy(sM,txtM);
-        strcat(sM,strM);
+        FILE *fid;
+        char filenameM[80];
+        strcpy(filenameM, "fp");
+        fid = fopen(filenameM, "w");
 
-        char strX[5];
-        sprintf(strX, "%04d", this->progressivePIP_->getSeed());
-        char* txtX="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/X_";
-        char* sX=(char *)malloc(strlen(txtX)+1+4);
-        strcpy(sX,txtX);
-        strcat(sX,strX);
+        fprintf(fid, "log_phi_gamma : %16.14lf\n",log_phi_gamma);
+        fprintf(fid, "log_nu_gamma : %16.14lf\n",log_nu_gamma);
+        fprintf(fid, "-----------\n");
+        double v;
+        for(int i = 0; i < lkdata.h_compr_; i++){
+            for(int j = 0; j < lkdata.w_compr_; j++){
+                v = lkdata.Log2DM_fp[i][j];
+                fprintf(fid, "%16.14lf ",v);
+            }
+            fprintf(fid, "\n");
+        }
+        fprintf(fid, "\n-----------\n");
+        for(int i = 0; i < lkdata.h_compr_; i++) {
+            v = lkdata.Log2DX_fp[i];
+            fprintf(fid, "%16.14lf\n",v);
+        }
+        fprintf(fid, "\n-----------\n");
+        for(int j = 0; j < lkdata.w_compr_; j++) {
+            v = lkdata.Log2DY_fp[j];
+            fprintf(fid, "%16.14lf\n",v);
+        }
 
-        char strY[5];
-        sprintf(strY, "%04d", this->progressivePIP_->getSeed());
-        char* txtY="/Volumes/ZHAW/RES_Jithin/MSA_LEN_VS_LK/MSA/MXY/Y_";
-        char* sY=(char *)malloc(strlen(txtY)+1+4);
-        strcpy(sY,txtY);
-        strcat(sY,strY);
-
-        fidM=fopen(sM,"w");
-        fidX=fopen(sX,"w");
-        fidY=fopen(sY,"w");
+        fclose(fid);
     }
-     */
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     //***************************************************************************
@@ -433,6 +440,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
         for (i = 1; i < lkdata.h_; i++) {
             for (j = 1; j < lkdata.w_; j++) {
                 //***************************************************************************
+
                 // MATCH[i][j]
                 id1m = map_compr_L->at(i - 1);
                 id2m = map_compr_R->at(j - 1);
@@ -496,6 +504,7 @@ void nodeRAM::DP3D(LKdata &lkdata,
                     // all the characters are in the MSA
 
                     if (tr_index == (int) STOP_STATE) {
+
                         LOG(FATAL) << "\nSomething went wrong in reading the TR value. "
                                       "TR is neither MATCH, nor GAPX, nor GAPY. ";
                     }
@@ -523,44 +532,80 @@ void nodeRAM::DP3D(LKdata &lkdata,
 
                 }
             }
+
+
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            if(this->bnode_->getId()==572) {
+            //if(true) {
+
+                FILE *fid;
+                std::string s;
+
+                s = std::to_string(m);
+
+                //char *filename;
+                char filenameM[80];
+                strcpy(filenameM,"M_");
+                strcat(filenameM,s.c_str());
+                fid=fopen(filenameM,"w");
+                for (i = 0; i < lkdata.h_; i++) {
+                    for (j = 0; j < lkdata.w_; j++) {
+                        double v1=lkdata.Log3DM[m_binary_this][i][j];
+                        fprintf(fid,"%16.14lf ",v1);
+                    }
+                    fprintf(fid,"\n");
+                }
+                fclose(fid);
+
+                char filenameX[80];
+                strcpy(filenameX,"X_");
+                strcat(filenameX,s.c_str());
+                fid=fopen(filenameX,"w");
+                for (i = 0; i < lkdata.h_; i++) {
+                    for (j = 0; j < lkdata.w_; j++) {
+                        double v2=lkdata.Log3DX[m_binary_this][i][j];
+                        fprintf(fid,"%16.14lf ",v2);
+                    }
+                    fprintf(fid,"\n");
+                }
+                fclose(fid);
+
+                char filenameY[80];
+                strcpy(filenameY,"Y_");
+                strcat(filenameY,s.c_str());
+                fid=fopen(filenameY,"w");
+                for (i = 0; i < lkdata.h_; i++) {
+                    for (j = 0; j < lkdata.w_; j++) {
+                        double v3=lkdata.Log3DY[m_binary_this][i][j];
+                        fprintf(fid,"%16.14lf ",v3);
+                    }
+                    fprintf(fid,"\n");
+                }
+                fclose(fid);
+            }
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+            //ààààààààààààààààààààààààààààààààààààààààààà
+
+
+
         }
 
-
-
-        //***************************************************************************
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        /*
-        if(this->_isRootNode()) {
-            fprintf(fidM, "%16.14lf\n", lkdata.Log3DM[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
-            fprintf(fidX, "%16.14lf\n", lkdata.Log3DX[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
-            fprintf(fidY, "%16.14lf\n", lkdata.Log3DY[m_binary_this][lkdata.h_ - 1][lkdata.w_ - 1]);
-        }
-        */
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        //***************************************************************************
-
-
-
-
     }
-
-
-    //***************************************************************************
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    /*
-    if(this->_isRootNode()) {
-        fclose(fidM);
-        fclose(fidX);
-        fclose(fidY);
-    }
-    */
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    //***************************************************************************
-
 
 }
 
@@ -661,6 +706,58 @@ void nodeRAM::DP3D_PIP_node() {
     }
 
     double log_nu_gamma = log(nu_gamma);
+
+
+
+
+
+
+
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    if(this->bnode_->getId()==572) {
+
+        FILE *fid;
+
+        char filenameM[80];
+        strcpy(filenameM, "phi_nu");
+        fid = fopen(filenameM, "w");
+
+        for (int catg = 0; catg < numCatg; catg++) {
+
+            fprintf(fid, "prob cat[i] : %16.14lf\n", progressivePIP_->rDist_->getProbability((size_t) catg));
+            fprintf(fid, "nu[i] : %16.14lf\n", progressivePIP_->nu_.at(catg));
+            fprintf(fid, "p0[i] : %16.14lf\n", pc0.at(catg));
+            fprintf(fid, "nu_gamma : %16.14lf\n", nu_gamma);
+            fprintf(fid, "log_nu_gamma : %16.14lf\n", log_nu_gamma);
+            fprintf(fid, "log_phi_gamma[i] : %16.14lf\n", log_phi_gamma);
+            fprintf(fid, "tau : %16.14lf\n", progressivePIP_->tau_);
+            fprintf(fid, "lambda[i] : %16.14lf\n", progressivePIP_->lambda_[(size_t) catg]);
+            fprintf(fid, "mu[i] : %16.14lf\n", progressivePIP_->mu_[(size_t) catg]);
+
+        }
+        fclose(fid);
+    }
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+
+
+
+
     //***************************************************************************************
     // 2D LK COMPUTATION
     //***************************************************************************************
@@ -899,16 +996,6 @@ PIPnode *nodeRAM::cloneChildNodeRAM(PIPnode *ref,int delta,int len){
 
     R->MSA_->getMSA(0)->fv_data_ = ref->MSA_->getMSA(0)->fv_data_;
 
-    //-------------------------------------------------------------//
-    /*
-    R->MSA_->getMSA(0)->map_compressed_seqs_.insert(\
-    R->MSA_->getMSA(0)->map_compressed_seqs_.end(),\
-    ref->MSA_->getMSA(0)->map_compressed_seqs_.begin()+delta,
-    ref->MSA_->getMSA(0)->map_compressed_seqs_.begin()+delta+len);
-
-    R->MSA_->getMSA(0)->rev_map_compressed_seqs_ = ref->MSA_->getMSA(0)->rev_map_compressed_seqs_;
-     */
-    //-------------------------------------------------------------//
     R->MSA_->getMSA(0)->traceback_path_.insert(\
     R->MSA_->getMSA(0)->traceback_path_.end(),\
     ref->MSA_->getMSA(0)->traceback_path_.begin()+delta,

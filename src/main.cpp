@@ -55,12 +55,6 @@
  */
 
 #include <iostream>
-#include <fstream>
-
-
-//#include <Bpp/Phyl/Parsimony/DRTreeParsimonyScore.h>
-//#include <Bpp/Seq/Io/Phylip.h>
-//#include <Bpp/Phyl/Io/Newick.h>
 
 /*
 * From miniJati:
@@ -73,50 +67,11 @@ using namespace tshlib;
 
 int main(int argc, char *argv[]) {
 
-    //FLAGS_logtostderr = 1;
     FLAGS_log_dir = ".";
     google::InitGoogleLogging(software::name.c_str());
     google::InstallFailureSignalHandler();
 
     try {
-
-
-        //////////////////////////////////////////////
-        //////////////////////////////////////////////
-        //////////////////////////////////////////////
-        //////////////////////////////////////////////
-        /*
-        try {
-            Newick treeReader;
-            //unique_ptr<Tree> tree(treeReader.readTree("example1.mp.dnd"));
-            unique_ptr<Tree> tree(treeReader.read("/Users/max/Documents/JATI/bpp/bpp-phyl-master/test/example1.mp.dnd"));
-            bpp::Phylip alnReader(false, false);
-            unique_ptr<SiteContainer> sites(alnReader.readAlignment("/Users/max/Documents/JATI/bpp/bpp-phyl-master/test/example1.ph", &AlphabetTools::DNA_ALPHABET));
-
-            //DRTreeParsimonyScore pars(*tree, *sites, true, true);
-            DRTreeParsimonyScore pars(*tree, *sites, true, false);
-
-            cout << "Parsimony score: " << pars.getScore() << endl;
-
-            //if (pars.getScore() != 9) return 1;
-
-        } catch (Exception& ex) {
-            cerr << ex.what() << endl;
-            return 1;
-        }
-         */
-        //////////////////////////////////////////////
-        //////////////////////////////////////////////
-        //////////////////////////////////////////////
-        //////////////////////////////////////////////
-
-
-
-
-
-
-
-
 
         bpp::CastorApplication castorapp(argc,
                                          argv,

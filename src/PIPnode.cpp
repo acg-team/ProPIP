@@ -45,7 +45,6 @@
 #include <chrono>
 #include <random>
 
-
 #include <Bpp/Numeric/Matrix/MatrixTools.h>
 #include <glog/logging.h>
 
@@ -110,7 +109,6 @@ void PIPnode::_getPrFromSubstitutionModel() {
 
         prNode_.resize(progressivePIP_->numCatg_);
 
-        //for (int i = 0; i < progressivePIP_->rDist_->getNumberOfCategories(); i++) {
         for (int i = 0; i < progressivePIP_->numCatg_; i++) {
             // substitution/deletion probabilities with rate variation (gamma)
             // Pr = exp( branchLength * rateVariation * Q )
@@ -360,85 +358,6 @@ std::vector<double> PIPnode::_computeLkEmptyNode(std::vector<bpp::ColMatrix<doub
 
 }
 
-//void PIPnode::_DP2D(PIPmsa *msaL,
-//                    PIPmsa *msaR,
-//                    int h_compr,
-//                    int w_compr,
-//                    std::vector<vector<double> > &Log2DM,
-//                    std::vector<double> &Log2DX,
-//                    std::vector<double> &Log2DY,
-//                    std::vector<vector<double> > &Log2DM_fp,
-//                    std::vector<double> &Log2DX_fp,
-//                    std::vector<double> &Log2DY_fp,
-//                    std::vector<vector<vector<bpp::ColMatrix<double> > > > &Fv_M,
-//                    std::vector<vector<bpp::ColMatrix<double> > > &Fv_X,
-//                    std::vector<vector<bpp::ColMatrix<double> > > &Fv_Y,
-//                    std::vector<vector<vector<double> > > &Fv_sigma_M,
-//                    std::vector<vector<double> > &Fv_sigma_X,
-//                    std::vector<vector<double> > &Fv_sigma_Y){
-//
-//    //***************************************************************************************
-//    // 2D LK COMPUTATION
-//    //***************************************************************************************
-//
-//    int i,j;
-//
-//    // computes the lk in the two subtrees
-//    std::vector<double> &lk_down_L = msaL->log_lk_down_;
-//    std::vector<double> &lk_down_R = msaR->log_lk_down_;
-//
-//    // MATCH2D
-//    double pr_m;
-//    double pr_m_fp;
-//    for (i = 0; i < h_compr; i++) {
-//        for (j = 0; j < w_compr; j++) {
-//
-//            _computeLK_M(msaL->fv_data_.at(i),
-//                         msaR->fv_data_.at(j),
-//                         Fv_M[i][j],
-//                         Fv_sigma_M[i][j],
-//                         pr_m,
-//                         pr_m_fp);
-//
-//            Log2DM[i][j] = log(pr_m); // stored for the next layer
-//            Log2DM_fp[i][j] = log(pr_m_fp); // used at this node
-//        }
-//    }
-//    //***************************************************************************************
-//    // GAPX2D
-//    double pr_x;
-//    double pr_x_fp;
-//    for (i = 0; i < h_compr; i++) {
-//
-//        _computeLK_X(msaL->fv_data_.at(i),
-//                     msaR->fv_empty_data_,
-//                     Fv_X[i],
-//                     Fv_sigma_X[i],
-//                     pr_x,
-//                     pr_x_fp);
-//
-//        Log2DX[i] = progressivePIPutils::add_lns(log(pr_x),lk_down_L.at(i)); // stored for the next layer
-//        Log2DX_fp[i] = progressivePIPutils::add_lns(log(pr_x_fp),lk_down_L.at(i)); // used at this node
-//    }
-//    //***************************************************************************************
-//    // GAPY2D
-//    double pr_y;
-//    double pr_y_fp;
-//    for (j = 0; j < w_compr; j++) {
-//
-//        _computeLK_Y(msaL->fv_empty_data_,
-//                     msaR->fv_data_.at(j),
-//                     Fv_Y[j],
-//                     Fv_sigma_Y[j],
-//                     pr_y,
-//                     pr_y_fp);
-//
-//        Log2DY[j] = progressivePIPutils::add_lns(log(pr_y),lk_down_R.at(j)); // stored for the next layer
-//        Log2DY_fp[j] = progressivePIPutils::add_lns(log(pr_y_fp),lk_down_R.at(j)); // used at this node
-//    }
-//
-//}
-
 void PIPnode::_alignStateMatrices2D(PIPmsa *msaL,
                                     PIPmsa *msaR,
                                     LKdata &lkdata){
@@ -470,6 +389,113 @@ void PIPnode::_alignStateMatrices2D(PIPmsa *msaL,
             lkdata.Log2DM_fp[i][j] = log(pr_m_fp); // used at this node
         }
     }
+
+
+
+
+
+
+
+
+
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //if(this->bnode_->getId()==572) {
+
+        FILE *fid;
+
+
+
+        char filename1[80];
+        strcpy(filename1, "msaL");
+        fid = fopen(filename1, "w");
+        for (int i = 0; i < lkdata.h_compr_; i++) {
+            for (int k = 0; k < 5; k++) {
+                fprintf(fid, "%16.14lf ", msaL->fv_data_.at(i).at(0).col(0).at(k));
+            }
+            fprintf(fid, "\n");
+        }
+        fclose(fid);
+
+        char filename2[80];
+        strcpy(filename2, "msaR");
+        fid = fopen(filename2, "w");
+        for (int j = 0; j < lkdata.w_compr_; j++) {
+            for (int k = 0; k < 5; k++) {
+                fprintf(fid, "%16.14lf ", msaR->fv_data_.at(j).at(0).col(0).at(k));
+            }
+            fprintf(fid, "\n");
+        }
+        fclose(fid);
+
+
+        char filename3[80];
+        strcpy(filename3, "FV_M");
+        fid = fopen(filename3, "w");
+        for (int i = 0; i < lkdata.h_compr_; i++) {
+            for (int j = 0; j < lkdata.w_compr_; j++) {
+                for (int k = 0; k < 5; k++) {
+                    fprintf(fid, "%16.14lf ", lkdata.Fv_M[i][j].at(0).col(0).at(k));
+                }
+                fprintf(fid, "\n");
+            }
+        }
+        fclose(fid);
+
+        char filename4[80];
+        strcpy(filename4, "FV_sigma_M");
+        fid = fopen(filename4, "w");
+        for (i = 0; i < lkdata.h_compr_; i++) {
+            for (j = 0; j < lkdata.w_compr_; j++) {
+                fprintf(fid, "%16.14lf\n", lkdata.Fv_sigma_M[i][j].at(0));
+            }
+        }
+
+        fclose(fid);
+
+
+        //exit(1);
+
+    //}
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+    //ààààààààààààààààààààààààààààààààààààààààààà
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     //***************************************************************************************
     // GAPX2D
     double pr_x;

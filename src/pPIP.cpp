@@ -92,7 +92,6 @@ void pPIP::_reserve(std::vector<tshlib::VirtualNode *> &nodeList) {
 
     // lk score at each node
     score_.resize(numNodes); // best likelihood score at each node (final)
-    //score_.assign(numNodes, -std::numeric_limits<double>::infinity()); // initialisation of the best score
 
     // traceback path at each node
     traceback_path_.resize(numNodes); // vector of strings with the traceback to the path that generates the best MSA
@@ -668,12 +667,6 @@ void pPIP::_build_MSA(bpp::Node *node, int idx_sb) {
     int sonLeftID = treemap_.right.at(utree_->getNodeIdsMap().at(treemap_.left.at(node->getId()))->getNodeLeft()->getVnode_id());
     int sonRightID = treemap_.right.at(utree_->getNodeIdsMap().at(treemap_.left.at(node->getId()))->getNodeRight()->getVnode_id());
 
-    //tshlib::VirtualNode *vnode_left = treemap_.left.at(node->getId())->getNodeLeft();
-    //tshlib::VirtualNode *vnode_right = treemap_.left.at(node->getId())->getNodeRight();
-
-    //int sonLeftID = treemap_.right.at(vnode_left);
-    //int sonRightID = treemap_.right.at(vnode_right);
-
     MSA_t *MSA_L = &(MSA_.at(sonLeftID).at(0));
     MSA_t *MSA_R = &(MSA_.at(sonRightID).at(0));
 
@@ -686,19 +679,16 @@ void pPIP::_build_MSA(bpp::Node *node, int idx_sb) {
     int idx_j = 0;
     for (int j = 0; j < traceback_path_.at(nodeID).at(idx_sb).size(); j++) {
 
-        //if (traceback_path.at(j) == MATCH_CHAR) {
         if (traceback_path_.at(nodeID).at(idx_sb).at(j) == (int)MATCH_STATE) {
             MSA.push_back(MSA_L->at(idx_i) + MSA_R->at(idx_j));
             idx_i++;
             idx_j++;
 
-        //} else if (traceback_path.at(j) == GAP_X_CHAR) {
         } else if (traceback_path_.at(nodeID).at(idx_sb).at(j) == (int)GAP_X_STATE) {
             std::string gapCol(lenColR, GAP_CHAR);
             MSA.push_back(MSA_L->at(idx_i) + gapCol);
             idx_i++;
 
-        //} else if (traceback_path.at(j) == GAP_Y_CHAR) {
         } else if (traceback_path_.at(nodeID).at(idx_sb).at(j) == GAP_Y_STATE) {
 
             std::string gapCol(lenColL, GAP_CHAR);
@@ -718,12 +708,6 @@ void pPIP::_setMSAsequenceNames(bpp::Node *node) {
     // @treemap
     int sonLeftID = treemap_.right.at(utree_->getNodeIdsMap().at(treemap_.left.at(node->getId()))->getNodeLeft()->getVnode_id());
     int sonRightID = treemap_.right.at(utree_->getNodeIdsMap().at(treemap_.left.at(node->getId()))->getNodeRight()->getVnode_id());
-
-    //tshlib::VirtualNode *vnode_left = treemap_.left.at(node->getId())->getNodeLeft();
-    //tshlib::VirtualNode *vnode_right = treemap_.left.at(node->getId())->getNodeRight();
-
-    //int sonLeftID = treemap_.right.at(vnode_left);
-    //int sonRightID = treemap_.right.at(vnode_right);
 
     std::vector<std::string> seqNames;
 
@@ -754,7 +738,6 @@ void pPIP::_setMSAleaves(bpp::Node *node, const std::string &sequence) {
     int nodeID = node->getId();
 
     /* convert a string into a vector of single char strings */
-    //std::vector<std::string> msa;
     MSA_t msa;
     msa.resize(sequence.size());
     for (int i = 0; i < sequence.size(); i++) {

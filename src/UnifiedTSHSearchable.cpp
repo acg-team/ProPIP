@@ -58,7 +58,6 @@
 #include <Bpp/Text/KeyvalTools.h>
 #include "UnifiedTSHSearchable.hpp"
 
-
 using namespace bpp;
 
 void UnifiedTSHSearchable::setOptimiser(AbstractHomogeneousTreeLikelihood *lk,
