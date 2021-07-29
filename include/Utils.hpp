@@ -55,7 +55,6 @@
 #ifndef CASTOR_UTILS_HPP
 #define CASTOR_UTILS_HPP
 
-
 #include <Utree.hpp>
 #include <boost/bimap.hpp>
 #include <Bpp/Phyl/Tree.h>
@@ -64,20 +63,15 @@
 #include <Bpp/Phyl/Distance/DistanceEstimation.h>
 #include <Bpp/Seq/GeneticCode/GeneticCode.h>
 
-
 namespace UtreeBppUtils {
     using namespace tshlib;
 
-    //typedef boost::bimap<int, tshlib::VirtualNode *> treemap;
     typedef boost::bimap<int, int> treemap;
     typedef treemap::value_type nodeassoc;
 
-    //void convertTree_b2u(bpp::TreeTemplate<bpp::Node> *in_tree, Utree *out_tree, treemap &tm);
     void convertTree_b2u(bpp::Tree *in_tree, Utree *out_tree, treemap &tm);
 
     void _traverseTree_b2u(Utree *in_tree, VirtualNode *target, bpp::Tree *refTree, int nodeId, treemap &tm);
-
-    // void _traverseTree_b2u(Utree *in_tree, VirtualNode *target, bpp::Node *source, treemap &tm);
 
     bpp::TreeTemplate<bpp::Node> *convertTree_u2b(Utree *in_tree);
 
@@ -96,18 +90,9 @@ namespace UtreeBppUtils {
     std::vector<bpp::Node *>
     remapNodeLists(std::vector<int> &inputList, bpp::TreeTemplate<bpp::Node> *tree, UtreeBppUtils::treemap tm);
 
-
 }
 
 namespace MatrixBppUtils {
-
-
-    //Eigen::MatrixXd Matrix2Eigen(const bpp::Matrix<double> &inMatrix);
-    //bpp::Matrix<double> Eigen2Matrix(Eigen::MatrixXd &inMatrix);
-
-    //bpp::RowMatrix<double> Eigen2Matrix(const Eigen::MatrixXd &M);
-
-    //Eigen::VectorXd Vector2Eigen(const std::vector<double> &inVector);
 
     double dotProd(const std::vector<double> *x, const std::vector<double> *y);
 

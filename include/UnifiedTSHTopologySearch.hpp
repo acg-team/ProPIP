@@ -74,7 +74,6 @@ namespace tshlib {
 
     private:
 
-    // m@x
     public:
         bpp::AbstractHomogeneousTreeLikelihood *likelihoodFunc;
         double tshinitScore;
@@ -89,7 +88,6 @@ namespace tshlib {
         int performed_cycles;
         int search_startingnodes;
         mutable tshlib::Utree *utree_;
-        //bool tshStatus;
         int threads_num;
 
     public:
@@ -123,15 +121,6 @@ namespace tshlib {
         void setMaxNumThreads(int numThreads){
             TreeSearch::threads_num = numThreads;
         }
-
-//        bool isTreeSearchSuccessful() const {
-//            return tshStatus;
-//        }
-//
-//        void setTreeSearchStatus(bool status) {
-//            TreeSearch::tshStatus = status;
-//        }
-
 
         void setLikelihoodFunc(bpp::AbstractHomogeneousTreeLikelihood *in_likelihoodFunc) {
             likelihoodFunc = in_likelihoodFunc;
@@ -283,13 +272,6 @@ namespace tshlib {
 
         double executeTreeSearch();
 
-
-
-    // m@x
-    //protected:
-
-
-
         /*!
          * @brief This method execute the cycle of tree search according to the settings selected by the user
          * @return the score of the tree topology found during the tree search
@@ -303,7 +285,6 @@ namespace tshlib {
         tshlib::TreeRearrangment *defineMoves();
 
         //===============================================================
-        // m@x
         tshlib::TreeRearrangment *mydefineMoves(std::default_random_engine &random_engine,bool shuffle);
         tshlib::TreeRearrangment *mydefineMoves_new(int source_id);
         //===============================================================

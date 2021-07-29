@@ -176,10 +176,6 @@ namespace bpp {
 
         void _computeHadamardFVSons(std::vector<VVVdouble *> inFVSons, VVVdouble *outFVParent) const;
 
-        //std::vector<double> _SingleRateCategoryHadamardMultFvSons(int nodeID, unsigned long site, unsigned long rate) const;
-
-        //std::vector<double> _SingleRateCategoryHadamardMultFvEmptySons(int nodeID, unsigned long rate) const;
-
         std::vector<double> _SingleRateCategoryHadamardMultFvSons(int nodeID,
                                                                   unsigned long site,
                                                                   unsigned long rate,
@@ -222,13 +218,6 @@ namespace bpp {
         };
 
         double getLogLikelihood() const;
-
-
-        //double getLogLikelihood(std::vector<tshlib::VirtualNode *> &listNodes) const;
-        //double getLogLikelihoodSubtree(const Node *node) const;
-        //double getLogLikelihoodSubtreeForASite(size_t site) const;
-        //double getLogLikelihoodSubtreeForASiteForARateClass(size_t site, size_t rateClass) const;
-
 
         /** @} */
 
@@ -342,7 +331,6 @@ namespace bpp {
          * @brief This method computes the likelihood of the tree for a list of nodes computed using a postorder-traversal
          * @param nodeList
          */
-        //void computeTreeLikelihood(std::vector<int> nodeList);
 
         /** @} */
 
@@ -370,9 +358,6 @@ namespace bpp {
          * @brief This method computes the likelihood after a tree rearrangment
          * @return The likelihood value using the intermediate partial values
          */
-        //void fireTopologyChange(std::vector<int> nodeList);
-
-        //double getLogLikelihoodOnTopologyChange() const;
 
         /**
          * @brief This method computes a list of nodes traversing the tree in postorder
@@ -412,14 +397,6 @@ namespace bpp {
                                                VVVdouble *_likelihoods_empty__node,
                                                std::vector<VVVdouble *> *lk_sons,
                                                std::vector<VVVdouble *> *lk_sons_empty);
-
-
-
-//        virtual void _kernel_subtreelikelihood(int nodeID, VVVdouble *pxy__node,
-//                                               VVVdouble *_likelihoods__node,
-//                                               VVVdouble *_likelihoods_empty__node,
-//                                               Vint *_sons__ids,
-//                                               std::map<int, bool> *ts_node__data_origin);
 
         virtual void computeDownSubtreeDLikelihood(const Node *);
 
@@ -466,7 +443,6 @@ namespace bpp {
         /**
          * @brief This method sets the setA (setA=1: possible insertion on that edge) value for all the nodes in the tree
          */
-        /*virtual void setAllSetAData(const SiteContainer &sites) const;*/
 
         virtual void setAllIotas(tshlib::Utree *utree);
         virtual void setAllBetas(tshlib::Utree *utree);
@@ -485,7 +461,6 @@ namespace bpp {
          * @brief This method sets to 1 all the likelihood arrays recursively from a starting node
          * @param node The node at which the likelihood arrays must be reset
          */
-        //virtual void resetNodeLikelihoodArrays(const Node *node);
 
         /**
          * @brief This method updates the likelihood arrays recursively from a starting node for a

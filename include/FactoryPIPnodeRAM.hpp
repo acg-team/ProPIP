@@ -130,12 +130,6 @@ namespace bpp {
         nodeRAM *cloneNodeRAM(int deltaL,int lenL,int deltaR,int lenR);
         PIPnode *cloneChildNodeRAM(PIPnode *ref,int delta,int len);
         void gatherResults(std::vector< nodeRAM* > &nodeRAMvec);
-        /*
-        virtual std::unique_ptr<PIPnode> clone() const override
-        {
-                return std::make_unique<nodeRAM>(*this);
-        }
-        */
 
     };
 

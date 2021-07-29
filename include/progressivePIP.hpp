@@ -56,17 +56,10 @@
 #include "Utilities.hpp"
 #include "Utils.hpp"
 
-#define SMALL_BR_LEN 1e-9
 #define SMALL_DOUBLE 1e-12
 #define GAP_CHAR '-'
 #define ERR_STATE (-999)
 #define DBL_EPSILON std::numeric_limits<double>::min()
-
-
-
-
-//#define STFT
-//#define COMPRESS_TR 1
 
 #ifdef COMPRESS_TR
     #define STOP_STATE  0b00000000

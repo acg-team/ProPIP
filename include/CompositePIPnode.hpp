@@ -42,8 +42,6 @@
  * @see For more information visit:
  */
 
-//#include <string>
-
 #include "PIPnode.hpp"
 
 #ifndef MINIJATI_COMPOSITEPIPNODE_HPP

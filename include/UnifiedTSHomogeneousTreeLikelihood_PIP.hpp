@@ -158,7 +158,6 @@ namespace bpp {
         void removeTestLikelihoodData(int idxThread) override;
 
         //=====================================================
-        // m@x
         void commitBranchLengths();
 
         void commitBranchLength(int id_Bpp,double bl);

@@ -92,17 +92,6 @@ namespace bpp {
         PIP_Nuc *clone() const { return new PIP_Nuc(*this); }
 
     public:
-        //double Pij_t(size_t i, size_t j, double d) const;
-
-        //double dPij_dt(size_t i, size_t j, double d) const;
-
-        //double d2Pij_dt2(size_t i, size_t j, double d) const;
-
-        //const Matrix<double> &getPij_t(double d) const;
-
-        //const Matrix<double> &getdPij_dt(double d) const;
-
-        //const Matrix<double> &getd2Pij_dt2(double d) const;
 
         void setFreqFromData(const SequenceContainer &data, double pseudoCount);
 
@@ -143,8 +132,6 @@ namespace bpp {
          * @param initFreqs Tell if the frequency set should be initialized with the original PIP_AA values.
          * Otherwise, the values of the set will be used.
          */
-        //PIP_AA(const ProteicAlphabet *alpha, ProteinFrequenciesSet *freqSet, bool initFreqs = false,);
-
         PIP_AA(const PIP_AA &model) :
                 AbstractParameterAliasable(model),
                 AbstractReversibleProteinSubstitutionModel(model),
@@ -234,25 +221,12 @@ namespace bpp {
 
         void setFreqFromData(const SequenceContainer &data, double pseudoCount = 0);
 
-        //const SubstitutionModel &getSubstitutionModel() const { return *pmodel_.get(); }
-
-        //const GeneticCode *getGeneticCode() const { return pmodel_->getGeneticCode(); }
-
-        //double getCodonsMulRate(size_t i, size_t j) const { return pmodel_->getCodonsMulRate(i, j); }
-
-        //const FrequenciesSet *getFrequenciesSet() const { return pmodel_->getFrequenciesSet(); }
-
     protected:
         void updateMatrices() override;
 
     protected:
 
-        //SubstitutionModel &getSubstitutionModel() { return *pmodel_.get(); }
-
     };
-
-
-
 
     // If the user requires to estimate the model parameters (lambda/mu) from the data, then invoke the right method
 

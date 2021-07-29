@@ -138,16 +138,11 @@ namespace bpp {
                         const bpp::Alphabet *alphabet,
                         const bpp::ColMatrix<double> &pi);
 
-        //void _setFVsigmaLeaf(int numCatg,
-        //                     const bpp::ColMatrix<double> &pi);
-
         void _setFVemptyNode(int numCatg,
                              PIPmsa *childL,
                              PIPmsa *childR,
                              std::vector<bpp::RowMatrix<double> > &PrL,
                              std::vector<bpp::RowMatrix<double> > &PrR);
-
-        //void _setFVsigmaEmptyLeaf(int numCatg);
 
         void _setFVsigmaEmptyNode(int numCatg,
                                   PIPmsa *childL,

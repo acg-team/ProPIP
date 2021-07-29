@@ -59,13 +59,11 @@
 #include "Utils.hpp"
 #include "RHomogeneousTreeLikelihood_Generic.hpp"
 
-
 namespace bpp {
 
     class UnifiedTSHomogeneousTreeLikelihood : public RHomogeneousTreeLikelihood_Generic, public UnifiedTSHSearchable {
 
     protected:
-        //mutable DRASRTreeLikelihoodData *likelihoodData;
         mutable DRASRTreeLikelihoodData *likelihoodDataTest_;
         const SiteContainer* data_;
         mutable tshlib::Utree *utree_;

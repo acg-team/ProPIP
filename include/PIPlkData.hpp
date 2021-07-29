@@ -58,7 +58,6 @@ struct LKdata {
     std::vector<std::vector<std::vector<double> > > Log3DX;   // DP sparse matrix for GAPX case (only 2 layer are needed)
     std::vector<std::vector<std::vector<double> > > Log3DY;   // DP sparse matrix for GAPY case (only 2 layer are needed)
 
-    //std::vector<std::vector<std::vector<int> > > TR;   // DP matrix for tracebacking
     std::vector<std::vector<std::vector<char> > > TR;   // DP matrix for tracebacking
 
     std::vector<std::vector<double> > Log2DM;

@@ -55,14 +55,12 @@
 #ifndef CASTOR_EXTENDEDALPHABET_HPP
 #define CASTOR_EXTENDEDALPHABET_HPP
 
-
 #include <Bpp/Seq/Alphabet/LetterAlphabet.h>
 #include <Bpp/Seq/Alphabet/NucleicAlphabetState.h>
 #include <Bpp/Seq/Alphabet/NucleicAlphabet.h>
 #include <Bpp/Seq/Alphabet/ProteicAlphabetState.h>
 #include <Bpp/Seq/Alphabet/ProteicAlphabet.h>
 #include <Bpp/Seq/Alphabet/WordAlphabet.h>
-
 
 namespace bpp {
 
@@ -167,8 +165,6 @@ namespace bpp {
         /** @} */
     public:
         ProteicAlphabet_Extended();
-
-        // ProteicAlphabet_Extended(const ProteicAlphabet_Extended &bia) : ProteicAlphabet(bia)  {}
 
         ProteicAlphabet_Extended &operator=(const ProteicAlphabet_Extended &bia) {
             LetterAlphabet::operator=(bia);

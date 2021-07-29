@@ -57,7 +57,6 @@
 
 #include <Bpp/Phyl/Likelihood/AbstractHomogeneousTreeLikelihood.h>
 
-
 namespace bpp {
     class Bootstrap {
 

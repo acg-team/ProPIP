@@ -66,8 +66,6 @@ namespace bpp {
         typedef std::string MSAcolumn_t;           // MSA column type
         typedef std::vector<MSAcolumn_t> MSA_t;    // MSA as vector of columns
         typedef std::vector<MSA_t> MSAensemble_t;  // for SB: set (vector) of MSAs
-        //typedef std::string TracebackPath_t;       // traceback path type
-        //typedef std::vector<TracebackPath_t> TracebackEnsemble_t; //for SB: set (vector) of traceback paths
 
         pPIP(tshlib::Utree *utree,              // tshlib:: tree
              bpp::Tree *tree,                   // bpp::tree
@@ -468,25 +466,11 @@ namespace bpp {
                              double &val,
                              int &state);
 
-        //void DP3D_PIP_no_gamma(bpp::Node *node, bool local,bool flag_map);
-
-//        void DP3D_PIP_RAM(bpp::Node *node,
-//                          bool local,
-//                          bool flag_map,
-//                          bool flag_pattern);
-
         void DP3D_PIP_RAM_FAST(bpp::Node *node);
 
         void DP3D_PIP_RAM_FAST_SB_cross(bpp::Node *node);
 
         void DP3D_PIP_RAM_FAST_SB(bpp::Node *node,int msa_idx_L, int msa_idx_R, int &position);
-
-//        void DP3D_PIP_SB(bpp::Node *node,
-//                         UtreeBppUtils::treemap *tm,
-//                         double gamma_rate,
-//                         bool local,
-//                         double temperature,
-//                         int num_SB);
 
     };
 

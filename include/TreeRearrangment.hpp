@@ -40,7 +40,6 @@
 #ifndef TSHLIB_TREEREARRANGEMENT_HPP
 #define TSHLIB_TREEREARRANGEMENT_HPP
 
-//#include "PhyTree.hpp"
 #include "Utree.hpp"
 #include "Utilities.hpp"
 #include "Move.hpp"
@@ -51,8 +50,6 @@ namespace tshlib {
 
     class TreeRearrangment {
     protected:
-        //VirtualNode *trSourceNode_;              // Starting node from which starting the tree exploration
-        //int trSourceNode_;                         // Starting node from which starting the tree exploration
 
         int trSearchRadius_min;                    // Radius of the node search (for NNI must set it to 3)
         int trSearchRadius_max;                    // Radius of the node search (for NNI must set it to 3)
@@ -63,9 +60,6 @@ namespace tshlib {
     protected:
         /* Strategy used to define the candidate moves -- max coverage of the tree space */
         bool trPreserveBranchLenghts_;             // Switch to preserve branch lentghs in case the move is applied (i.e NNI vs SPR)
-
-        //Utree *utree_;
-
 
     private:
         std::string trUID_;                        // Tree-rearrangment ID. Useful in case of parallel independent executions
@@ -80,12 +74,6 @@ namespace tshlib {
 
         ~TreeRearrangment();
 
-        //VirtualNode *getSourceNode() const { return trSourceNode_ ?: nullptr; }
-        //int getSourceNode() const { return trSourceNode_ ?: -2; }
-
-        //void setSourceNode(VirtualNode *mset_sourcenode) { TreeRearrangment::trSourceNode_ = mset_sourcenode; }
-        //void setSourceNode(int mset_sourcenode) { TreeRearrangment::trSourceNode_ = mset_sourcenode; }
-
         int getMinRadius() const { return trSearchRadius_min; }
 
         void setMinRadius(int mset_min_radius) { TreeRearrangment::trSearchRadius_min = mset_min_radius; }
@@ -94,24 +82,14 @@ namespace tshlib {
 
         void setMaxRadius(int mset_max_radius) { TreeRearrangment::trSearchRadius_max = mset_max_radius; }
 
-        //Utree *getTree() const { return utree_; }
-
-        //void setTree(Utree *inTree);
-
-
-
         /*!
          * @brief Perform a complete node search and fill the vector containing the candidate moves.
          * @param includeSelf bool ?
          */
-        //void defineMoves(bool includeSelf, bool allowDuplicatedMoves = true);
-
-        //const std::vector<VirtualNode *> updatePathBetweenNodes(unsigned long moveID, std::vector<VirtualNode *> inPath);
 
         const std::vector<int> updatePathBetweenNodes(unsigned long moveID, std::vector<int> inPath);
 
         //================================================================================
-        // m@x
         Move *setMove(tshlib::Move *m,int idx);
         void sortData(std::vector<int> &array,std::vector<int> &indeces);
         std::vector<int> sortByDepth(std::vector<int> &path,tshlib::Utree *utree);
@@ -139,19 +117,12 @@ namespace tshlib {
         void defineMoves(VirtualNode *sourceNode,bool includeSelf, bool allowDuplicatedMoves = true);
         void getNodesInRadiusUp(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, NodePosition traverse_direction,bool allowDuplicatedMoves);
         void getNodesInRadiusDown(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, bool includeSelf,MoveDirections direction, bool allowDuplicatedMoves);
-        //bool revertMove(Move *move, Utree & _thread__topology);
         void removeMoveDuplicates(int num_nodes);
         void myCheckTreeCountLeaves_rec(VirtualNode *node,int &n);
         bool myCheckTreeCountLeaves(tshlib::Utree *utree);
         //================================================================================
 
-        //bool applyMove(unsigned long moveID, Utree & _thread__topology);
-
-        //void commitMove(int moveID, Utree & _thread__topology);
-
         Move *getMove(unsigned long moveID);
-
-        //bool revertMove(unsigned long moveID, Utree & _thread__topology);
 
         void printMoves();
 
@@ -181,38 +152,6 @@ namespace tshlib {
 
     protected:
 
-        /*!
-         * @brief Recursive function to retrieve all the nodes within a fixed radius from a starting node
-         * @param node_source   VirtualNode pointer to the starting node
-         * @param radius_min    int Radius of the search (NNI = 1, SPR > 1)
-         * @param radius_max    int Radius of the search (NNI = 1, SPR > 1)
-         * @param includeSelf bool ?
-         */
-//        void
-//        getNodesInRadiusDown(VirtualNode *node_source,VirtualNode *node_target, int radius_min, int radius_curr, int radius_max, bool includeSelf, MoveDirections direction,
-//                             bool allowDuplicatedMoves);
-
-
-        /*!
-         * @brief Recursive function to retrieve all the nodes within a fixed radius from a starting node
-         * @param node_source   PhyTree Pointer to the starting node
-         * @param radius_min    int Radius of the search (NNI = 3, SPR > 3)
-         * @param radius_max    int Radius of the search (NNI = 1, SPR > 1)
-         * @param traverse_direction     NodePosition it indicates the direction of the node wrt parent node
-         */
-//        void getNodesInRadiusUp(VirtualNode *node_source, int radius_min, int radius_curr, int radius_max, NodePosition traverse_direction,
-//                                bool allowDuplicatedMoves);
-
-        /*!
-         * @brief Append candidate move to the mset_moves vector
-         * @param move Move Pointer to the candidate move object
-         */
-        //void addMove(int radius, VirtualNode *targetNode, MoveDirections moveDirection, bool allowDuplicatedMoves = true);
-
-
-        //bool _applySPR(Move *move, Utree & _thread__topology);
-
-        //bool _revertSPR(Move *move, Utree & _thread__topology);
     };
 
 

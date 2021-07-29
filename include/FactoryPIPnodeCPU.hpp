@@ -92,9 +92,6 @@ namespace bpp {
                                                       std::vector<bpp::ColMatrix<double> > &fvR,
                                                       std::vector<bpp::ColMatrix<double> > &Fv_gap);
 
-//        double compute_lk_gap_down(MSAcolumn_t &s,
-//                                   int catg);
-
 
         double computeLK_M_local(double NU,
                                  double valM,
@@ -128,10 +125,6 @@ namespace bpp {
                                  int m,
                                  std::map<MSAcolumn_t, double> &lkY,
                                  std::vector<std::vector<double> > &lkY_pattern);
-
-//        bpp::ColMatrix<double> computeFVrec(MSAcolumn_t &s,
-//                                            int &idx,
-//                                            int catg);
 
         std::string createGapCol(int len);
 
@@ -259,12 +252,6 @@ namespace bpp {
         // PUBLIC FIELDS
         //***************************************************************************************
 
-//        nodeCPU *parent;
-//        nodeCPU *childL;
-//        nodeCPU *childR;
-
-        //PIPmsaSingle *MSA_; //contains the MSA
-
         //***************************************************************************************
         // PUBLIC METHODS
         //***************************************************************************************
@@ -273,20 +260,11 @@ namespace bpp {
                                                                                                     bnode) {
         }
 
-        //virtual ~nodeCPU() = default;
-
         ~nodeCPU(){ delete MSA_; };
 
         void DP3D_PIP();
 
         void _computeAllFvEmptySigmaRec();
-
-/*
-        virtual std::unique_ptr<PIPnode> clone() const override
-        {
-            return std::make_unique<nodeCPU>(*this);
-        }
-*/
 
     };
 

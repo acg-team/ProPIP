@@ -76,14 +76,6 @@ namespace bpp {
         std::string optMethodModel_;
         bool optNumericalDerivatives_;
 
-        // Temporary object for storing FV components (unlimited) during tree-search
-        // - allocation at the beginning of the tree-search cycle
-        // - deallocation at the end of the tree-search cycle
-        // - one or more VVVdouble object per each tree-rearrangement (map classVVVdouble (map idxRearrangment, map idxNode, VVVdouble))
-
-
-
-
     public:
 
         std::string OPTIMIZATION_NEWTON = "newton";

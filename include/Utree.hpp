@@ -47,8 +47,6 @@
 
 #include "Utilities.hpp"
 
-//#include "Alignment.hpp"
-
 namespace tshlib {
 
 /*
@@ -170,8 +168,6 @@ namespace tshlib {
          */
         void resetNodeDirections(bool revertRotations);
 
-        //void getMemberNeighbors(int radius);
-
         /*!
          * @brief The function prints the neighborhood of the node in the format <^nodeUp;nodeLeft;nodeRight >
          * @return std::string with the node neighborhood
@@ -229,24 +225,6 @@ namespace tshlib {
          * @return
          */
         NodePosition indexOf();
-
-
-
-
-//        void moveTheRoot(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
-//        void NNImoveUP(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
-//        void NNImoveUP_LR(VirtualNode *pnode, VirtualNode *qnode, std::vector<VirtualNode *> &startVNodes);
-//
-//        /*!
-//         * @brief This function swaps the current node and another one passed in the argument. The swap takes in consideration the topology of the tree.
-//         * @param targetNode
-//         * @return boolean value if the execution was performed correctly.
-//         */
-//        bool swapNode(VirtualNode *targetNode, MoveDirections move_direction, bool revertRotations,std::vector<VirtualNode *> &startVNodes);
-//
-//
-
-
 
         /*!
          * @brief The function checks if the current node is a parent of another node using a recursive structure
@@ -355,13 +333,10 @@ namespace tshlib {
          */
         void addMember(VirtualNode *inVNode, bool isStartNode = false);
 
-
         //=======================
-        // m@x
         void myAddRoot();
         void myRemoveRoot();
         //=======================
-
 
         /*!
          * @brief
@@ -410,7 +385,6 @@ namespace tshlib {
 
         std::vector<int> computePathBetweenNodes2(VirtualNode *vnode_1, VirtualNode *vnode_2);
 
-        //std::vector<VirtualNode *> computePathBetweenNodes(VirtualNode *vnode_1, VirtualNode *vnode_2);
         std::vector<int> computePathBetweenNodes(VirtualNode *vnode_1, VirtualNode *vnode_2);
 
         std::vector<VirtualNode *> _unique(std::vector<VirtualNode *> &list_nodes_n1, std::vector<VirtualNode *> &list_nodes_n2);
@@ -471,29 +445,6 @@ namespace tshlib {
 
     namespace UtreeUtils {
         using namespace tshlib;
-
-        //void _traverseTree(Utree *in_tree, VirtualNode *target, PhyTree *source);
-
-        //void convertUtree(PhyTree *in_tree, Utree *out_tree);
-
-        /*!
-         * @brief This function has been ported in Utree::_unique
-         * @param n
-         * @return
-         */
-        //std::vector<VirtualNode *> get_unique(std::vector<VirtualNode *> &list_nodes_n1, std::vector<VirtualNode *> &list_nodes_n2);
-
-
-        //std::vector<VirtualNode *> fill_with_nodes(VirtualNode *n);
-
-        /*!
-             * @brief This function has been ported in Utree::computePathBetweenNodes
-             * @param n
-             * @return
-             */
-        //std::vector<VirtualNode *> get_path_from_nodes(VirtualNode *vn1, VirtualNode *vn2);
-
-        //void associateNode2Alignment(Alignment *inMSA, Utree *inTree);
 
         VirtualNode *getPseudoRoot(VirtualNode *vn);
 
