@@ -180,6 +180,14 @@ void PIPnode::_computeLK_M(std::vector<bpp::ColMatrix<double> > &fvL,
         pr_match += p;
     }
 
+    if(pr_match_full_path<DBL_EPSILON){
+        pr_match_full_path = DBL_EPSILON;
+    }
+    if(pr_match<DBL_EPSILON){
+        pr_match = DBL_EPSILON;
+    }
+
+
 }
 
 void PIPnode::_computeLK_X(std::vector<bpp::ColMatrix<double> > &fvL,
@@ -236,6 +244,14 @@ void PIPnode::_computeLK_X(std::vector<bpp::ColMatrix<double> > &fvL,
         pr_gapx += p0;
     }
 
+    if(pr_gapx_full_path<DBL_EPSILON){
+        pr_gapx_full_path = DBL_EPSILON;
+    }
+    if(pr_gapx<DBL_EPSILON){
+        pr_gapx = DBL_EPSILON;
+    }
+
+
 }
 
 void PIPnode::_computeLK_Y(std::vector<bpp::ColMatrix<double> > &fvL,
@@ -291,6 +307,13 @@ void PIPnode::_computeLK_Y(std::vector<bpp::ColMatrix<double> > &fvL,
 
         pr_gapy += p0;
 
+    }
+
+    if(pr_gapy_full_path<DBL_EPSILON){
+        pr_gapy_full_path = DBL_EPSILON;
+    }
+    if(pr_gapy<DBL_EPSILON){
+        pr_gapy = DBL_EPSILON;
     }
 
 }
@@ -360,13 +383,13 @@ std::vector<double> PIPnode::_computeLkEmptyNode(std::vector<bpp::ColMatrix<doub
 
 void PIPnode::_alignStateMatrices2D(PIPmsa *msaL,
                                     PIPmsa *msaR,
-                                    LKdata &lkdata){
+                                    LKdata &lkdata) {
 
     //***************************************************************************************
     // LK COMPUTATION
     //***************************************************************************************
 
-    int i,j;
+    int i, j;
 
     // computes the lk in the two subtrees
     std::vector<double> &lk_down_L = msaL->log_lk_down_;
@@ -389,112 +412,6 @@ void PIPnode::_alignStateMatrices2D(PIPmsa *msaL,
             lkdata.Log2DM_fp[i][j] = log(pr_m_fp); // used at this node
         }
     }
-
-
-
-
-
-
-
-
-
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //if(this->bnode_->getId()==572) {
-
-        FILE *fid;
-
-
-
-        char filename1[80];
-        strcpy(filename1, "msaL");
-        fid = fopen(filename1, "w");
-        for (int i = 0; i < lkdata.h_compr_; i++) {
-            for (int k = 0; k < 5; k++) {
-                fprintf(fid, "%16.14lf ", msaL->fv_data_.at(i).at(0).col(0).at(k));
-            }
-            fprintf(fid, "\n");
-        }
-        fclose(fid);
-
-        char filename2[80];
-        strcpy(filename2, "msaR");
-        fid = fopen(filename2, "w");
-        for (int j = 0; j < lkdata.w_compr_; j++) {
-            for (int k = 0; k < 5; k++) {
-                fprintf(fid, "%16.14lf ", msaR->fv_data_.at(j).at(0).col(0).at(k));
-            }
-            fprintf(fid, "\n");
-        }
-        fclose(fid);
-
-
-        char filename3[80];
-        strcpy(filename3, "FV_M");
-        fid = fopen(filename3, "w");
-        for (int i = 0; i < lkdata.h_compr_; i++) {
-            for (int j = 0; j < lkdata.w_compr_; j++) {
-                for (int k = 0; k < 5; k++) {
-                    fprintf(fid, "%16.14lf ", lkdata.Fv_M[i][j].at(0).col(0).at(k));
-                }
-                fprintf(fid, "\n");
-            }
-        }
-        fclose(fid);
-
-        char filename4[80];
-        strcpy(filename4, "FV_sigma_M");
-        fid = fopen(filename4, "w");
-        for (i = 0; i < lkdata.h_compr_; i++) {
-            for (j = 0; j < lkdata.w_compr_; j++) {
-                fprintf(fid, "%16.14lf\n", lkdata.Fv_sigma_M[i][j].at(0));
-            }
-        }
-
-        fclose(fid);
-
-
-        //exit(1);
-
-    //}
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-    //ààààààààààààààààààààààààààààààààààààààààààà
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     //***************************************************************************************
     // GAPX2D
@@ -528,86 +445,7 @@ void PIPnode::_alignStateMatrices2D(PIPmsa *msaL,
         lkdata.Log2DY[j] = progressivePIPutils::add_lns(log(pr_y),lk_down_R.at(j)); // stored for the next layer
         lkdata.Log2DY_fp[j] = progressivePIPutils::add_lns(log(pr_y_fp),lk_down_R.at(j)); // used at this node
     }
-
-
-
-
-
-    //==== DEBUG ===============
-//    std::cout<<"\n";
-//
-//    std::cout<<"M2D\n";
-//    for(int ii=0;ii<lkdata.h_compr_;ii++){
-//        for(int jj=0;jj<lkdata.w_compr_;jj++){
-//            double lk;
-//            if(std::isinf(lkdata.Log2DM[ii][jj])){
-//                lk=-0.0;
-//            }else{
-//                lk=lkdata.Log2DM[ii][jj];
-//            }
-//            printf("%8.6lf ",lk);
-//        }
-//        std::cout<<"\n";
-//    }
-//
-//    std::cout<<"\n";
-//
-//    std::cout<<"X2D\n";
-//    for(int ii=0;ii<lkdata.h_compr_;ii++){
-//        double lk;
-//        if(std::isinf(lkdata.Log2DX[ii])){
-//            lk=-0.0;
-//        }else{
-//            lk=lkdata.Log2DX[ii];
-//        }
-//        printf("%8.6lf ",lk);
-//    }
-//    std::cout<<"\n\n";
-//
-//    std::cout<<"Y2D\n";
-//    for(int jj=0;jj<lkdata.w_compr_;jj++){
-//        double lk;
-//        if(std::isinf(lkdata.Log2DY[jj])){
-//            lk=-0.0;
-//        }else{
-//            lk=lkdata.Log2DY[jj];
-//        }
-//        printf("%8.6lf ",lk);
-//    }
-//    std::cout<<"\n";
-    //==== DEBUG ===============
-
-    //==== DEBUG ===============
-    /*
-    FILE *fidM;
-    FILE *fidX;
-    FILE *fidY;
-    fidM=fopen("/Users/max/PIPjava/state/execs/2DM","w");
-    fidX=fopen("/Users/max/PIPjava/state/execs/2DX","w");
-    fidY=fopen("/Users/max/PIPjava/state/execs/2DY","w");
-    for (i = 0; i < lkdata.h_compr_; i++) {
-        for (j = 0; j < lkdata.w_compr_; j++) {
-            fprintf(fidM,"%8.6lf ",lkdata.Log2DM_fp[i][j]);
-        }
-        fprintf(fidM,"\n");
-    }
-
-    for (i = 0; i < lkdata.h_compr_; i++) {
-            fprintf(fidX,"%8.6lf\n",lkdata.Log2DX_fp[i]);
-    }
-
-    for (j = 0; j < lkdata.w_compr_; j++) {
-            fprintf(fidY,"%8.6lf\n",lkdata.Log2DY_fp[j]);
-    }
-
-    fclose(fidM);
-    fclose(fidX);
-    fclose(fidY);
-    */
-    //==== DEBUG ===============
-
-
-
+    
 }
 
 // TODO:re-implement this method for nodeCPU

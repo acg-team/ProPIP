@@ -1522,7 +1522,9 @@ void CastorApplication::fixSmallBranchLength(){
     std::vector<int> nodeIds = tree->getNodesId();
     for(int i=0;i<nodeIds.size();i++){
         if(nodeIds.at(i) != rootId){
-            tree->setDistanceToFather(nodeIds.at(i),r);
+            if(tree->getDistanceToFather(nodeIds.at(i))<r){
+                tree->setDistanceToFather(nodeIds.at(i),r);
+            }
         }
 
     }
