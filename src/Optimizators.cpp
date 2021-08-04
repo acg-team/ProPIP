@@ -707,7 +707,6 @@ namespace bpp {
 
         //==============================================================================================================
         int cycle_counter = 0;
-        int contatore = 0;
         while ( (std::fabs(initScore-currentScore)>tolerance) && (cycle_counter<nbEvalMax) ){
 
             // optimize Topology (1 cycle)
@@ -730,8 +729,7 @@ namespace bpp {
                                                 n,
                                                 tm,
                                                 sites,
-                                                pars,
-                                                contatore);
+                                                pars);
             }
 
             // Separate branch lenght params from model params
@@ -816,8 +814,7 @@ namespace bpp {
                                                                  int &n,
                                                                  UtreeBppUtils::treemap &tm,
                                                                  bpp::SiteContainer *sites,
-                                                                 std::map<std::string, std::string> &pars,
-                                                                 int &contatore){
+                                                                 std::map<std::string, std::string> &pars){
 
         bool is_PIP  = false;
         int thread_id=0;
@@ -878,8 +875,6 @@ namespace bpp {
                 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 // all moves with node_i as source
                 for (int move_i = 0; move_i < move_set->getNumberOfMoves(); move_i++) {
-
-                    contatore++;
 
                     currentMove = move_set->getMove(move_i);
 
